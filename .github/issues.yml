@@ -1,0 +1,371 @@
+# .github/issues.yml
+# Zbiorczy import zadań dla projektu "Network Simulator"
+
+issues:
+  - title: "[CORE] Klasy: Node, Host, Router, Link, Packet"
+    body: |
+      Stworzyć podstawowe klasy reprezentujące elementy sieci:
+      - `Node` – klasa abstrakcyjna (nazwa, IP, receivePacket)
+      - `Host` – implementacja węzła końcowego
+      - `Router` – tablica routingu (mapa `dst → nextHop`)
+      - `Link` – połączenie między Node'ami
+      - `Packet` – pola: src, dst, ttl, delay, payload
+    labels: ["backend", "core", "C++"]
+    assignees: ["UmarlyPoeta"]
+
+  - title: "[CORE] Implementacja klasy Network (graf połączeń)"
+    body: |
+      - Przechowuj węzły i połączenia (`std::map<std::string, std::set<std::string>>`)
+      - Metody: `addNode<T>()`, `connect()`, `findByName()`, `getNeighbors()`
+      - Umożliwi BFS w Engine::ping()
+    labels: ["backend", "core", "C++"]
+    assignees: ["UmarlyPoeta"]
+
+  - title: "[ENGINE] BFS i logika ping"
+    body: |
+      - W Engine::ping() zaimplementuj BFS po Network
+      - Obsłuż TTL i zakończenie trasy
+      - Zwracaj ścieżkę w wektorze stringów
+    labels: ["backend", "engine", "C++"]
+    assignees: ["UmarlyPoeta"]
+
+  - title: "[API] Serwer cpprestsdk + endpoint /status"
+    body: |
+      - Uruchomić prosty listener HTTP (`http://0.0.0.0:8080`)
+      - Dodać endpoint GET `/status` → `{ "status": "ok" }`
+      - Projekt budowany przez CMake
+    labels: ["api", "rest", "C++"]
+    assignees: ["UmarlyPoeta"]
+
+  - title: "[API] Endpoint /addNode"
+    body: |
+      - POST /addNode { "name": "A", "ip": "10.0.0.1" }
+      - Tworzy Host i dodaje go do Network
+      - Zwraca `{ "result": "node added" }`
+    labels: ["api", "rest", "C++"]
+    assignees: ["UmarlyPoeta"]
+
+  - title: "[API] Endpoint /connect i /ping"
+    body: |
+      - POST /connect { "a": "A", "b": "B" }
+      - POST /ping { "src": "A", "dst": "B" }
+      - Wywołuje Engine::ping() i zwraca ścieżkę
+    labels: ["api", "rest", "network"]
+    assignees: ["UmarlyPoeta"]
+
+  - title: "[API] Endpoint /network (topologia)"
+    body: |
+      - GET /network → JSON:
+        ```json
+        {
+          "nodes": ["A", "B", "R1"],
+          "links": [["A","R1"],["R1","B"]]
+        }
+        ```
+    labels: ["api", "rest", "network"]
+    assignees: ["UmarlyPoeta"]
+
+  - title: "[FRONTEND] Szkielet React (Vite + Tailwind)"
+    body: |
+      - Utworzyć aplikację `npm create vite@latest frontend`
+      - Dodać Tailwind + konfig
+      - Przygotować layout (sidebar + canvas)
+    labels: ["frontend", "react", "setup"]
+    assignees: ["NandarinWasTaken"]
+
+  - title: "[FRONTEND] Fetch /status i /addNode"
+    body: |
+      - Sprawdzić połączenie z backendem (`/status`)
+      - Formularz do dodania węzła (`name`, `ip`)
+    labels: ["frontend", "api"]
+    assignees: ["NandarinWasTaken"]
+
+  - title: "[FRONTEND] Rysowanie sieci z /network"
+    body: |
+      - Użyć React Flow do wizualizacji grafu
+      - Rysować node'y i krawędzie z danych JSON
+    labels: ["frontend", "visualization"]
+    assignees: ["NandarinWasTaken"]
+
+  - title: "[FRONTEND] Animacja trasy pakietu (ping)"
+    body: |
+      - Po /ping pokazać animację przejścia pakietu
+      - Podświetlać krawędzie na zielono przy transmisji
+    labels: ["frontend", "animation"]
+    assignees: ["NandarinWasTaken"]
+
+  - title: "[DOC] Dokumentacja REST API"
+    body: |
+      - Opisać endpointy: `/addNode`, `/connect`, `/ping`, `/network`
+      - Dodać przykłady curl i JSON
+    labels: ["documentation"]
+    assignees: [""]
+
+  - title: "[TEST] Testy integracyjne"
+    body: |
+      - Test połączenia front-back
+      - Symulacja prostego pingu
+    labels: ["testing", "integration"]
+    assignees: ["UmarlyPoeta", "NandarinWasTaken"]
+
+  - title: "[BUILD] CMake + npm scripts"
+    body: |
+      - Dodać `build.sh` i `run.sh`
+      - Skrypt uruchamia backend i frontend równocześnie
+    labels: ["build", "devops"]
+    assignees: [""]
+
+  - title: "[UX] Finalny polish i demo"
+    body: |
+       - Poprawki UI
+       - Nagranie prezentacji projektu (demo)
+    labels: ["frontend", "presentation"]
+    assignees: ["NandarinWasTaken"]
+
+  - title: "[BACKEND] Implementacja usuwania węzłów (Network::removeNode)"
+    body: |
+       - Dodać metodę `void Network::removeNode(const std::string& name)`
+       - Usunąć węzeł z `nodes`, `nodesByName`, `adj`
+       - Rzucić wyjątek jeśli węzeł nie istnieje lub ma aktywne połączenia
+       - Zaktualizować testy TDD dla tej funkcjonalności
+    labels: ["backend", "core", "C++", "enhancement"]
+    assignees: ["UmarlyPoeta"]
+
+  - title: "[API] Endpoint /removeNode"
+    body: |
+       - POST /removeNode { "name": "NodeName" }
+       - Wywołać `Network::removeNode()` i obsłużyć wyjątki
+       - Zwrócić `{ "result": "node removed" }` lub błąd
+    labels: ["api", "rest", "C++", "enhancement"]
+    assignees: ["UmarlyPoeta"]
+
+  - title: "[FRONTEND] UI do usuwania węzłów"
+    body: |
+       - Dodać przycisk "Delete" przy każdym węźle w wizualizacji
+       - Potwierdzenie usunięcia z ostrzeżeniem o utracie połączeń
+       - Odświeżenie grafu po usunięciu węzła
+    labels: ["frontend", "ui", "enhancement"]
+    assignees: ["NandarinWasTaken"]
+
+  - title: "[BACKEND] Implementacja rozłączania węzłów (Network::disconnect)"
+    body: |
+       - Dodać metodę `void Network::disconnect(const std::string& nameA, const std::string& nameB)`
+       - Usunąć połączenie między węzłami w `adj` (obie strony)
+       - Zaktualizować testy TDD dla tej funkcjonalności
+    labels: ["backend", "core", "C++", "enhancement"]
+    assignees: ["UmarlyPoeta"]
+
+  - title: "[API] Endpoint /disconnect"
+    body: |
+       - POST /disconnect { "a": "NodeA", "b": "NodeB" }
+       - Wywołać `Network::disconnect()` i obsłużyć błędy
+       - Zwrócić `{ "result": "nodes disconnected" }` lub błąd
+    labels: ["api", "rest", "C++", "enhancement"]
+    assignees: ["UmarlyPoeta"]
+
+  - title: "[FRONTEND] UI do rozłączania węzłów"
+    body: |
+       - Dodać możliwość kliknięcia na krawędź między węzłami
+       - Menu kontekstowe z opcją "Disconnect"
+       - Odświeżenie wizualizacji po rozłączeniu
+    labels: ["frontend", "ui", "enhancement"]
+    assignees: ["NandarinWasTaken"]
+
+  - title: "[BACKEND] Symulacja opóźnień łączy (Link Delay)"
+    body: |
+       - Dodać mapy dla opóźnień: `std::map<std::pair<std::string,std::string>, int> linkDelays`
+       - Metody: `setLinkDelay()`, `getLinkDelay()` (domyślnie 0)
+       - Modyfikować `Engine::ping()` aby uwzględniać opóźnienia
+       - Zaktualizować testy TDD
+    labels: ["backend", "simulation", "C++", "enhancement"]
+    assignees: ["UmarlyPoeta"]
+
+  - title: "[API] Endpoints do zarządzania opóźnieniami"
+    body: |
+       - POST /setLinkDelay { "a": "A", "b": "B", "delay": 50 }
+       - GET /getLinkDelay?a=A&b=B
+       - Zwracać aktualne opóźnienie między węzłami
+    labels: ["api", "rest", "C++", "enhancement"]
+    assignees: ["UmarlyPoeta"]
+
+  - title: "[FRONTEND] UI do konfiguracji opóźnień łączy"
+    body: |
+       - Przycisk "Configure Delay" na krawędziach
+       - Slider/modal do ustawiania wartości opóźnienia (ms)
+       - Wizualne oznaczenie łączy z opóźnieniem (np. grubość linii)
+    labels: ["frontend", "ui", "enhancement"]
+    assignees: ["NandarinWasTaken"]
+
+  - title: "[BACKEND] Statystyki pakietów (Packet Statistics)"
+    body: |
+      - Dodać liczniki pakietów między węzłami
+      - Metody: `getPacketCount()`, `incrementPacketCount()`
+      - Inkrementować przy każdym wysłaniu pakietu w `sendPacket()`
+      - Zaktualizować testy TDD
+    labels: ["backend", "monitoring", "C++", "enhancement"]
+    assignees: ["UmarlyPoeta"]
+
+  - title: "[API] Endpoint /packetStats"
+    body: |
+      - GET /packetStats → JSON z licznikami pakietów między węzłami
+      - Przykład: `{ "A->B": 15, "B->C": 8 }`
+    labels: ["api", "rest", "C++", "enhancement"]
+    assignees: ["UmarlyPoeta"]
+
+  - title: "[FRONTEND] Dashboard ze statystykami pakietów"
+    body: |
+      - Panel boczny z tabelą statystyk transmisji
+      - Aktualizacja w czasie rzeczywistym podczas symulacji
+      - Wykres słupkowy pokazujący ruch między węzłami
+    labels: ["frontend", "dashboard", "enhancement"]
+    assignees: ["NandarinWasTaken"]
+
+  - title: "[BACKEND] Izolacja VLAN (VLAN Support)"
+    body: |
+      - Dodać mapę VLAN dla węzłów: `std::map<std::string, int> nodeVlans`
+      - Metody: `assignVLAN()`, `canCommunicate()` (ten sam VLAN)
+      - Modyfikować `Engine::ping()` aby sprawdzać VLAN przed routingiem
+      - Zaktualizować testy TDD
+    labels: ["backend", "networking", "C++", "enhancement"]
+    assignees: ["UmarlyPoeta"]
+
+  - title: "[API] Endpoints do zarządzania VLAN"
+    body: |
+      - POST /assignVLAN { "node": "A", "vlan": 10 }
+      - GET /getVLAN?node=A
+      - GET /canCommunicate?a=A&b=B
+    labels: ["api", "rest", "C++", "enhancement"]
+    assignees: ["UmarlyPoeta"]
+
+  - title: "[FRONTEND] Wizualizacja VLAN"
+    body: |
+      - Kolorowanie węzłów według VLAN (np. różne kolory)
+      - Legenda pokazująca przypisania VLAN
+      - Filtrowanie widoku po VLAN-ie
+    labels: ["frontend", "visualization", "enhancement"]
+    assignees: ["NandarinWasTaken"]
+
+  - title: "[BACKEND] Eksport/Import topologii (JSON)"
+    body: |
+      - Metody: `exportToJson()`, `importFromJson()`
+      - Serializować węzły, połączenia, VLAN-y, opóźnienia
+      - Obsłużyć format JSON z nlohmann/json
+      - Zaktualizować testy TDD
+    labels: ["backend", "persistence", "C++", "enhancement"]
+    assignees: ["UmarlyPoeta"]
+
+  - title: "[API] Endpoints do eksportu/importu"
+    body: |
+      - GET /exportTopology → JSON całej topologii
+      - POST /importTopology ← JSON do załadowania
+      - Obsłużyć błędy parsowania i walidację
+    labels: ["api", "rest", "C++", "enhancement"]
+    assignees: ["UmarlyPoeta"]
+
+  - title: "[FRONTEND] Zapis/wczytywanie topologii"
+    body: |
+      - Przyciski "Save Topology" i "Load Topology"
+      - Pobieranie/plikowanie plików JSON
+      - Potwierdzenie przed zastąpieniem obecnej topologii
+    labels: ["frontend", "file-management", "enhancement"]
+    assignees: ["NandarinWasTaken"]
+
+  - title: "[BACKEND] Symulacja awarii węzłów (Node Failure)"
+    body: |
+      - Dodać flagę `failed` dla węzłów
+      - Metody: `failNode()`, `isFailed()`, `repairNode()`
+      - Modyfikować `sendPacket()` aby rzucać wyjątek dla failed węzłów
+      - Zaktualizować testy TDD
+    labels: ["backend", "simulation", "C++", "enhancement"]
+    assignees: ["UmarlyPoeta"]
+
+  - title: "[API] Endpoints do symulacji awarii"
+    body: |
+      - POST /failNode { "name": "NodeName" }
+      - POST /repairNode { "name": "NodeName" }
+      - GET /isFailed?name=NodeName
+    labels: ["api", "rest", "C++", "enhancement"]
+    assignees: ["UmarlyPoeta"]
+
+  - title: "[FRONTEND] Symulacja awarii w UI"
+    body: |
+      - Przycisk "Fail" przy węźle (zmienia kolor na czerwony)
+      - Przycisk "Repair" do przywrócenia
+      - Wizualne oznaczenie failed węzłów (np. przekreślenie)
+    labels: ["frontend", "simulation", "enhancement"]
+    assignees: ["NandarinWasTaken"]
+
+  - title: "[BACKEND] Traceroute (rozszerzony ping)"
+    body: |
+      - Dodać metodę `bool Engine::traceroute(const std::string& src, const std::string& dst, std::vector<std::string>& path)`
+      - Zwracać pełną ścieżkę zamiast samego sukcesu
+      - Obsłużyć TTL i zapętlenia
+      - Zaktualizować testy TDD
+    labels: ["backend", "networking", "C++", "enhancement"]
+    assignees: ["UmarlyPoeta"]
+
+  - title: "[API] Endpoint /traceroute"
+    body: |
+      - POST /traceroute { "src": "A", "dst": "C" }
+      - Zwrócić pełną ścieżkę: `{ "success": true, "path": ["A", "B", "C"] }`
+    labels: ["api", "rest", "C++", "enhancement"]
+    assignees: ["UmarlyPoeta"]
+
+  - title: "[FRONTEND] Wizualizacja traceroute"
+    body: |
+      - Przycisk "Traceroute" obok "Ping"
+      - Animacja pokazująca całą ścieżkę (kolejno podświetlane węzły/krawędzie)
+      - Wyświetlanie wyniku w panelu bocznym
+    labels: ["frontend", "animation", "enhancement"]
+    assignees: ["NandarinWasTaken"]
+
+  - title: "[BACKEND] Symulacja przepustowości (Bandwidth)"
+    body: |
+      - Dodać mapy bandwidth: `std::map<std::pair<std::string,std::string>, int> linkBandwidths`
+      - Metody: `setBandwidth()`, `getBandwidth()`, `consumeBandwidth()`
+      - Symulować zmniejszanie dostępnej przepustowości przy transmisji
+      - Zaktualizować testy TDD
+    labels: ["backend", "simulation", "C++", "enhancement"]
+    assignees: ["UmarlyPoeta"]
+
+  - title: "[API] Endpoints do zarządzania bandwidth"
+    body: |
+      - POST /setBandwidth { "a": "A", "b": "B", "bandwidth": 100 }
+      - GET /getBandwidth?a=A&b=B
+      - POST /consumeBandwidth { "a": "A", "b": "B", "amount": 10 }
+    labels: ["api", "rest", "C++", "enhancement"]
+    assignees: ["UmarlyPoeta"]
+
+  - title: "[FRONTEND] Wizualizacja przepustowości"
+    body: |
+      - Konfiguracja bandwidth na krawędziach (slider)
+      - Wizualne oznaczenie wykorzystania (np. kolor linii: zielony = wolny, czerwony = zajęty)
+      - Tooltip pokazujący aktualną dostępną przepustowość
+    labels: ["frontend", "visualization", "enhancement"]
+    assignees: ["NandarinWasTaken"]
+
+  - title: "[BACKEND] Reguły firewall (Firewall Rules)"
+    body: |
+      - Dodać strukturę reguł firewall (node, protocol, allow/deny)
+      - Metody: `addFirewallRule()`, `isAllowed()`
+      - Modyfikować `sendPacket()` aby sprawdzać reguły przed transmisją
+      - Zaktualizować testy TDD
+    labels: ["backend", "security", "C++", "enhancement"]
+    assignees: ["UmarlyPoeta"]
+
+  - title: "[API] Endpoints do zarządzania firewall"
+    body: |
+      - POST /addFirewallRule { "node": "A", "protocol": "tcp", "allow": false }
+      - GET /isAllowed?node=A&protocol=tcp
+      - DELETE /removeFirewallRule { "node": "A", "protocol": "tcp" }
+    labels: ["api", "rest", "C++", "enhancement"]
+    assignees: ["UmarlyPoeta"]
+
+  - title: "[FRONTEND] Konfiguracja firewall w UI"
+    body: |
+      - Panel ustawień firewall dla każdego węzła
+      - Lista reguł z możliwością dodawania/usuwania
+      - Wizualne oznaczenie zablokowanych połączeń (np. przerywana linia)
+    labels: ["frontend", "security", "enhancement"]
+    assignees: ["NandarinWasTaken"]
+
