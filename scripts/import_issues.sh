@@ -1,34 +1,45 @@
 #!/usr/bin/env bash
-# Importuje issues z .github/issues.yml do GitHuba
-# Wymaga: gh, yq
+set -euo pipefail
 
-set -e
+echo "🚀 Importuję issues z .github/issues.yml ..."
 
-ISSUES_FILE=".github/issues.yml"
-
-if [ ! -f "$ISSUES_FILE" ]; then
-  echo "❌ Plik $ISSUES_FILE nie istnieje."
+# Sprawdzenie, czy wymagane programy są zainstalowane
+if ! command -v gh >/dev/null 2>&1; then
+  echo "❌ Brak 'gh' (GitHub CLI). Zainstaluj: sudo dnf install gh"
   exit 1
 fi
 
-echo "🚀 Importuję issues z $ISSUES_FILE ..."
+if ! command -v yq >/dev/null 2>&1; then
+  echo "❌ Brak 'yq'. Zainstaluj: sudo dnf install yq"
+  exit 1
+fi
 
-count=$(yq '.issues | length' "$ISSUES_FILE")
+# Pobranie repozytorium
+REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner)
+
+# Liczba issues w YAML-u
+count=$(yq eval '.issues | length' .github/issues.yml)
 
 for i in $(seq 0 $((count - 1))); do
-  title=$(yq -r ".issues[$i].title" "$ISSUES_FILE")
-  body=$(yq -r ".issues[$i].body" "$ISSUES_FILE")
-  labels=$(yq -r ".issues[$i].labels | join(\",\")" "$ISSUES_FILE")
-  assignees=$(yq -r ".issues[$i].assignees | join(\",\")" "$ISSUES_FILE")
+  title=$(yq eval ".issues[$i].title" .github/issues.yml)
+  body=$(yq eval ".issues[$i].body // \"\"" .github/issues.yml) # obsługa pustego body
 
-  echo "📄 Tworzę issue: $title"
+  echo "📄 Sprawdzam issue: $title"
 
-  gh issue create \
-    --title "$title" \
-    --body "$body" \
-    $( [ -n "$labels" ] && echo --label "$labels" ) \
-    $( [ -n "$assignees" ] && echo --assignee "$assignees" )
+  # Sprawdź, czy issue już istnieje
+  if gh issue list --repo "$REPO" --search "$title" --limit 100 | grep -Fq "$title"; then
+    echo "ℹ️  Issue już istnieje: $title, pomijam..."
+    continue
+  fi
 
+  echo "📄 Tworzę nowe issue: $title"
+  if ! gh issue create \
+        --title "$title" \
+        --body "$body" \
+        --repo "$REPO" \
+        >/dev/null; then
+    echo "⚠️  Nie udało się utworzyć: $title"
+  fi
 done
 
-echo "✅ Wszystkie issues zostały utworzone!"
+echo "✅ Import zakończony!"
