@@ -36,6 +36,13 @@ public:
     void Network::removeNode(const std::string& name);
     void Network::disconnect(const std::string& nameA, const std::string& nameB);
 
+    void setLinkDelay(const std::string& nameA, const std::string& nameB, int delayMs);
+    int getLinkDelay(const std::string& nameA, const std::string& nameB) const;
+    void removeLinkDelay(const std::string& nameA, const std::string& nameB);
+
+    void checkConnectivity(const std::string& nameA, const std::string& nameB) const;
+    void getLinkDelays(std::map<std::pair<std::string, std::string>, int>& outDelays) const;
+
 private:
     std::vector<std::shared_ptr<Node>> nodes;                // wszystkie węzły
     std::map<std::string, std::shared_ptr<Node>> nodesByName; // szybki lookup

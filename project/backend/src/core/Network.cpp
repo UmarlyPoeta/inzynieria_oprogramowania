@@ -77,3 +77,106 @@ void Network::disconnect(const std::string &nameA, const std::string &nameB)
     adj[a->getName()].erase(b->getName());
     adj[b->getName()].erase(a->getName());
 }
+
+void Network::setLinkDelay(const std::string &nameA, const std::string &nameB, int delayMs)
+{
+    if (nameA == nameB)
+        throw std::runtime_error("Cannot set link delay for the same node");
+    auto a = findByName(nameA);
+    auto b = findByName(nameB);
+    if (!a || !b)
+        throw std::runtime_error("Cannot set link delay for null nodes");
+    if (delayMs < 0)
+        throw std::runtime_error("Delay must be non-negative");
+
+    if (adj.find(a->getName()) == adj.end() || adj.find(b->getName()) == adj.end())
+        throw std::runtime_error("One or both nodes have no connections");
+    if (adj.at(a->getName()).find(b->getName()) == adj.at(a->getName()).end())
+        throw std::runtime_error("Nodes are not connected");
+
+    
+
+    linkDelays[{nameA, nameB}] = delayMs;
+    linkDelays[{nameB, nameA}] = delayMs; // symetryczne ustawienie
+
+
+}
+
+int Network::getLinkDelay(const std::string &nameA, const std::string &nameB) const
+{
+    if (nameA == nameB)
+        return 0;
+    auto a = findByName(nameA);
+    auto b = findByName(nameB);
+    if (!a || !b)
+        throw std::runtime_error("Cannot get link delay for null nodes");
+
+    if (adj.find(a->getName()) == adj.end() || adj.find(b->getName()) == adj.end())
+        throw std::runtime_error("One or both nodes have no connections");
+    if (adj.at(a->getName()).find(b->getName()) == adj.at(a->getName()).end())
+        throw std::runtime_error("Nodes are not connected");
+
+    auto it = linkDelays.find({nameA, nameB});
+    if (it != linkDelays.end())
+        return it->second;
+    return 0;
+}
+
+void Network::removeLinkDelay(const std::string &nameA, const std::string &nameB)
+{
+    if (nameA == nameB)
+        throw std::runtime_error("Cannot remove link delay for the same node");
+    auto a = findByName(nameA);
+    auto b = findByName(nameB);
+    if (!a || !b)
+        throw std::runtime_error("Cannot remove link delay for null nodes");
+    
+    if (adj.find(a->getName()) == adj.end() || adj.find(b->getName()) == adj.end())
+        throw std::runtime_error("One or both nodes have no connections");
+    if (adj.at(a->getName()).find(b->getName()) == adj.at(a->getName()).end())
+        throw std::runtime_error("Nodes are not connected");
+    
+    std::map<std::pair<std::string, std::string>, int> linkDelays;
+    getLinkDelays(linkDelays);
+
+    linkDelays.erase({nameA, nameB});
+    linkDelays.erase({nameB, nameA}); // symetryczne usunięcie
+}
+
+void Network::checkConnectivity(const std::string &nameA, const std::string &nameB) const
+{
+    if (nameA == nameB)
+        return;
+    auto a = findByName(nameA);
+    auto b = findByName(nameB);
+    if (!a || !b)
+        throw std::runtime_error("Cannot check connectivity for null nodes");
+
+    if (adj.find(a->getName()) == adj.end() || adj.find(b->getName()) == adj.end())
+        throw std::runtime_error("One or both nodes have no connections");
+
+    std::set<std::string> visited;
+    std::vector<std::string> stack;
+    stack.push_back(nameA);
+
+    while (!stack.empty()) {
+        auto current = stack.back();
+        stack.pop_back();
+        if (current == nameB)
+            return; // Found a path
+        if (visited.count(current))
+            continue;
+        visited.insert(current);
+        for (const auto& neighbor : getNeighbors(current)) {
+            if (!visited.count(neighbor))
+                stack.push_back(neighbor);
+        }
+    }
+    throw std::runtime_error("No path between nodes: " + nameA + " and " + nameB);
+}
+
+void Network::getLinkDelays(std::map<std::pair<std::string, std::string>, int> &outDelays) const
+{
+    outDelays = linkDelays;
+}
+
