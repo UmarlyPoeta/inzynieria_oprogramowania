@@ -99,20 +99,6 @@ ctest
 4. Run tests and ensure they pass: `ctest`.
 5. Submit a Pull Request with a description of changes.
 
-## TODO
-
-- [ ] Implement node removal (`Network::removeNode`)
-- [ ] Add link disconnection (`Network::disconnect`)
-- [ ] Simulate link delays and bandwidth
-- [ ] Add VLAN support for network isolation
-- [ ] Implement firewall rules
-- [ ] Add packet statistics and monitoring
-- [ ] Export/import network topology to/from JSON
-- [ ] Node failure simulation
-- [ ] Advanced routing protocols (OSPF, RIP)
-- [ ] Web UI for topology visualization
-- [ ] Integration with monitoring tools (Grafana, Prometheus)
-
 ## License
 
 This project is licensed under the MIT License.
