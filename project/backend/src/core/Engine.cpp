@@ -70,3 +70,7 @@ bool Engine::ping(const std::string &src, const std::string &dst, std::vector<st
 
     return true;
 }
+
+bool Engine::traceroute(const std::string &src, const std::string &dst, std::vector<std::string> &pathOut) {
+    return ping(src, dst, pathOut); // For simplicity, same as ping
+}

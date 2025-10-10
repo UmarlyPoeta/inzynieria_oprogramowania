@@ -8,8 +8,11 @@ class Engine {
 public:
     explicit Engine(Network& net);
     bool ping(const std::string &srcName,
-              const std::string &dstName,
-              std::vector<std::string> &path);
+               const std::string &dstName,
+               std::vector<std::string> &path);
+    bool traceroute(const std::string &srcName,
+                    const std::string &dstName,
+                    std::vector<std::string> &path);
 
 private:
     Network &net;

@@ -1,4 +1,6 @@
 #include "Network.hpp"
+#include <nlohmann/json.hpp>
+using json = nlohmann::json;
 
 
 void Network::connect(std::shared_ptr<Node> a, std::shared_ptr<Node> b) {
@@ -41,11 +43,14 @@ const std::map<std::string, std::set<std::string>>& Network::getAdjacency() cons
     return adj;
 }
 
-void Network::removeNode(const std::string &name)
+void Network::removeNode(const std::string& name)
 {
     auto nodeIt = nodesByName.find(name);
     if (nodeIt == nodesByName.end())
         throw std::runtime_error("Node not found: " + name);
+
+    if (!getNeighbors(name).empty())
+        throw std::runtime_error("Cannot remove node with connections: " + name);
 
     for (const auto& neighbor : getNeighbors(name)) {
         adj[neighbor].erase(name);
@@ -68,7 +73,6 @@ void Network::disconnect(const std::string &nameA, const std::string &nameB)
     if (!a || !b)
         throw std::runtime_error("Cannot disconnect null nodes");
 
-    auto adj = getAdjacency();
     if (adj.find(a->getName()) == adj.end() || adj.find(b->getName()) == adj.end())
         throw std::runtime_error("One or both nodes have no connections");
     if (adj.at(a->getName()).find(b->getName()) == adj.at(a->getName()).end())
@@ -180,3 +184,159 @@ void Network::getLinkDelays(std::map<std::pair<std::string, std::string>, int> &
     outDelays = linkDelays;
 }
 
+int Network::getPacketCount(const std::string &nameA, const std::string &nameB)
+{
+    if (nameA == nameB)
+        throw std::runtime_error("Cannot get packet count for the same node");
+    auto a = findByName(nameA);
+    auto b = findByName(nameB);
+    if (!a || !b)
+        throw std::runtime_error("Cannot get packet count for null nodes");
+    if (adj.find(a->getName()) == adj.end() || adj.find(b->getName()) == adj.end())
+        throw std::runtime_error("One or both nodes have no connections");
+    if (adj.at(a->getName()).find(b->getName()) == adj.at(a->getName()).end())
+        throw std::runtime_error("Nodes are not connected");
+
+    return a->getPacketCountByNeighbor(b->getName());
+}
+
+void Network::incrementPacketCount(const std::string &nameA, const std::string &nameB)
+{
+    if (nameA == nameB)
+        throw std::runtime_error("Cannot increment packet count for the same node");
+    auto a = findByName(nameA);
+    auto b = findByName(nameB);
+    if (!a || !b)
+        throw std::runtime_error("Cannot increment packet count for null nodes");
+    if (adj.find(a->getName()) == adj.end() || adj.find(b->getName()) == adj.end())
+        throw std::runtime_error("One or both nodes have no connections");
+    if (adj.at(a->getName()).find(b->getName()) == adj.at(a->getName()).end())
+        throw std::runtime_error("Nodes are not connected");
+
+    a->incrementPacketCountToNeighbor(b->getName());
+    b->incrementPacketCountToNeighbor(a->getName());
+
+}
+
+// VLAN
+void Network::assignVLAN(const std::string& name, int vlanId) {
+    findByName(name); // check exists
+    vlans[name] = vlanId;
+}
+
+bool Network::canCommunicate(const std::string& nameA, const std::string& nameB) const {
+    findByName(nameA); // check exists
+    findByName(nameB);
+    auto itA = vlans.find(nameA);
+    auto itB = vlans.find(nameB);
+    if (itA == vlans.end() || itB == vlans.end()) return true; // no VLAN assigned, allow
+    return itA->second == itB->second;
+}
+
+// Bandwidth
+void Network::setBandwidth(const std::string& nameA, const std::string& nameB, int bw) {
+    if (nameA == nameB) throw std::runtime_error("Cannot set bandwidth for same node");
+    findByName(nameA);
+    findByName(nameB);
+    if (adj.find(nameA) == adj.end() || adj.find(nameB) == adj.end() || adj.at(nameA).find(nameB) == adj.at(nameA).end())
+        throw std::runtime_error("Nodes not connected");
+    bandwidths[{nameA, nameB}] = bw;
+    bandwidths[{nameB, nameA}] = bw;
+}
+
+int Network::getBandwidth(const std::string& nameA, const std::string& nameB) const {
+    if (nameA == nameB) return 0;
+    findByName(nameA);
+    findByName(nameB);
+    auto it = bandwidths.find({nameA, nameB});
+    if (it != bandwidths.end()) return it->second;
+    return 0; // default
+}
+
+void Network::consumeBandwidth(const std::string& nameA, const std::string& nameB, int amount) {
+    if (nameA == nameB) throw std::runtime_error("Cannot consume bandwidth for same node");
+    findByName(nameA);
+    findByName(nameB);
+    if (adj.find(nameA) == adj.end() || adj.find(nameB) == adj.end() || adj.at(nameA).find(nameB) == adj.at(nameA).end())
+        throw std::runtime_error("Nodes not connected");
+    bandwidths[{nameA, nameB}] -= amount;
+    bandwidths[{nameB, nameA}] -= amount;
+    if (bandwidths[{nameA, nameB}] < 0) bandwidths[{nameA, nameB}] = 0;
+    if (bandwidths[{nameB, nameA}] < 0) bandwidths[{nameB, nameA}] = 0;
+}
+
+// Firewall
+void Network::addFirewallRule(const std::string& src, const std::string& dst, const std::string& protocol, bool allow) {
+    findByName(src);
+    findByName(dst);
+    firewallRules[{src, dst, protocol}] = allow;
+}
+
+bool Network::isAllowed(const std::string& src, const std::string& dst, const std::string& protocol) const {
+    findByName(src);
+    findByName(dst);
+    auto it = firewallRules.find({src, dst, protocol});
+    if (it != firewallRules.end()) return it->second;
+    return true; // default allow
+}
+
+// Node failure
+void Network::failNode(const std::string& name) {
+    findByName(name);
+    failedNodes.insert(name);
+}
+
+bool Network::isFailed(const std::string& name) const {
+    findByName(name);
+    return failedNodes.count(name);
+}
+
+void Network::sendPacket(const Packet& pkt) {
+    auto src = findByName(pkt.src);
+    auto dst = findByName(pkt.dest);
+    if (isFailed(pkt.src) || isFailed(pkt.dest)) throw std::runtime_error("Node failed");
+    if (!isAllowed(pkt.src, pkt.dest, pkt.type)) throw std::runtime_error("Firewall blocked");
+    // Assume direct send for simplicity
+    dst->receivePacket(const_cast<Packet&>(pkt));
+}
+
+// Export/Import
+std::string Network::exportToJson() const {
+    nlohmann::json j;
+    j["nodes"] = nlohmann::json::array();
+    for (auto& n : nodes) {
+        nlohmann::json node;
+        node["name"] = n->getName();
+        node["ip"] = n->getIp();
+        j["nodes"].push_back(node);
+    }
+    j["connections"] = nlohmann::json::array();
+    for (auto& [a, neighbors] : adj) {
+        for (auto& b : neighbors) {
+            if (a < b) { // avoid duplicates
+                j["connections"].push_back({a, b});
+            }
+        }
+    }
+    return j.dump();
+}
+
+void Network::importFromJson(const std::string& jsonStr) {
+    nlohmann::json j = nlohmann::json::parse(jsonStr);
+    // Clear current
+    nodes.clear();
+    nodesByName.clear();
+    adj.clear();
+    // Add nodes
+    for (auto& node : j["nodes"]) {
+        std::string name = node["name"];
+        std::string ip = node["ip"];
+        addNode<DummyNode>(name, ip); // Assume DummyNode for simplicity
+    }
+    // Add connections
+    for (auto& conn : j["connections"]) {
+        std::string a = conn[0];
+        std::string b = conn[1];
+        connect(a, b);
+    }
+}

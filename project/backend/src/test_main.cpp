@@ -6,13 +6,7 @@
 #include "core/Host.hpp"
 #include "core/Router.hpp"
 
-// DummyNode for testing
-class DummyNode : public Node {
-public:
-    bool received = false;
-    DummyNode(const std::string& n, const std::string& ip) : Node(n, ip) {}
-    void receivePacket(Packet& pkt) override { received = true; }
-};
+// DummyNode is defined in Network.hpp
 
 // Test klasy Packet
 TEST(PacketTest, ConstructionAndFields) {

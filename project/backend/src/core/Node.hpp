@@ -1,5 +1,6 @@
 #pragma once
 #include "Packet.hpp"
+#include <map>
 #include <vector>
 
 
@@ -15,6 +16,10 @@ public:
 
     virtual void receivePacket(Packet& p) = 0;
     void sendPacket(Packet& p, Node& dest);
+    int getAllPacketCount() const { return packetCount; }
+    int getPacketCountByNeighbor(const std::string& neighborName) const;
+    void incrementPacketCount() { packetCount++; }
+    void incrementPacketCountToNeighbor(const std::string& neighborName);
 
     void addNeighbor(Node* neighbor);
 
@@ -24,4 +29,6 @@ public:
     std::string ip;
     Packet packet;
     std::vector<Node*> connections;
+    std::map<std::string, int> packetCountByNeighbor;
+    mutable int packetCount = 0;
 };
