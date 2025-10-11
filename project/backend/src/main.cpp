@@ -37,7 +37,7 @@ int main() {
                         ? utility::conversions::to_utf8string(jv[U("ip")].as_string())
                         : std::string("127.0.0.1");
 
-                    auto node = net.addNode<Host>(ip, 8080); // Use Host as example
+                    auto node = net.addNode<Host>(name, ip, 8080); // Use Host as example
                     // Note: Host constructor is (address, port), so adjust if needed
 
                     web::json::value resp;

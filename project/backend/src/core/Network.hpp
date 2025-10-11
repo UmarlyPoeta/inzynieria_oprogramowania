@@ -77,6 +77,9 @@ public:
     std::string exportToJson() const;
     void importFromJson(const std::string& jsonStr);
 
+    // Packet Loss
+    void setPacketLoss(const std::string& nameA, const std::string& nameB, double lossProb);
+
 private:
     std::vector<std::shared_ptr<Node>> nodes;                // wszystkie węzły
     std::map<std::string, std::shared_ptr<Node>> nodesByName; // szybki lookup
@@ -86,6 +89,7 @@ private:
     std::map<std::pair<std::string, std::string>, int> bandwidths; // bandwidth między węzłami
     std::map<std::tuple<std::string, std::string, std::string>, bool> firewallRules; // src, dst, protocol -> allow
     std::set<std::string> failedNodes; // failed węzły
+    std::map<std::pair<std::string, std::string>, double> packetLoss; // link -> loss probability
 
 };
 

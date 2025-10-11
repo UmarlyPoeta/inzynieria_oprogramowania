@@ -12,7 +12,7 @@ class Host : public Node {
         std::string address;
 
 
-        Host(const std::string& address, int port);
+        Host(const std::string& name, const std::string& address, int port);
         std::string getAddress() const;
         int getPort() const;
         void setAddress(const std::string& address);

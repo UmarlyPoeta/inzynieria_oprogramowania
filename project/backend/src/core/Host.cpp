@@ -1,7 +1,7 @@
 #include "Host.hpp"
 
-Host::Host(const std::string& address, int port)
-    : address(address), port(port) {}
+Host::Host(const std::string& name, const std::string& address, int port)
+    : Node(name, address), address(address), port(port) {}
 
 std::string Host::getAddress() const {
     return address;

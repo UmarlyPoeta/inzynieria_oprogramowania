@@ -300,6 +300,17 @@ void Network::sendPacket(const Packet& pkt) {
     dst->receivePacket(const_cast<Packet&>(pkt));
 }
 
+// Packet Loss
+void Network::setPacketLoss(const std::string& nameA, const std::string& nameB, double lossProb) {
+    if (nameA == nameB) throw std::runtime_error("Cannot set packet loss for same node");
+    findByName(nameA);
+    findByName(nameB);
+    if (adj.find(nameA) == adj.end() || adj.find(nameB) == adj.end() || adj.at(nameA).find(nameB) == adj.at(nameA).end())
+        throw std::runtime_error("Nodes not connected");
+    packetLoss[{nameA, nameB}] = lossProb;
+    packetLoss[{nameB, nameA}] = lossProb;
+}
+
 // Export/Import
 std::string Network::exportToJson() const {
     nlohmann::json j;

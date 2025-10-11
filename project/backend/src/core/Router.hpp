@@ -13,6 +13,12 @@ public:
         routingTable[ip] = next;
     }
 
+    Node* getNextHop(const std::string& dst) const {
+        auto it = routingTable.find(dst);
+        if (it != routingTable.end()) return it->second;
+        return nullptr;
+    }
+
     void receivePacket(Packet& p) override;
 
     void printRoutingTable() const {
