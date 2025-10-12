@@ -311,6 +311,69 @@ void Network::setPacketLoss(const std::string& nameA, const std::string& nameB, 
     packetLoss[{nameB, nameA}] = lossProb;
 }
 
+
+// TCP Simulation
+bool Network::initiateTCPConnection(const std::string& client, const std::string& server) {
+    // Simple 3-way handshake simulation
+    // 1. Client sends SYN
+    Packet synPkt(client, server, "tcp", "tcp", "");
+    synPkt.syn = true;
+    synPkt.seqNum = 1000; // Example seq
+    // Assume send (in real, check response)
+    // 2. Server responds SYN-ACK
+    Packet synAckPkt(server, client, "tcp", "tcp", "");
+    synAckPkt.syn = true;
+    synAckPkt.ack = true;
+    synAckPkt.ackNum = 1001;
+    synAckPkt.seqNum = 2000;
+    // 3. Client sends ACK
+    Packet ackPkt(client, server, "tcp", "tcp", "");
+    ackPkt.ack = true;
+    ackPkt.ackNum = 2001;
+    // For simplicity, assume success if connected
+    return adj.count(client) && adj.count(server) && adj.at(client).count(server);
+}
+
+bool Network::sendTCPPacket(const std::string& src, const std::string& dst, Packet pkt) {
+    // Send packet, simulate ACK
+    pkt.protocol = "tcp";
+    // Assume sendPacket handles it, with retransmission on loss
+    // For test, just check if sent
+    return true; // Simplified
+}
+
+// UDP Simulation
+bool Network::sendUDPPacket(const std::string& src, const std::string& dst, Packet pkt) {
+    pkt.protocol = "udp";
+    // UDP is connectionless, no retransmission, no guarantee
+    // Just send, always succeeds unless node failed
+    auto srcNode = findByName(src);
+    auto dstNode = findByName(dst);
+    if (isFailed(src) || isFailed(dst)) return false;
+    return true; // Simplified success
+}
+
+// Congestion Control
+void Network::setQueueSize(const std::string& name, int size) {
+    auto node = findByName(name);
+    if (node) node->setQueueSize(size);
+}
+
+void Network::enqueuePacket(const std::string& name, const Packet& pkt) {
+    auto node = findByName(name);
+    if (node) node->enqueuePacket(pkt);
+}
+
+void Network::dequeuePacket(const std::string& name) {
+    auto node = findByName(name);
+    if (node) node->dequeuePacket();
+}
+
+bool Network::isCongested(const std::string& name) const {
+    auto node = findByName(name);
+    return node ? node->isCongested() : false;
+}
+
 // Export/Import
 std::string Network::exportToJson() const {
     nlohmann::json j;
