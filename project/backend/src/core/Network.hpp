@@ -58,6 +58,7 @@ public:
     // VLAN
     void assignVLAN(const std::string& name, int vlanId);
     bool canCommunicate(const std::string& nameA, const std::string& nameB) const;
+    const std::map<std::string, int>& getVLANs() const;
 
     // Bandwidth
     void setBandwidth(const std::string& nameA, const std::string& nameB, int bw);
@@ -77,8 +78,21 @@ public:
     std::string exportToJson() const;
     void importFromJson(const std::string& jsonStr);
 
+    // Congestion Control
+    void setQueueSize(const std::string& name, int size);
+    void enqueuePacket(const std::string& name, const Packet& pkt);
+    void dequeuePacket(const std::string& name);
+    bool isCongested(const std::string& name) const;
+
     // Packet Loss
     void setPacketLoss(const std::string& nameA, const std::string& nameB, double lossProb);
+
+    // TCP Simulation
+    bool initiateTCPConnection(const std::string& client, const std::string& server);
+    bool sendTCPPacket(const std::string& src, const std::string& dst, Packet pkt);
+
+    // UDP Simulation
+    bool sendUDPPacket(const std::string& src, const std::string& dst, Packet pkt);
 
 private:
     std::vector<std::shared_ptr<Node>> nodes;                // wszystkie węzły

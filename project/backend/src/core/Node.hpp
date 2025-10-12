@@ -2,14 +2,15 @@
 #include "Packet.hpp"
 #include <map>
 #include <vector>
+#include <string>
+#include <queue>
 
 
 class Node {
 public:
     Node() = default;
-        Node(const std::string& name, const std::string& ip) : name(name), ip(ip) {}
-        virtual ~Node() = default;
-
+    Node(const std::string& name, const std::string& ip) : name(name), ip(ip) {}
+    virtual ~Node() = default;
 
     std::string getName() const {return name;}
     std::string getIp() const {return ip;}
@@ -22,8 +23,14 @@ public:
     void incrementPacketCountToNeighbor(const std::string& neighborName);
 
     void addNeighbor(Node* neighbor);
+    void setQueueSize(int size) { queuesize = size; }
+    void enqueuePacket(const Packet& pkt) { packetQueue.push(pkt); }
+    void dequeuePacket() { if (!packetQueue.empty()) packetQueue.pop(); }
+    bool isCongested() const { return packetQueue.size() >= queuesize; }
 
 
+    int getPacketCount() const { return packetCount; }
+    int getQueueSize() const { return queuesize; }
     protected:
     std::string name;
     std::string ip;
@@ -31,4 +38,7 @@ public:
     std::vector<Node*> connections;
     std::map<std::string, int> packetCountByNeighbor;
     mutable int packetCount = 0;
+    std::queue<Packet> packetQueue; // For queueing packets
+    int queuesize = 10;
+    
 };

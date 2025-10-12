@@ -307,6 +307,161 @@ TEST(NetworkTest, PacketLoss) {
     // May fail sometimes, but for test, expect possible
 }
 
+// Nowe pomysły na funkcjonalności - dodaj implementację, aby testy przeszły
+
+// 21. Congestion Control: Dodaj mechanizm kontroli przeciążenia
+//    - Dodaj kolejki pakietów w węzłach, drop przy przeciążeniu
+//    - Metody: enqueuePacket, dequeuePacket, isCongested
+TEST(NetworkTest, CongestionControl) {
+    Network net;
+    net.addNode<DummyNode>("A", "10.0.0.1");
+    net.addNode<DummyNode>("B", "10.0.0.2");
+    net.connect("A", "B");
+    net.setQueueSize("A", 5); // Assume method for queue limit
+    // Enqueue multiple packets
+    for (int i = 0; i < 7; ++i) {
+        net.enqueuePacket("A", Packet("A", "B", "data", "tcp", "msg" + std::to_string(i)));
+    }
+    EXPECT_TRUE(net.isCongested("A"));
+    // Dequeue some
+    net.dequeuePacket("A");
+    EXPECT_FALSE(net.isCongested("A"));
+}
+
+// 22. TCP Simulation: Dodaj symulację protokołu TCP
+//    - Dodaj handshake (SYN, SYN-ACK, ACK), retransmisje
+//    - Metody: initiateTCPConnection, sendTCPPacket
+TEST(NetworkTest, TCPSimulation) {
+    Network net;
+    net.addNode<DummyNode>("A", "10.0.0.1");
+    net.addNode<DummyNode>("B", "10.0.0.2");
+    net.connect("A", "B");
+    // Assume TCP connection
+    bool connected = net.initiateTCPConnection("A", "B");
+    EXPECT_TRUE(connected);
+    // Send TCP packet with ACK
+    bool sent = net.sendTCPPacket("A", "B", Packet("A", "B", "data", "tcp", "payload"));
+    EXPECT_TRUE(sent);
+}
+
+// 23. UDP Simulation: Dodaj symulację protokołu UDP
+//    - Bezpołączeniowy, bez retransmisji
+//    - Metody: sendUDPPacket (bez gwarancji dostarczenia)
+TEST(NetworkTest, UDPSimulation) {
+    Network net;
+    net.addNode<DummyNode>("A", "10.0.0.1");
+    net.addNode<DummyNode>("B", "10.0.0.2");
+    net.connect("A", "B");
+    // Send UDP packet
+    bool sent = net.sendUDPPacket("A", "B", Packet("A", "B", "data", "udp", "payload"));
+    EXPECT_TRUE(sent); // Always true for UDP, no guarantee
+}
+
+// 24. Time-Based Simulation: Dodaj symulację czasu
+//    - Pakiety podróżują z opóźnieniem czasowym
+//    - Metody: advanceTime, schedulePacketDelivery
+TEST(NetworkTest, TimeBasedSimulation) {
+    Network net;
+    net.addNode<DummyNode>("A", "10.0.0.1");
+    net.addNode<DummyNode>("B", "10.0.0.2");
+    net.connect("A", "B");
+    net.setLinkDelay("A", "B", 100); // 100ms
+    // Schedule packet
+    net.schedulePacketDelivery(Packet("A", "B", "data", "tcp", "msg"), 100);
+    // Advance time
+    net.advanceTime(50);
+    EXPECT_FALSE(net.hasPacketArrived("B"));
+    net.advanceTime(60);
+    EXPECT_TRUE(net.hasPacketArrived("B"));
+}
+
+// 25. Routing Protocols: Dodaj symulację OSPF/BGP
+//    - Router wymienia informacje o trasach
+//    - Metody: exchangeRoutingInfo, updateRoutingTable
+TEST(RouterTest, RoutingProtocols) {
+    Network net;
+    auto r1 = net.addNode<Router>("R1", "192.168.0.1");
+    auto r2 = net.addNode<Router>("R2", "192.168.0.2");
+    Router* router1 = dynamic_cast<Router*>(r1.get());
+    Router* router2 = dynamic_cast<Router*>(r2.get());
+    // Exchange info
+    router1->exchangeRoutingInfo(router2);
+    // Assume routing table updated
+    EXPECT_TRUE(router1->hasRouteTo("192.168.0.2"));
+}
+
+// 26. Packet Fragmentation: Dodaj dzielenie pakietów na fragmenty
+//    - Duże pakiety dzielone na mniejsze
+//    - Metody: fragmentPacket, reassemblePacket
+TEST(PacketTest, PacketFragmentation) {
+    Packet largePkt("A", "B", "data", "tcp", std::string(2000, 'x')); // Large payload
+    std::vector<Packet> fragments = largePkt.fragmentPacket(500); // Assume method
+    EXPECT_EQ(fragments.size(), 4); // 2000 / 500
+    Packet reassembled = Packet::reassemblePacket(fragments); // Assume static method
+    EXPECT_EQ(reassembled.payload, largePkt.payload);
+}
+
+// 27. Wireless Networks: Dodaj symulację Wi-Fi
+//    - Zakłócenia, zasięg, interferencje
+//    - Metody: setWirelessRange, simulateInterference
+TEST(NetworkTest, WirelessNetworks) {
+    Network net;
+    net.addNode<DummyNode>("AP", "192.168.1.1"); // Access Point
+    net.addNode<DummyNode>("Client", "192.168.1.2");
+    net.connectWireless("AP", "Client"); // Assume wireless connect
+    net.setWirelessRange("AP", 50); // 50m range
+    // Simulate interference
+    net.simulateInterference("AP", 0.2); // 20% loss
+    bool connected = net.isWirelessConnected("AP", "Client");
+    EXPECT_TRUE(connected);
+}
+
+// 28. Cloud Integration: Dodaj symulację chmury
+//    - Węzły w chmurze z autoscaling
+//    - Metody: addCloudNode, scaleUp, scaleDown
+TEST(NetworkTest, CloudIntegration) {
+    Network net;
+    net.addCloudNode("Cloud1", "cloud.example.com"); // Assume method
+    EXPECT_EQ(net.getCloudNodes().size(), 1);
+    // Scale up
+    net.scaleUp("Cloud1");
+    EXPECT_EQ(net.getCloudNodes().size(), 2);
+    // Scale down
+    net.scaleDown("Cloud1");
+    EXPECT_EQ(net.getCloudNodes().size(), 1);
+}
+
+// 29. IoT Devices: Dodaj symulację urządzeń IoT
+//    - Niskie zasilanie, sporadyczne połączenia
+//    - Metody: addIoTDevice, simulateBatteryDrain
+TEST(NetworkTest, IoTDevices) {
+    Network net;
+    net.addIoTDevice("Sensor1", "10.0.0.10"); // Assume method
+    EXPECT_TRUE(net.hasIoTDevice("Sensor1"));
+    // Simulate battery
+    net.simulateBatteryDrain("Sensor1", 20); // 20% drain
+    EXPECT_EQ(net.getBatteryLevel("Sensor1"), 80);
+}
+
+// 30. Performance Metrics: Dodaj metryki wydajności
+//    - Latency, throughput, packet loss rate
+//    - Metody: getLatency, getThroughput, getPacketLossRate
+TEST(NetworkTest, PerformanceMetrics) {
+    Network net;
+    net.addNode<DummyNode>("A", "10.0.0.1");
+    net.addNode<DummyNode>("B", "10.0.0.2");
+    net.connect("A", "B");
+    net.setLinkDelay("A", "B", 50);
+    // Send packets
+    for (int i = 0; i < 10; ++i) {
+        net.incrementPacketCount("A", "B");
+    }
+    // Metrics
+    EXPECT_EQ(net.getLatency("A", "B"), 50);
+    EXPECT_EQ(net.getThroughput("A", "B"), 10); // Packets sent
+    EXPECT_EQ(net.getPacketLossRate("A", "B"), 0.0); // No loss
+}
+
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
