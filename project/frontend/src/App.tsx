@@ -1,15 +1,11 @@
 import { ReactLogo } from '@/assets';
+import { Sidebar } from './components';
 
 const App = () => {
   return (
-    <>
-      <div >
-        <a href="https://react.dev" target="_blank">
-          <img src={ReactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>NetSimCPP</h1>
-    </>
+    <div>
+      <Sidebar />
+    </div>
   )
 }
 
