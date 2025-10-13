@@ -1,5 +1,110 @@
 # Diagramy dla Network Simulator
 
+## Prezentacja Projektu
+
+### Pomysł
+NetSimCPP to symulator sieci komputerowych napisany w C++, umożliwiający tworzenie i modyfikowanie topologii sieci, symulację transmisji pakietów między węzłami oraz analizę zachowania sieci. Projekt jest przeznaczony do nauki podstaw sieci, testowania algorytmów routingu, symulacji protokołów TCP/UDP oraz eksperymentów z zaawansowanymi funkcjami jak kontrola przeciążenia, VLAN, firewall czy fragmentacja pakietów. Wykorzystuje podejście TDD (Test-Driven Development) dla zapewnienia jakości kodu.
+
+### Badanie Rynku
+Na rynku istnieją narzędzia do symulacji sieci takie jak:
+- **NS-3**: Zaawansowany symulator open-source w C++, skupiający się na protokołach sieciowych i mobilności.
+- **OMNeT++**: Modularny symulator dla sieci przewodowych i bezprzewodowych, z graficznym interfejsem.
+- **Mininet**: Symulator sieci SDN, umożliwiający tworzenie wirtualnych topologii na jednym komputerze.
+- **Cisco Packet Tracer**: Narzędzie edukacyjne firmy Cisco, z interfejsem graficznym, ale zamknięte źródło.
+
+Nasze wyróżniki:
+- Pełne open-source (MIT License).
+- Implementacja w czystym C++ bez zewnętrznych symulatorów.
+- REST API dla integracji z innymi narzędziami.
+- Rozszerzalne poprzez dodawanie nowych typów węzłów i protokołów.
+- Skupienie na TDD i wysokiej pokryciu testami (47 testów).
+- Symulacja zaawansowanych funkcji jak TCP handshake, fragmentacja pakietów, czasowa symulacja zdarzeń.
+
+## Inżynieria Wymagań
+
+### Historie Użytkownika (User Stories)
+- Jako student inżynierii oprogramowania, chcę dodać węzeł do sieci, aby móc budować prostą topologię.
+- Jako programista, chcę połączyć dwa węzły, aby symulować łącze między urządzeniami.
+- Jako użytkownik, chcę wysłać ping między węzłami, aby sprawdzić łączność i ścieżkę.
+- Jako badacz sieci, chcę ustawić opóźnienia łączy, aby symulować rzeczywiste warunki.
+- Jako administrator sieci, chcę przypisać VLAN do węzłów, aby izolować ruch.
+- Jako tester bezpieczeństwa, chcę skonfigurować reguły firewall, aby blokować niechciany ruch.
+- Jako inżynier, chcę symulować awarię węzła, aby przetestować odporność sieci.
+- Jako deweloper, chcę eksportować topologię do JSON, aby zapisać konfigurację.
+- Jako użytkownik zaawansowany, chcę symulować połączenie TCP, aby zobaczyć handshake.
+- Jako analityk, chcę zbierać statystyki pakietów, aby monitorować wydajność.
+
+### Diagram Przypadków Użycia (Use-Case) UML
+
+```plantuml
+@startuml
+left to right direction
+actor "Użytkownik" as User
+rectangle "NetSimCPP" {
+    User --> (Dodaj Węzeł)
+    User --> (Połącz Węzły)
+    User --> (Wykonaj Ping)
+    User --> (Ustaw Opóźnienie Łącza)
+    User --> (Przypisz VLAN)
+    User --> (Skonfiguruj Firewall)
+    User --> (Symuluj Awarię Węzła)
+    User --> (Eksportuj Topologię)
+    User --> (Importuj Topologię)
+    User --> (Symuluj Połączenie TCP)
+    User --> (Wyślij Pakiet UDP)
+    User --> (Zbierz Statystyki)
+    User --> (Uruchom Testy)
+}
+@enduml
+```
+
+### Diagram Wymagań (Requirements) SysML
+
+```plantuml
+@startuml
+package "Wymagania Funkcjonalne" {
+    requirement RF1 "System musi umożliwiać dodanie węzła do sieci"
+    requirement RF2 "System musi umożliwiać połączenie dwóch węzłów"
+    requirement RF3 "System musi symulować ping między węzłami"
+    requirement RF4 "System musi obsługiwać ustawianie opóźnień łączy"
+    requirement RF5 "System musi wspierać izolację VLAN"
+    requirement RF6 "System musi pozwalać na konfigurację reguł firewall"
+    requirement RF7 "System musi symulować awarie węzłów"
+    requirement RF8 "System musi umożliwiać eksport/import topologii do JSON"
+    requirement RF9 "System musi symulować protokoły TCP/UDP"
+    requirement RF10 "System musi zbierać statystyki pakietów"
+}
+
+package "Wymagania Niefunkcjonalne" {
+    requirement NF1 "System musi być wydajny dla sieci do 100 węzłów"
+    requirement NF2 "System musi mieć wysoką niezawodność (testy pokrywają 47 przypadków)"
+    requirement NF3 "System musi być rozszerzalny poprzez dodawanie nowych klas"
+    requirement NF4 "System musi mieć REST API dla integracji"
+    requirement NF5 "System musi być bezpieczny (brak logowania wrażliwych danych)"
+}
+
+RF1 --> NF3 : refine
+RF3 --> NF4 : derive
+@enduml
+```
+
+### Kategoryzacja Wymagań
+
+#### Wymagania Funkcjonalne
+- Zarządzanie węzłami: dodawanie, usuwanie, łączenie, rozłączanie.
+- Symulacja transmisji: ping, traceroute, multicast, TCP/UDP handshake.
+- Konfiguracja sieci: opóźnienia, przepustowość, VLAN, firewall, utrata pakietów.
+- Symulacja zdarzeń: awarie węzłów, kontrola przeciążenia, fragmentacja pakietów.
+- Zarządzanie topologią: eksport/import JSON.
+- API: REST endpoints dla interakcji.
+
+#### Wymagania Niefunkcjonalne
+- Wydajność: Obsługa dużych sieci bez znacznego spadku wydajności.
+- Niezawodność: Wysoka pokrycie testami, brak błędów krytycznych.
+- Rozszerzalność: Łatwe dodawanie nowych funkcji bez zmiany rdzenia.
+- Użyteczność: Proste API i dokumentacja.
+- Bezpieczeństwo: Brak przechowywania wrażliwych danych, bezpieczne operacje.
+
 ## 1. Diagram Klas UML
 
 ```plantuml
@@ -247,7 +352,3 @@ bool Network::sendUDPPacket(const std::string& src, const std::string& dst, Pack
     return true; // Always succeeds for UDP
 }
 ```
-
-Test UDPSimulation sprawdza wysyłanie pakietu UDP – powinien przejść.
-
-Następna? Powiedz, którą funkcjonalność zaimplementować! 🚀
