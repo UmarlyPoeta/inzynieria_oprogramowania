@@ -1,33 +1,65 @@
 # NetSimCPP - Network Simulator in C++
 
-NetSimCPP is a simple network simulator written in C++ that allows you to create, modify, and test network topologies, simulate packet transmission between nodes, and analyze network behavior. It's designed for learning network fundamentals and testing network algorithms.
+NetSimCPP is a comprehensive network simulator written in C++ that allows you to create, modify, and test network topologies, simulate packet transmission between nodes, and analyze network behavior. It includes advanced features like congestion control, TCP/UDP simulation, time-based events, packet fragmentation, and more. It's designed for learning network fundamentals, testing network algorithms, and simulating real-world network scenarios.
 
 ## Features
 
-- **Node Management**: Create and manage different types of network nodes (Hosts, Routers).
-- **Topology Creation**: Connect nodes to form network topologies.
-- **Packet Simulation**: Simulate packet transmission with ping and traceroute.
+- **Node Management**: Create and manage different types of network nodes (Hosts, Routers, DummyNodes).
+- **Topology Creation**: Connect nodes to form network topologies, with support for removal and disconnection.
+- **Packet Simulation**: Simulate packet transmission with ping, traceroute, multicast, and advanced routing.
+- **Advanced Networking Features**:
+  - Link delays and bandwidth simulation
+  - VLAN isolation
+  - Firewall rules
+  - Packet loss and statistics
+  - Node failure simulation
+  - Congestion control with packet queuing
+  - TCP/UDP protocol simulation (including 3-way handshake)
+  - Time-based simulation with event scheduling
+  - Packet fragmentation and reassembly
+- **Topology Management**: Export/import network topologies to/from JSON.
 - **REST API**: Control the simulator via HTTP endpoints.
 - **Extensible Design**: Easy to add new node types, protocols, and features.
-- **Unit Tests**: Comprehensive test suite with GoogleTest.
+- **Unit Tests**: Comprehensive test suite with GoogleTest (47 tests covering all implemented features).
 
 ## Architecture and Classes
 
 ### Core Classes
 
-- **Packet**: Represents network packets with fields like source, destination, type, protocol, payload, delay, and TTL.
-- **Node**: Abstract base class for all network nodes. Defines interface for receiving packets.
-  - **Host**: Represents end-user devices (e.g., computers). Receives packets and can send pings.
-  - **Router**: Represents routing devices. Forwards packets based on routing tables.
-- **Network**: Manages the entire network graph. Handles adding nodes, connections, and packet routing.
-- **Engine**: Core simulation engine. Performs ping and traceroute operations using BFS.
+- **Packet**: Represents network packets with fields like source, destination, type, protocol, payload, delay, TTL, priority, TCP flags (seqNum, ackNum, syn, ack), and fragmentation fields (fragmentId, isLast). Supports fragmentation and reassembly.
+- **Node**: Abstract base class for all network nodes. Defines interface for receiving packets. Includes packet queuing for congestion control.
+  - **Host**: Represents end-user devices (e.g., computers). Receives packets and can send pings. Constructor: Host(name, address, port).
+  - **Router**: Represents routing devices. Forwards packets based on routing tables. Supports adding routes and dynamic routing.
+  - **DummyNode**: Simple node for testing purposes.
+- **Network**: Manages the entire network graph. Handles adding/removing nodes, connections/disconnections, packet routing, link properties (delays, bandwidth, loss), VLANs, firewalls, and advanced simulations.
+- **Engine**: Core simulation engine. Performs ping, traceroute, multicast operations using BFS and supports delays.
 
 ### Key Methods
 
 - `Network::addNode<T>(args...)`: Creates and adds a node of type T (e.g., Host, Router).
+- `Network::removeNode(name)`: Removes a node from the network.
 - `Network::connect(nameA, nameB)`: Connects two nodes.
-- `Engine::ping(src, dst, path)`: Simulates ping, returns success and path.
+- `Network::disconnect(nameA, nameB)`: Disconnects two nodes.
+- `Network::setLinkDelay(nameA, nameB, delay)`: Sets link delay in ms.
+- `Network::setBandwidth(nameA, nameB, bw)`: Sets link bandwidth.
+- `Network::setPacketLoss(nameA, nameB, prob)`: Sets packet loss probability.
+- `Network::assignVLAN(name, vlanId)`: Assigns VLAN to a node.
+- `Network::addFirewallRule(src, dst, protocol, allow)`: Adds firewall rule.
+- `Network::exportToJson()`: Exports topology to JSON.
+- `Network::importFromJson(json)`: Imports topology from JSON.
+- `Network::failNode(name)`: Simulates node failure.
+- `Network::enqueuePacket(name, pkt)`: Enqueues packet for congestion control.
+- `Network::initiateTCPConnection(src, dst)`: Simulates TCP 3-way handshake.
+- `Network::sendUDPPacket(src, dst, pkt)`: Sends UDP packet.
+- `Network::advanceTime(ms)`: Advances simulation time.
+- `Network::schedulePacketDelivery(pkt, delay)`: Schedules packet delivery.
+- `Engine::ping(src, dst, path)`: Simulates ping with delays, returns success and path.
 - `Engine::traceroute(src, dst, path)`: Returns full path to destination.
+- `Engine::multicast(src, destinations)`: Sends packet to multiple destinations.
+- `Packet::fragmentPacket(mtu)`: Fragments packet into smaller packets.
+- `Packet::reassemblePacket(fragments)`: Reassembles fragments into original packet.
+- `Router::addRoute(dst, nextHop)`: Adds route to routing table.
+- `Router::exchangeRoutingInfo(other)`: Exchanges routing info for dynamic routing.
 
 ## Requirements
 
@@ -73,7 +105,7 @@ curl -X POST -H "Content-Type: application/json" -d '{"src":"A","dst":"B"}' http
 
 ## Testing
 
-The project includes 31 unit tests covering all core classes and TDD tests for planned features.
+The project includes 47 unit tests covering all core classes and implemented features, following TDD principles.
 
 **Run tests**:
 ```bash
@@ -84,12 +116,17 @@ ctest
 ```
 
 **Test Coverage**:
-- Packet construction and fields
-- Node creation and packet reception
-- Network topology management (add, connect, find nodes)
-- Engine ping/traceroute simulation
+- Packet construction, fields, QoS priority, and fragmentation/reassembly
+- Node creation, packet reception, and queuing
+- Network topology management (add/remove nodes, connect/disconnect, find nodes)
+- Engine ping/traceroute/multicast simulation with delays
+- Advanced features: link delays, bandwidth, packet loss, VLAN isolation, firewall rules, export/import JSON, node failure, congestion control, TCP/UDP simulation, time-based events
 - Error handling and edge cases
-- TDD tests for future features (VLAN, firewall, etc.)
+
+## Documentation
+
+- [Architecture Overview](project/docs/architecture.md): Detailed description of the system architecture.
+- [Diagrams](project/docs/diagrams.md): UML class diagrams, sequence diagrams, use cases, and more.
 
 ## Contributing
 
@@ -107,34 +144,66 @@ This project is licensed under the MIT License.
 
 # NetSimCPP - Symulator Sieci w C++ (Wersja Polska)
 
-NetSimCPP to prosty symulator sieci napisany w C++, który pozwala na tworzenie, modyfikowanie i testowanie topologii sieci, symulację transmisji pakietów między węzłami oraz analizę zachowania sieci. Jest przeznaczony do nauki podstaw sieci oraz testowania algorytmów sieciowych.
+NetSimCPP to kompleksowy symulator sieci napisany w C++, który pozwala na tworzenie, modyfikowanie i testowanie topologii sieci, symulację transmisji pakietów między węzłami oraz analizę zachowania sieci. Zawiera zaawansowane funkcje jak kontrola przeciążenia, symulacja TCP/UDP, symulacja czasowa, fragmentacja pakietów i więcej. Jest przeznaczony do nauki podstaw sieci, testowania algorytmów sieciowych oraz symulacji scenariuszy rzeczywistych sieci.
 
 ## Funkcjonalności
 
-- **Zarządzanie Węzłami**: Tworzenie i zarządzanie różnymi typami węzłów sieciowych (Hosty, Routery).
-- **Tworzenie Topologii**: Łączenie węzłów w topologie sieciowe.
-- **Symulacja Pakietów**: Symulacja transmisji pakietów z ping i traceroute.
+- **Zarządzanie Węzłami**: Tworzenie i zarządzanie różnymi typami węzłów sieciowych (Hosty, Routery, DummyNodes).
+- **Tworzenie Topologii**: Łączenie węzłów w topologie sieciowe, z wsparciem dla usuwania i rozłączania.
+- **Symulacja Pakietów**: Symulacja transmisji pakietów z ping, traceroute, multicast i zaawansowanym routingiem.
+- **Zaawansowane Funkcje Sieciowe**:
+  - Symulacja opóźnień i przepustowości łączy
+  - Izolacja VLAN
+  - Reguły firewall
+  - Utrata pakietów i statystyki
+  - Symulacja awarii węzłów
+  - Kontrola przeciążenia z kolejkowaniem pakietów
+  - Symulacja protokołów TCP/UDP (włącznie z 3-way handshake)
+  - Symulacja czasowa z planowaniem zdarzeń
+  - Fragmentacja i reassemblacja pakietów
+- **Zarządzanie Topologią**: Eksport/import topologii sieci do/z JSON.
 - **REST API**: Sterowanie symulatorem przez endpoints HTTP.
 - **Rozszerzalny Design**: Łatwe dodawanie nowych typów węzłów, protokołów i funkcji.
-- **Testy Jednostkowe**: Kompletny zestaw testów z GoogleTest.
+- **Testy Jednostkowe**: Kompletny zestaw testów z GoogleTest (47 testów pokrywających wszystkie zaimplementowane funkcje).
 
 ## Architektura i Klasy
 
 ### Główne Klasy
 
-- **Packet**: Reprezentuje pakiety sieciowe z polami jak źródło, cel, typ, protokół, payload, opóźnienie i TTL.
-- **Node**: Abstrakcyjna klasa bazowa dla wszystkich węzłów sieciowych. Definiuje interfejs do odbioru pakietów.
-  - **Host**: Reprezentuje urządzenia końcowe (np. komputery). Odbiera pakiety i może wysyłać pingi.
-  - **Router**: Reprezentuje urządzenia routingu. Przesyła pakiety na podstawie tabel routingu.
-- **Network**: Zarządza całym grafem sieci. Obsługuje dodawanie węzłów, połączeń i routingu pakietów.
-- **Engine**: Główny silnik symulacji. Wykonuje operacje ping i traceroute używając BFS.
+- **Packet**: Reprezentuje pakiety sieciowe z polami jak źródło, cel, typ, protokół, payload, opóźnienie, TTL, priorytet, flagi TCP (seqNum, ackNum, syn, ack) oraz pola fragmentacji (fragmentId, isLast). Wspiera fragmentację i reassemblację.
+- **Node**: Abstrakcyjna klasa bazowa dla wszystkich węzłów sieciowych. Definiuje interfejs do odbioru pakietów. Zawiera kolejkowanie pakietów dla kontroli przeciążenia.
+  - **Host**: Reprezentuje urządzenia końcowe (np. komputery). Odbiera pakiety i może wysyłać pingi. Konstruktor: Host(name, address, port).
+  - **Router**: Reprezentuje urządzenia routingu. Przesyła pakiety na podstawie tabel routingu. Wspiera dodawanie tras i dynamiczne routing.
+  - **DummyNode**: Prosty węzeł do celów testowych.
+- **Network**: Zarządza całym grafem sieci. Obsługuje dodawanie/usuwanie węzłów, połączenia/rozłączenia, routing pakietów, właściwości łączy (opóźnienia, przepustowość, utrata), VLANy, firewalle i zaawansowane symulacje.
+- **Engine**: Główny silnik symulacji. Wykonuje operacje ping, traceroute, multicast używając BFS i wspiera opóźnienia.
 
 ### Kluczowe Metody
 
 - `Network::addNode<T>(args...)`: Tworzy i dodaje węzeł typu T (np. Host, Router).
+- `Network::removeNode(name)`: Usuwa węzeł z sieci.
 - `Network::connect(nameA, nameB)`: Łączy dwa węzły.
-- `Engine::ping(src, dst, path)`: Symuluje ping, zwraca sukces i ścieżkę.
+- `Network::disconnect(nameA, nameB)`: Rozłącza dwa węzły.
+- `Network::setLinkDelay(nameA, nameB, delay)`: Ustawia opóźnienie łącza w ms.
+- `Network::setBandwidth(nameA, nameB, bw)`: Ustawia przepustowość łącza.
+- `Network::setPacketLoss(nameA, nameB, prob)`: Ustawia prawdopodobieństwo utraty pakietów.
+- `Network::assignVLAN(name, vlanId)`: Przypisuje VLAN do węzła.
+- `Network::addFirewallRule(src, dst, protocol, allow)`: Dodaje regułę firewall.
+- `Network::exportToJson()`: Eksportuje topologię do JSON.
+- `Network::importFromJson(json)`: Importuje topologię z JSON.
+- `Network::failNode(name)`: Symuluje awarię węzła.
+- `Network::enqueuePacket(name, pkt)`: Kolejkuje pakiet dla kontroli przeciążenia.
+- `Network::initiateTCPConnection(src, dst)`: Symuluje 3-way handshake TCP.
+- `Network::sendUDPPacket(src, dst, pkt)`: Wysyła pakiet UDP.
+- `Network::advanceTime(ms)`: Przesuwa czas symulacji.
+- `Network::schedulePacketDelivery(pkt, delay)`: Planuje dostarczenie pakietu.
+- `Engine::ping(src, dst, path)`: Symuluje ping z opóźnieniami, zwraca sukces i ścieżkę.
 - `Engine::traceroute(src, dst, path)`: Zwraca pełną ścieżkę do celu.
+- `Engine::multicast(src, destinations)`: Wysyła pakiet do wielu celów.
+- `Packet::fragmentPacket(mtu)`: Fragmentuje pakiet na mniejsze pakiety.
+- `Packet::reassemblePacket(fragments)`: Reassembluje fragmenty w oryginalny pakiet.
+- `Router::addRoute(dst, nextHop)`: Dodaje trasę do tabeli routingu.
+- `Router::exchangeRoutingInfo(other)`: Wymienia informacje o routing dla dynamicznego routingu.
 
 ## Wymagania
 
@@ -180,7 +249,7 @@ curl -X POST -H "Content-Type: application/json" -d '{"src":"A","dst":"B"}' http
 
 ## Testowanie
 
-Projekt zawiera 31 testów jednostkowych pokrywających wszystkie główne klasy oraz testy TDD dla planowanych funkcji.
+Projekt zawiera 47 testów jednostkowych pokrywających wszystkie główne klasy i zaimplementowane funkcje, zgodnie z zasadami TDD.
 
 **Uruchom testy**:
 ```bash
@@ -191,12 +260,17 @@ ctest
 ```
 
 **Pokrycie Testów**:
-- Konstrukcja pakietów i pól
-- Tworzenie węzłów i odbiór pakietów
-- Zarządzanie topologią sieci (dodawanie, łączenie, wyszukiwanie węzłów)
-- Symulacja ping/traceroute w Engine
+- Konstrukcja pakietów, pól, priorytetu QoS oraz fragmentacji/reassemblacji
+- Tworzenie węzłów, odbiór pakietów i kolejkowanie
+- Zarządzanie topologią sieci (dodawanie/usuwanie węzłów, łączenie/rozłączanie, wyszukiwanie węzłów)
+- Symulacja ping/traceroute/multicast w Engine z opóźnieniami
+- Zaawansowane funkcje: opóźnienia łączy, przepustowość, utrata pakietów, izolacja VLAN, reguły firewall, eksport/import JSON, awarie węzłów, kontrola przeciążenia, symulacja TCP/UDP, zdarzenia czasowe
 - Obsługa błędów i przypadków brzegowych
-- Testy TDD dla przyszłych funkcji (VLAN, firewall, itp.)
+
+## Dokumentacja
+
+- [Przegląd Architektury](project/docs/architecture.md): Szczegółowy opis architektury systemu.
+- [Diagramy](project/docs/diagrams.md): Diagramy UML klas, sekwencji, przypadków użycia i więcej.
 
 ## Jak Kontrybuować
 
@@ -206,19 +280,14 @@ ctest
 4. Uruchom testy i upewnij się, że przechodzą: `ctest`.
 5. Prześlij Pull Request z opisem zmian.
 
-## TODO
+## Future Enhancements
 
-- [ ] Zaimplementuj usuwanie węzłów (`Network::removeNode`)
-- [ ] Dodaj rozłączanie łączy (`Network::disconnect`)
-- [ ] Symuluj opóźnienia i przepustowość łączy
-- [ ] Dodaj wsparcie dla VLAN do izolacji sieci
-- [ ] Zaimplementuj reguły firewall
-- [ ] Dodaj statystyki pakietów i monitorowanie
-- [ ] Eksport/import topologii sieci do/z JSON
-- [ ] Symulacja awarii węzłów
-- [ ] Zaawansowane protokoły routingu (OSPF, RIP)
-- [ ] Web UI do wizualizacji topologii
-- [ ] Integracja z narzędziami monitorującymi (Grafana, Prometheus)
+- Implement routing protocols (OSPF, BGP) with full dynamic routing.
+- Add wireless network simulation with interference and range.
+- Integrate cloud and IoT device simulations.
+- Add performance metrics collection and monitoring.
+- Develop a web UI for topology visualization.
+- Integrate with monitoring tools (Grafana, Prometheus).
 
 ## Licencja
 
