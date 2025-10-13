@@ -353,6 +353,48 @@ bool Network::sendUDPPacket(const std::string& src, const std::string& dst, Pack
     return true; // Simplified success
 }
 
+// Time-Based Simulation
+void Network::advanceTime(int ms) {
+    currentTime += ms;
+    // Deliver packets that have arrived
+    for (auto it = scheduledPackets.begin(); it != scheduledPackets.end(); ) {
+        if (it->first <= currentTime) {
+            for (const auto& pkt : it->second) {
+                arrivedPackets[pkt.dest] = true;
+            }
+            it = scheduledPackets.erase(it);
+        } else {
+            ++it;
+        }
+    }
+}
+
+void Network::schedulePacketDelivery(const Packet& pkt, int delay) {
+    int linkDelay = getLinkDelay(pkt.src, pkt.dest);
+    int totalDelay = delay + pkt.delayMs + linkDelay;
+    int arrivalTime = currentTime + totalDelay;
+    scheduledPackets[arrivalTime].push_back(pkt);
+}
+
+bool Network::hasPacketArrived(const std::string& node) const {
+    auto it = arrivedPackets.find(node);
+    if (it != arrivedPackets.end() && it->second) {
+        // Reset for next check
+        const_cast<Network*>(this)->arrivedPackets[node] = false;
+        return true;
+    }
+    return false;
+}
+  
+void Network::connectWireless(const std::string & nameA, const std::string & nameB)
+{
+    connect(nameA, nameB);
+    // Set wireless range (for simplicity, just a fixed value)
+    wirelessRanges[{nameA, nameB}] = 50; // 50 meters
+    wirelessRanges[{nameB, nameA}] = 50; // 50 meters
+
+}
+
 // Congestion Control
 void Network::setQueueSize(const std::string& name, int size) {
     auto node = findByName(name);

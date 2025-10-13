@@ -93,6 +93,13 @@ public:
     // UDP Simulation
     bool sendUDPPacket(const std::string& src, const std::string& dst, Packet pkt);
 
+    // Time-Based Simulation
+    void advanceTime(int ms);
+    void schedulePacketDelivery(const Packet& pkt, int delay);
+    bool hasPacketArrived(const std::string& node) const;
+
+    void connectWirelessRange(const std::string& nameA, const std::string& nameB, int range);
+    void connectWireless(const std::string& nameA, const std::string& nameB);
 private:
     std::vector<std::shared_ptr<Node>> nodes;                // wszystkie węzły
     std::map<std::string, std::shared_ptr<Node>> nodesByName; // szybki lookup
@@ -103,6 +110,9 @@ private:
     std::map<std::tuple<std::string, std::string, std::string>, bool> firewallRules; // src, dst, protocol -> allow
     std::set<std::string> failedNodes; // failed węzły
     std::map<std::pair<std::string, std::string>, double> packetLoss; // link -> loss probability
+    int currentTime = 0; // current simulation time
+    std::map<int, std::vector<Packet>> scheduledPackets; // time -> packets to deliver
+    std::map<std::string, bool> arrivedPackets; // node -> has packet arrived
 
 };
 
