@@ -24,7 +24,7 @@ public:
 
     void addNeighbor(Node* neighbor);
     void setQueueSize(int size) { queuesize = size; }
-    void enqueuePacket(const Packet& pkt) { packetQueue.push(pkt); }
+    void enqueuePacket(const Packet& pkt) { if (packetQueue.size() < queuesize) packetQueue.push(pkt); }
     void dequeuePacket() { if (!packetQueue.empty()) packetQueue.pop(); }
     bool isCongested() const { return packetQueue.size() >= queuesize; }
 
