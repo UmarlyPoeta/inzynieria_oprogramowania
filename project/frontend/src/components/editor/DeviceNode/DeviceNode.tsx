@@ -1,8 +1,39 @@
 import styled from "styled-components";
-import type { Device } from "@/context/EditorContext";
+import { type Device, useEditor } from "@/context/EditorContext";
+import { useState, useEffect } from "react";
 
 const DeviceNode: React.FC<{ device: Device }> = ({ device }) => {
-  return <Node style={{ left: device.x, top: device.y }}>{device.type}</Node>;
+  const { moveDevice } = useEditor();
+  const [dragging, setDragging] = useState(false);
+  const [startPos, setStartPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (e.button !== 2) return; // tylko lewy przycisk
+    e.stopPropagation();
+    setDragging(true);
+    setStartPos({ x: e.clientX, y: e.clientY });
+  };
+
+  const handleMouseUp = () => setDragging(false);
+
+  const handleMouseMove = (e: MouseEvent) => {
+    if (!dragging) return;
+    const dx = e.clientX - startPos.x;
+    const dy = e.clientY - startPos.y;
+    moveDevice(device.id, device.x + dx, device.y + dy);
+    setStartPos({ x: e.clientX, y: e.clientY });
+  };
+
+  useEffect(() => {
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [dragging, startPos, device.x, device.y]);
+
+  return <Node style={{ left: device.x, top: device.y }} onMouseDown={handleMouseDown}>{device.type}</Node>;
 };
 
 const Node = styled.div`
@@ -15,8 +46,9 @@ const Node = styled.div`
   align-items: center;
   justify-content: center;
   color: ${(props: any) => props.theme.colors.text};
-  cursor: pointer;
+  cursor: grab;
   user-select: none;
 `;
+
 
 export default DeviceNode;

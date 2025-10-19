@@ -11,7 +11,7 @@ const CanvasArea = () => {
   const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
     e.preventDefault();
     const delta = e.deltaY > 0 ? -0.1 : 0.1;
-    setScale(prev => Math.min(Math.max(prev + delta, 0.2), 2)); // zoom 0.2 - 2x
+    setScale(prev => Math.min(Math.max(prev + delta, 0.2), 2));
   };
 
   const handleMouseDrag = (e: React.MouseEvent<HTMLDivElement>) => {
