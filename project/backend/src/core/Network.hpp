@@ -26,7 +26,7 @@ public:
 
     // Połączenie dwóch node’ów po wskaźnikach
     void connect(std::shared_ptr<Node> a, std::shared_ptr<Node> b);
-
+    void disconnect(const std::string& nameA, const std::string& nameB);
     // Połączenie dwóch node’ów po nazwie (REST-friendly)
     void connect(const std::string& nameA, const std::string& nameB);
 
@@ -43,8 +43,8 @@ public:
     const std::map<std::string, std::set<std::string>>& getAdjacency() const;
 
     void removeNode(const std::string& name);
-    void disconnect(const std::string& nameA, const std::string& nameB);
-
+    
+    // links
     void setLinkDelay(const std::string& nameA, const std::string& nameB, int delayMs);
     int getLinkDelay(const std::string& nameA, const std::string& nameB) const;
     void removeLinkDelay(const std::string& nameA, const std::string& nameB);
@@ -100,6 +100,7 @@ public:
 
     void connectWirelessRange(const std::string& nameA, const std::string& nameB, int range);
     void connectWireless(const std::string& nameA, const std::string& nameB);
+    void setWirelessRange(const std::string& name, int range);
 private:
     std::vector<std::shared_ptr<Node>> nodes;                // wszystkie węzły
     std::map<std::string, std::shared_ptr<Node>> nodesByName; // szybki lookup
@@ -113,7 +114,7 @@ private:
     int currentTime = 0; // current simulation time
     std::map<int, std::vector<Packet>> scheduledPackets; // time -> packets to deliver
     std::map<std::string, bool> arrivedPackets; // node -> has packet arrived
-
+    std::map<std::pair<std::string, std::string>, int> wirelessRanges; // link -> wireless range
 };
 
 // Implementacja szablonu w headerze

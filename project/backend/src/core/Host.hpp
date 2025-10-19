@@ -11,7 +11,6 @@ class Host : public Node {
         int port;
         std::string address;
 
-
         Host(const std::string& name, const std::string& address, int port);
         std::string getAddress() const;
         int getPort() const;
@@ -19,5 +18,4 @@ class Host : public Node {
         void setPort(int port);
 
         void receivePacket(Packet& p) override;
-        void ping(const std::string& targetIp);
     };

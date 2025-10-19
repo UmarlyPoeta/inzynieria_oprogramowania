@@ -61,6 +61,9 @@ void Network::removeNode(const std::string& name)
     if (vecIt != nodes.end()) {
         nodes.erase(vecIt);
     }
+
+
+
     nodesByName.erase(name);
 }
 
@@ -385,8 +388,22 @@ bool Network::hasPacketArrived(const std::string& node) const {
     }
     return false;
 }
-  
-void Network::connectWireless(const std::string & nameA, const std::string & nameB)
+
+
+void Network::connectWirelessRange(const std::string &nameA, const std::string &nameB, int range)
+{
+    auto nodeA = findByName(nameA);
+    auto nodeB = findByName(nameB);
+
+
+    if (!nodeA || !nodeB)
+        throw std::runtime_error("Cannot connect null nodes");
+
+    
+    connect(nameA, nameB);
+}
+
+void Network::connectWireless(const std::string &nameA, const std::string &nameB)
 {
     connect(nameA, nameB);
     // Set wireless range (for simplicity, just a fixed value)

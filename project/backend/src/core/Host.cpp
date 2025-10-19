@@ -32,13 +32,7 @@ void Host::receivePacket(Packet& p) {
             std::cout << "[HOST " << name << "] Packet TTL expired.\n";
             return;
         }
-        if (packet.protocol == "ICMP") {
-            // Handle ICMP packet
-        } else if (packet.protocol == "TCP") {
-            // Handle TCP packet
-        } else if (packet.protocol == "UDP") {
-            // Handle UDP packet
-        }
+        
 
         if (packet.dest == ip) {
             std::cout << "[HOST " << name << "] Received: " << packet.payload << std::endl;
