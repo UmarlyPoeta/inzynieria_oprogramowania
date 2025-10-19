@@ -35,6 +35,7 @@ const CanvasArea = () => {
 
 };
 
+
 const Container = styled.div`
     flex: 1;
     background-color: ${(props: any) => props.theme.colors.background};
@@ -43,25 +44,6 @@ const Container = styled.div`
     cursor: grab;
 `;
 
-// const Container = styled.div`
-//   position: absolute;   // lub fixed
-//   top: 0;
-//   left: 0;
-//   width: 100vw;
-//   height: 100vh;
-//   overflow: hidden;
-//   cursor: grab;
-//   background-color: ${(props: any) => props.theme.colors.background};
-// `;
-
-
-const Inner = styled.div`
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-`;
 const Grid = styled.div`
   position: absolute;
   top: 0;
@@ -75,5 +57,12 @@ const Grid = styled.div`
   pointer-events: none;
 `;
 
+const Inner = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+`;
 
 export default CanvasArea;
