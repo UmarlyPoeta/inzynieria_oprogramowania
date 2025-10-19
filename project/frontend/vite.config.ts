@@ -6,6 +6,7 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig({
   resolve: { 
     alias: { 
+      '@': resolve(__dirname, "src"),
       '@/components': resolve(__dirname, 'src/components/index.ts'),
       '@/context': resolve(__dirname, 'src/context/index.ts'),
       '@/data': resolve(__dirname, 'src/data/index.ts'),
