@@ -23,30 +23,57 @@ const CanvasArea = () => {
   };
 
   return (
-    <Container onWheel={handleWheel} onMouseMove={handleMouseDrag}>
-      <Inner style={{ transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})` }}>
-        {devices.map(d => (
-          <DeviceNode key={d.id} device={d} />
-        ))}
-      </Inner>
-    </Container>
-  );
+  <Container onWheel={handleWheel} onMouseMove={handleMouseDrag}>
+    <Inner style={{ transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})` }}>
+      <Grid />  
+      {devices.map(d => (
+        <DeviceNode key={d.id} device={d} />
+      ))}
+    </Inner>
+  </Container>
+);
+
 };
 
 const Container = styled.div`
-  flex: 1;
-  background-color: ${(props: any) => props.theme.colors.background};
-  overflow: hidden;
-  cursor: grab;
+    flex: 1;
+    background-color: ${(props: any) => props.theme.colors.background};
+    overflow: hidden;
+    position: relative;
+    cursor: grab;
 `;
 
+// const Container = styled.div`
+//   position: absolute;   // lub fixed
+//   top: 0;
+//   left: 0;
+//   width: 100vw;
+//   height: 100vh;
+//   overflow: hidden;
+//   cursor: grab;
+//   background-color: ${(props: any) => props.theme.colors.background};
+// `;
+
+
 const Inner = styled.div`
-  position: relative;
-  width: 2000px;
-  height: 2000px;
-  background-size: 20px 20px;
-  background-image: linear-gradient(to right, #222 1px, transparent 1px),
-                    linear-gradient(to bottom, #222 1px, transparent 1px);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
 `;
+const Grid = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-size: 20px 20px;
+  background-image: 
+    linear-gradient(to right, #222 1px, transparent 1px),
+    linear-gradient(to bottom, #222 1px, transparent 1px);
+  pointer-events: none;
+`;
+
 
 export default CanvasArea;
