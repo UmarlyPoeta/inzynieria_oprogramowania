@@ -10,8 +10,21 @@ const CanvasArea = () => {
 
   const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
     e.preventDefault();
-    const delta = e.deltaY > 0 ? -0.1 : 0.1;
-    setScale(prev => Math.min(Math.max(prev + delta, 0.2), 2));
+    const delta = -e.deltaY * 0.001;          // mniejszy krok
+    const newScale = Math.min(Math.max(scale + delta, 0.2), 4);
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    const scaleFactor = newScale / scale;
+
+    setOffset(prev => ({
+      x: mouseX - (mouseX - prev.x) * scaleFactor,
+      y: mouseY - (mouseY - prev.y) * scaleFactor,
+    }));
+
+    setScale(newScale);
   };
 
   const handleMouseDrag = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -23,7 +36,7 @@ const CanvasArea = () => {
   };
 
   return (
-  <Container onWheel={handleWheel} onMouseMove={handleMouseDrag}>
+  <Container onWheel={handleWheel} onMouseMove={handleMouseDrag} onContextMenu={(e) => e.preventDefault()}>
     <Inner style={{ transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})` }}>
       <Grid />  
       {devices.map(d => (
@@ -42,6 +55,8 @@ const Container = styled.div`
     overflow: hidden;
     position: relative;
     cursor: grab;
+    width: 100%;
+    height: 100%;
 `;
 
 const Grid = styled.div`
