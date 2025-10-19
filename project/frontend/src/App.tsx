@@ -1,11 +1,14 @@
-import { ReactLogo } from '@/assets';
-import { Sidebar } from './components';
+import { ThemeProvider } from 'styled-components';
+import { GlobalStyle } from '@/styles';
+import { Theme } from '@/styles';
+import { Workspace } from '@/pages';
 
 const App = () => {
   return (
-    <div>
-      <Sidebar />
-    </div>
+    <ThemeProvider theme={Theme}>
+      <GlobalStyle />
+      <Workspace />
+    </ThemeProvider>
   )
 }
 
