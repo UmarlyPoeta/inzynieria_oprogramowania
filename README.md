@@ -74,13 +74,13 @@ NetSimCPP is a comprehensive network simulator written in C++ that allows you to
 1. **Clone the repository**:
    ```bash
    git clone https://github.com/UmarlyPoeta/inzynieria_oprogramowania.git
-   cd netsimcpp/project
+   cd inzynieria_oprogramowania
    ```
 
 2. **Build the project**:
    ```bash
-   cd backend
-   mkdir build && cd build
+   cd project/backend
+   mkdir -p build && cd build
    cmake ..
    cmake --build .
    ```
@@ -109,10 +109,11 @@ The project includes 47 unit tests covering all core classes and implemented fea
 
 **Run tests**:
 ```bash
-cd backend/build
+cd project/backend/build
 ctest
 # or
 ./netsim_tests
+# Run single test: ./netsim_tests --gtest_filter=TestName
 ```
 
 **Test Coverage**:
@@ -125,6 +126,7 @@ ctest
 
 ## Documentation
 
+- [AGENTS.md](AGENTS.md): Development guidelines, build commands, and code style conventions for AI agents.
 - [Architecture Overview](project/docs/architecture.md): Detailed description of the system architecture.
 - [Diagrams](project/docs/diagrams.md): UML class diagrams, sequence diagrams, use cases, and more.
 
@@ -217,14 +219,14 @@ NetSimCPP to kompleksowy symulator sieci napisany w C++, który pozwala na tworz
 
 1. **Sklonuj repozytorium**:
    ```bash
-   git clone <adres-repozytorium>
-   cd netsimcpp/project
+   git clone https://github.com/UmarlyPoeta/inzynieria_oprogramowania.git
+   cd inzynieria_oprogramowania
    ```
 
 2. **Zbuduj projekt**:
    ```bash
-   cd backend
-   mkdir build && cd build
+   cd project/backend
+   mkdir -p build && cd build
    cmake ..
    cmake --build .
    ```
@@ -253,10 +255,11 @@ Projekt zawiera 47 testów jednostkowych pokrywających wszystkie główne klasy
 
 **Uruchom testy**:
 ```bash
-cd backend/build
+cd project/backend/build
 ctest
 # lub
 ./netsim_tests
+# Uruchom pojedynczy test: ./netsim_tests --gtest_filter=NazwaTestu
 ```
 
 **Pokrycie Testów**:
@@ -269,6 +272,7 @@ ctest
 
 ## Dokumentacja
 
+- [AGENTS.md](AGENTS.md): Wytyczne rozwoju, komendy budowania i konwencje stylu kodu dla agentów AI.
 - [Przegląd Architektury](project/docs/architecture.md): Szczegółowy opis architektury systemu.
 - [Diagramy](project/docs/diagrams.md): Diagramy UML klas, sekwencji, przypadków użycia i więcej.
 
