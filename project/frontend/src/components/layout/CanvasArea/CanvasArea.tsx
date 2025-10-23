@@ -66,9 +66,9 @@ const Grid = styled.div`
   width: 100%;
   height: 100%;
   background-size: 20px 20px;
-  background-image: 
-    linear-gradient(to right, #222 1px, transparent 1px),
-    linear-gradient(to bottom, #222 1px, transparent 1px);
+  // background-image: 
+  //   linear-gradient(to right, #222 1px, transparent 1px),
+  //   linear-gradient(to bottom, #222 1px, transparent 1px);
   pointer-events: none;
 `;
 
