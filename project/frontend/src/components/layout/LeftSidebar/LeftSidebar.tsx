@@ -15,8 +15,6 @@ import {
   Move
 } from "lucide-react";
 
-const DEVICE_TYPES = ["router", "switch", "pc"] as const;
-
 const SidebarWrapper = styled.div`
   display: flex;
   height: 100%;
@@ -80,21 +78,6 @@ const SectionTitle = styled.h3`
   text-transform: uppercase;
   margin-bottom: 8px;
   letter-spacing: 0.5px;
-`;
-
-const DeviceButton = styled.button`
-  width: 225px;
-  margin-bottom: 8px;
-  padding: 8px;
-  border-radius: 6px;
-  background-color: ${(props: any) => props.theme.colors.primary};
-  color: ${(props: any) => props.theme.colors.text};
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-
-  &:hover {
-    background-color: ${(props: any) => props.theme.colors.primaryHover};
-  }
 `;
 
 const AppLogo = styled.div`
@@ -172,7 +155,9 @@ const DeviceRow = styled.div`
 `;
 
 const LayersPanel: React.FC = () => {
-  const { devices, groups, toggleGroupCollapsed } = useEditor();
+  const { devices, groups, toggleGroupCollapsed, renameGroup } = useEditor();
+  const [editingGroupId, setEditingGroupId] = React.useState<string | null>(null);
+  const [tempName, setTempName] = React.useState<string>("");
 
   const devicesByGroup = groups.reduce((acc: Record<string, typeof devices>, group) => {
     acc[group.id] = devices.filter(d => d.groupId === group.id);
@@ -185,25 +170,56 @@ const LayersPanel: React.FC = () => {
 
   return (
     <LayersPanelWrapper>
+      <SectionTitle>Layers</SectionTitle>
       {groups.map(group => (
         <div key={group.id}>
-          <GroupRow collapsed={group.collapsed} onClick={() => toggleGroupCollapsed(group.id)}>
-            <span>{group.name}</span>
-            <ChevronDown style={{ transform: group.collapsed ? "rotate(-90deg)" : "rotate(0deg)" }} />
+          <GroupRow
+            collapsed={group.collapsed}
+            onClick={() => toggleGroupCollapsed(group.id)}
+            onDoubleClick={() => {
+              setEditingGroupId(group.id);
+              setTempName(group.name);
+            }}
+          >
+            {editingGroupId === group.id ? (
+              <input
+                value={tempName}
+                onChange={(e) => setTempName(e.target.value)}
+                onBlur={() => {
+                  if (tempName.trim()) renameGroup(group.id, tempName.trim());
+                  setEditingGroupId(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    if (tempName.trim()) renameGroup(group.id, tempName.trim());
+                    setEditingGroupId(null);
+                  } else if (e.key === "Escape") {
+                    setEditingGroupId(null);
+                  }
+                }}
+                autoFocus
+                style={{ fontWeight: "bold", width: "100%" }}
+              />
+            ) : (
+              <span>{group.name}</span>
+            )}
+            <ChevronDown
+              style={{ transform: group.collapsed ? "rotate(-90deg)" : "rotate(0deg)" }}
+            />
           </GroupRow>
           {!group.collapsed &&
             devicesByGroup[group.id]?.map(device => (
               <DeviceRow key={device.id}>{device.name || device.type}</DeviceRow>
             ))}
         </div>
-      ))}
+      ))} <br />
       <button onClick={showAll}>Show / Hide All Layers</button>
     </LayersPanelWrapper>
   );
 };
 
 const LeftSidebar = () => {
-  const { addDevice, addGroup, devices } = useEditor();
+  const { addDevice, addGroup } = useEditor();
 
   // For testing: add some default groups and devices (to be removed later)
   useEffect(() => {
