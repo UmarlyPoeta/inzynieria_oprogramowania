@@ -66,6 +66,7 @@ const IconButton = styled.button`
 const RightPanel = styled.div`
   flex: 1;
   // padding: 12px;
+  width: 202px;
   display: flex;
   flex-direction: column;
   border-right: 2px solid #ededf5;
@@ -123,12 +124,6 @@ const RightBarHeader = styled.div`
     height: 14px;
   }
 `;
-
-// const LayersPanel = styled.div`
-//   padding: 12px;
-//   display: flex;
-//   flex-direction: column;
-// `;
 
 const LayersPanelWrapper = styled.div`
   padding: 12px;
@@ -201,7 +196,7 @@ const LayersPanel: React.FC = () => {
                 style={{ fontWeight: "bold", width: "100%" }}
               />
             ) : (
-              <span>{group.name}</span>
+              <span style={{whiteSpace: "nowrap"}} title={group.name}>{group.name.length > 15 ? `${group.name.substring(0, 12)}...` : group.name}</span>
             )}
             <ChevronDown
               style={{ transform: group.collapsed ? "rotate(-90deg)" : "rotate(0deg)" }}
