@@ -1,6 +1,5 @@
 import styled from 'styled-components';
 import { 
-    TopBar, 
     LeftSidebar, 
     RightSidebar, 
     CanvasArea,
@@ -22,7 +21,6 @@ const MainArea = styled.div`
 const Workspace = () => {
   return (
     <Container>
-      <TopBar />
       <MainArea>
         <LeftSidebar />
         <CanvasArea />
