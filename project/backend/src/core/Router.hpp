@@ -9,6 +9,17 @@ class Router : public Node {
 public:
     using Node::Node;
 
+    Node* getNextHop(const std::string& dst);
+
+    bool forwardPacket(Packet& p) {
+        Node* nextHop = getNextHop(p.dest);
+        if (nextHop) {
+            nextHop->receivePacket(p);
+            return true;
+        }
+        return false; // No route found
+    }
+
     void addRoute(const std::string& ip, Node* next) {
         routingTable[ip] = next;
     }

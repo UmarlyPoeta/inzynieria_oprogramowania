@@ -205,7 +205,7 @@ TEST(RouterTest, ForwardPacket) {
     router->addRoute("10.0.0.0/24", r2.get());
     Packet pkt("A", "10.0.0.1", "data", "tcp", "payload");
     // Assume forwardPacket method exists
-    // router.forwardPacket(pkt); // Should route to R2
+    router->forwardPacket(pkt); // Should route to R2
     // But since not implemented, just check no throw
     EXPECT_NO_THROW(router->receivePacket(pkt));
 }
@@ -428,22 +428,22 @@ TEST(NetworkTest, TimeBasedSimulation) {
 //    - hasRouteTo(dst: string) - sprawdza, czy ma trasę do dst
 //    - Symuluje dynamiczne uczenie się tras w sieci (jak w realnych protokołach)
 //    - Używa map<string, Node*> routingTable w Router
-// TEST(RouterTest, RoutingProtocols) {
-//     Network net;
-//     auto r1 = net.addNode<Router>("R1", "192.168.0.1");
-//     auto r2 = net.addNode<Router>("R2", "192.168.0.2");
-//     auto r3 = net.addNode<Router>("R3", "192.168.0.3");
-//     net.connect("R1", "R2");
-//     net.connect("R2", "R3");
-//     Router* router1 = dynamic_cast<Router*>(r1.get());
-//     Router* router2 = dynamic_cast<Router*>(r2.get());
-//     // R1 dodaje trasę do R3 przez R2
-//     router1->addRoute("192.168.0.3", r2.get());
-//     // Exchange info between R1 and R2
-//     router1->exchangeRoutingInfo(router2);
-//     // Assume R2 updates and now has route to R3
-//     EXPECT_TRUE(router2->hasRouteTo("192.168.0.3"));
-// }
+ TEST(RouterTest, RoutingProtocols) {
+     Network net;
+     auto r1 = net.addNode<Router>("R1", "192.168.0.1");
+     auto r2 = net.addNode<Router>("R2", "192.168.0.2");
+     auto r3 = net.addNode<Router>("R3", "192.168.0.3");
+     net.connect("R1", "R2");
+     net.connect("R2", "R3");
+     Router* router1 = dynamic_cast<Router*>(r1.get());
+     Router* router2 = dynamic_cast<Router*>(r2.get());
+     // R1 dodaje trasę do R3 przez R2
+     router1->addRoute("192.168.0.3", r2.get());
+     // Exchange info between R1 and R2
+     router1->exchangeRoutingInfo(router2);
+     // Assume R2 updates and now has route to R3
+     EXPECT_TRUE(router2->hasRouteTo("192.168.0.3"));
+ }
 
 // 26. Packet Fragmentation: Dodaj mechanizm dzielenia dużych pakietów na fragmenty
 //    - Jeśli payload > MTU (np. 500 bajtów), pakiet dzielony na mniejsze fragmenty

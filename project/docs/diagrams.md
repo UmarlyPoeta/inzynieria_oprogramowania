@@ -78,7 +78,7 @@ package "Wymagania Funkcjonalne" {
 package "Wymagania Niefunkcjonalne" {
     requirement NF1 "System musi być wydajny dla sieci do 100 węzłów"
     requirement NF2 "System musi mieć wysoką niezawodność (testy pokrywają 47 przypadków)"
-    requirement NF3 "System musi być rozszerzalny poprzez dodawanie nowych klas"
+    requirement NF 3 "System musi być rozszerzalny poprzez dodawanie nowych klas"
     requirement NF4 "System musi mieć REST API dla integracji"
     requirement NF5 "System musi być bezpieczny (brak logowania wrażliwych danych)"
 }

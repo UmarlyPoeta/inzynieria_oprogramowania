@@ -18,4 +18,6 @@ class Host : public Node {
         void setPort(int port);
 
         void receivePacket(Packet& p) override;
+        void sendPacket(Packet& p, Node& dest) override;
+
     };
