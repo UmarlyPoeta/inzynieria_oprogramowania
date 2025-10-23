@@ -18,6 +18,7 @@ import {
 const SidebarWrapper = styled.div`
   display: flex;
   height: 100%;
+  z-index: 2;
   background-color: ${(props: any) => props.theme.colors.surface};
 `;
 
@@ -222,10 +223,10 @@ const LeftSidebar = () => {
     addGroup({ id: "routers", name: "Routers", collapsed: false });
     addGroup({ id: "switches", name: "Switches", collapsed: false });
 
-    addDevice({ id: "router-1", type: "router", x: 0, y: 0, groupId: "routers" });
-    addDevice({ id: "switch-1", type: "switch", x: 50, y: 50, groupId: "switches" });
-    addDevice({ id: "switch-2", type: "switch", x: 50, y: 50, groupId: "switches" });
-    addDevice({ id: "switch-3", type: "switch", x: 50, y: 50, groupId: "switches" });
+    addDevice({ id: "router-1", type: "router", x: 300, y: 25, groupId: "routers" });
+    addDevice({ id: "switch-1", type: "switch", x: 500, y: 50, groupId: "switches" });
+    addDevice({ id: "switch-2", type: "switch", x: 700, y: 50, groupId: "switches" });
+    addDevice({ id: "switch-3", type: "switch", x: 231, y: 120, groupId: "switches" });
   }, []);
 
   return (

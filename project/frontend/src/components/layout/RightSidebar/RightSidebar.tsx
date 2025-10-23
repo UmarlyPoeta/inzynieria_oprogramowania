@@ -5,8 +5,8 @@ const Sidebar = styled.div`
   width: 260px;
   background-color: ${(props: any) => props.theme.colors.surface};
   border-left: 2px solid #ededf5;
-  // padding: ${(props: any) => props.theme.spacing(2)};
   overflow-y: auto;
+  z-index: 2;
 `;
 
 const SimulationContainer = styled.div`

@@ -16,6 +16,7 @@ const MainArea = styled.div`
   display: flex;
   flex: 1;
   overflow: hidden;
+  justify-content: space-between;
 `;
 
 const Workspace = () => {

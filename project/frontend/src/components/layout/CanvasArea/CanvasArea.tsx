@@ -53,7 +53,8 @@ const Container = styled.div`
     flex: 1;
     background-color: ${(props: any) => props.theme.colors.background};
     overflow: hidden;
-    position: relative;
+    position: absolute;
+    z-index: 1;
     cursor: grab;
     width: 100%;
     height: 100%;
@@ -76,8 +77,8 @@ const Inner = styled.div`
   position: absolute;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
+  // width: 100%;
+  // height: 100%;
 `;
 
 export default CanvasArea;
