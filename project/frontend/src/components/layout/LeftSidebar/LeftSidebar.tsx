@@ -161,7 +161,11 @@ const LayersPanel: React.FC = () => {
   }, {} as Record<string, typeof devices>);
 
   const showAll = () => {
-    groups.forEach(g => toggleGroupCollapsed(g.id)); 
+    if (groups.every(g => g.collapsed)) {
+      groups.forEach(g => toggleGroupCollapsed(g.id, false)); 
+      return;
+    }
+    groups.forEach(g => toggleGroupCollapsed(g.id, true)); 
   };
 
   return (
@@ -171,7 +175,7 @@ const LayersPanel: React.FC = () => {
         <div key={group.id}>
           <GroupRow
             collapsed={group.collapsed}
-            onClick={() => toggleGroupCollapsed(group.id)}
+            onClick={() => toggleGroupCollapsed(group.id, !group.collapsed)}
             onDoubleClick={() => {
               setEditingGroupId(group.id);
               setTempName(group.name);

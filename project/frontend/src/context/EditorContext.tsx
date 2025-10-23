@@ -31,7 +31,7 @@ interface EditorContextType {
   moveDevice: (id: string, x: number, y: number) => void;
   addGroup: (group: Group) => void;
   renameGroup: (id: string, name: string) => void;
-  toggleGroupCollapsed: (id: string) => void;
+  toggleGroupCollapsed: (id: string, coll: boolean) => void;
 }
 
 const EditorContext = createContext<EditorContextType | undefined>(undefined);
@@ -59,8 +59,9 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const addGroup = (group: Group) => setGroups(prev => [...prev, group]);
   const renameGroup = (id: string, name: string) =>
     setGroups(prev => prev.map(g => (g.id === id ? { ...g, name } : g)));
-  const toggleGroupCollapsed = (id: string) =>
-    setGroups(prev => prev.map(g => (g.id === id ? { ...g, collapsed: !g.collapsed } : g)));
+  const toggleGroupCollapsed = (id: string, coll: boolean) => { 
+    setGroups(prev => prev.map(g => (g.id === id ? { ...g, collapsed: coll } : g)));
+  };
 
   return (
     <EditorContext.Provider
