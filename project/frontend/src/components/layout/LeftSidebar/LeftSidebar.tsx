@@ -1,4 +1,5 @@
 import styled from "styled-components";
+import React, { useEffect } from "react";
 import { useEditor } from "@/context/EditorContext";
 import { 
   Save, 
@@ -140,19 +141,81 @@ const RightBarHeader = styled.div`
   }
 `;
 
-const LayersPanel = styled.div`
+// const LayersPanel = styled.div`
+//   padding: 12px;
+//   display: flex;
+//   flex-direction: column;
+// `;
+
+const LayersPanelWrapper = styled.div`
   padding: 12px;
-  display: flex;
-  flex-direction: column;
+  flex: 1;
+  overflow-y: auto;
 `;
 
-const LeftSidebar = () => {
-  const { addDevice } = useEditor();
+const GroupRow = styled.div<{ collapsed: boolean }>`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: bold;
+  cursor: pointer;
+  margin-bottom: 4px;
+`;
 
-  const handleAddDevice = (type: typeof DEVICE_TYPES[number]) => {
-    const id = `${type}-${Date.now()}`;
-    addDevice({ id, type, x: 100, y: 100 });
+const DeviceRow = styled.div`
+  padding-left: 16px;
+  margin-bottom: 2px;
+  cursor: pointer;
+  &:hover {
+    background-color: rgba(255, 174, 0, 0.1);
+  }
+`;
+
+const LayersPanel: React.FC = () => {
+  const { devices, groups, toggleGroupCollapsed } = useEditor();
+
+  const devicesByGroup = groups.reduce((acc: Record<string, typeof devices>, group) => {
+    acc[group.id] = devices.filter(d => d.groupId === group.id);
+    return acc;
+  }, {} as Record<string, typeof devices>);
+
+  const showAll = () => {
+    groups.forEach(g => toggleGroupCollapsed(g.id)); 
   };
+
+  return (
+    <LayersPanelWrapper>
+      {groups.map(group => (
+        <div key={group.id}>
+          <GroupRow collapsed={group.collapsed} onClick={() => toggleGroupCollapsed(group.id)}>
+            <span>{group.name}</span>
+            <ChevronDown style={{ transform: group.collapsed ? "rotate(-90deg)" : "rotate(0deg)" }} />
+          </GroupRow>
+          {!group.collapsed &&
+            devicesByGroup[group.id]?.map(device => (
+              <DeviceRow key={device.id}>{device.name || device.type}</DeviceRow>
+            ))}
+        </div>
+      ))}
+      <button onClick={showAll}>Show / Hide All Layers</button>
+    </LayersPanelWrapper>
+  );
+};
+
+const LeftSidebar = () => {
+  const { addDevice, addGroup, devices } = useEditor();
+
+  // For testing: add some default groups and devices (to be removed later)
+  useEffect(() => {
+    // It affect rerender so be sure to reload website after changes (its info for you, Patryk and Adrian)
+    addGroup({ id: "routers", name: "Routers", collapsed: false });
+    addGroup({ id: "switches", name: "Switches", collapsed: false });
+
+    addDevice({ id: "router-1", type: "router", x: 0, y: 0, groupId: "routers" });
+    addDevice({ id: "switch-1", type: "switch", x: 50, y: 50, groupId: "switches" });
+    addDevice({ id: "switch-2", type: "switch", x: 50, y: 50, groupId: "switches" });
+    addDevice({ id: "switch-3", type: "switch", x: 50, y: 50, groupId: "switches" });
+  }, []);
 
   return (
     <SidebarWrapper>
@@ -196,14 +259,7 @@ const LeftSidebar = () => {
           <p> Project X </p>
 
         </RightBarHeader>
-        <LayersPanel>
-          <SectionTitle>Layers</SectionTitle>
-          {DEVICE_TYPES.map(type => (
-            <DeviceButton key={type} onClick={() => handleAddDevice(type)}>
-              {type.charAt(0).toUpperCase() + type.slice(1)}
-            </DeviceButton>
-          ))}
-        </LayersPanel>
+          <LayersPanel />
       </RightPanel>
 
     </SidebarWrapper>
