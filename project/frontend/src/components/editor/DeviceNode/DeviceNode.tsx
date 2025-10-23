@@ -2,7 +2,7 @@ import styled from "styled-components";
 import { type Device, useEditor } from "@/context/EditorContext";
 import { useState, useEffect } from "react";
 
-const DeviceNode: React.FC<{ device: Device }> = ({ device }) => {
+const DeviceNode: React.FC<{ device: Device, scale: number }> = ({ device, scale }) => {
   const { moveDevice } = useEditor();
   const [dragging, setDragging] = useState(false);
   const [startPos, setStartPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -18,8 +18,8 @@ const DeviceNode: React.FC<{ device: Device }> = ({ device }) => {
 
   const handleMouseMove = (e: MouseEvent) => {
     if (!dragging) return;
-    const dx = e.clientX - startPos.x;
-    const dy = e.clientY - startPos.y;
+    const dx = (e.clientX - startPos.x) / scale;
+    const dy = (e.clientY - startPos.y) / scale;
     moveDevice(device.id, device.x + dx, device.y + dy);
     setStartPos({ x: e.clientX, y: e.clientY });
   };
@@ -31,7 +31,7 @@ const DeviceNode: React.FC<{ device: Device }> = ({ device }) => {
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseup", handleMouseUp);
     };
-  }, [dragging, startPos, device.x, device.y]);
+  }, [dragging, startPos, device.x, device.y, scale]);
 
   return <Node style={{ left: device.x, top: device.y }} onMouseDown={handleMouseDown}>{device.type}</Node>;
 };

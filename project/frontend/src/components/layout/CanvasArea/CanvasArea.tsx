@@ -40,7 +40,7 @@ const CanvasArea = () => {
     <Inner style={{ transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})` }}>
       <Grid />  
       {devices.map(d => (
-        <DeviceNode key={d.id} device={d} />
+        <DeviceNode key={d.id} device={d} scale={scale}/>
       ))}
     </Inner>
   </Container>
