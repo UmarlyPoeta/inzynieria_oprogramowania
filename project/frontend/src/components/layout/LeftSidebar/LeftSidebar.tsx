@@ -209,7 +209,7 @@ const LayersPanel: React.FC = () => {
             ))}
         </div>
       ))} <br />
-      <button onClick={showAll}>Show / Hide All Layers</button>
+      <button onClick={showAll} style={{border: "1px dashed #b2b2b6ff", padding: "2px"}}> Show / Hide All Layers </button>
     </LayersPanelWrapper>
   );
 };
