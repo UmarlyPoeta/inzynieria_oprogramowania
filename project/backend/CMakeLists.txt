@@ -5,6 +5,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(cpprestsdk REQUIRED) # Microsoft C++ REST SDK
 find_package(nlohmann_json REQUIRED)
+find_package(OpenSSL REQUIRED)
 
 add_executable(netsim
     src/main.cpp
@@ -18,7 +19,7 @@ add_executable(netsim
 
 target_include_directories(netsim PRIVATE src)
 
-target_link_libraries(netsim PRIVATE cpprestsdk::cpprest nlohmann_json::nlohmann_json)
+target_link_libraries(netsim PRIVATE cpprestsdk::cpprest nlohmann_json::nlohmann_json OpenSSL::SSL OpenSSL::Crypto)
 
 # Optional: install rules
 install(TARGETS netsim DESTINATION bin)

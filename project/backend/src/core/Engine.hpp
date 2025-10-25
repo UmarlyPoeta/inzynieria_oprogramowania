@@ -13,6 +13,10 @@ public:
     bool traceroute(const std::string &srcName,
                     const std::string &dstName,
                     std::vector<std::string> &path);
+    int getTotalDelay(const std::vector<std::string>& path);
+    
+    // Multicast - wysyłanie do wielu odbiorców
+    bool multicast(const std::string& srcName, const std::vector<std::string>& destinations);
 
 private:
     Network &net;

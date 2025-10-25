@@ -15,10 +15,11 @@ Na rynku istnieją narzędzia do symulacji sieci takie jak:
 Nasze wyróżniki:
 - Pełne open-source (MIT License).
 - Implementacja w czystym C++ bez zewnętrznych symulatorów.
-- REST API dla integracji z innymi narzędziami.
+- REST API dla integracji z innymi narzędziami (29 endpoints).
 - Rozszerzalne poprzez dodawanie nowych typów węzłów i protokołów.
-- Skupienie na TDD i wysokiej pokryciu testami (47 testów).
+- Skupienie na TDD i wysokiej pokryciu testami (60 testów).
 - Symulacja zaawansowanych funkcji jak TCP handshake, fragmentacja pakietów, czasowa symulacja zdarzeń.
+- Wsparcie dla sieci bezprzewodowych, chmurowych i IoT.
 
 ## Inżynieria Wymagań
 
@@ -33,6 +34,10 @@ Nasze wyróżniki:
 - Jako deweloper, chcę eksportować topologię do JSON, aby zapisać konfigurację.
 - Jako użytkownik zaawansowany, chcę symulować połączenie TCP, aby zobaczyć handshake.
 - Jako analityk, chcę zbierać statystyki pakietów, aby monitorować wydajność.
+- Jako projektant sieci bezprzewodowych, chcę symulować zasięg i interferencje WiFi.
+- Jako architekt chmury, chcę testować autoscaling węzłów chmurowych.
+- Jako deweloper IoT, chcę symulować zużycie baterii urządzeń IoT.
+- Jako integrator systemów, chcę korzystać z REST API do automatyzacji zadań sieciowych.
 
 ### Diagram Przypadków Użycia (Use-Case) UML
 
@@ -40,20 +45,29 @@ Nasze wyróżniki:
 @startuml
 left to right direction
 actor "Użytkownik" as User
+actor "Administrator" as Admin
+actor "Deweloper API" as Dev
 rectangle "NetSimCPP" {
     User --> (Dodaj Węzeł)
     User --> (Połącz Węzły)
     User --> (Wykonaj Ping)
-    User --> (Ustaw Opóźnienie Łącza)
-    User --> (Przypisz VLAN)
-    User --> (Skonfiguruj Firewall)
-    User --> (Symuluj Awarię Węzła)
+    User --> (Traceroute)
+    User --> (Multicast)
+    Admin --> (Ustaw Opóźnienie Łącza)
+    Admin --> (Przypisz VLAN)
+    Admin --> (Skonfiguruj Firewall)
+    Admin --> (Symuluj Awarię Węzła)
     User --> (Eksportuj Topologię)
     User --> (Importuj Topologię)
     User --> (Symuluj Połączenie TCP)
     User --> (Wyślij Pakiet UDP)
     User --> (Zbierz Statystyki)
     User --> (Uruchom Testy)
+    Dev --> (Zarządzaj przez REST API)
+    User --> (Symuluj Sieć Bezprzewodową)
+    Admin --> (Zarządzaj Chmurą)
+    User --> (Monitoruj IoT)
+    User --> (Metryki Wydajności)
 }
 @enduml
 ```
@@ -77,10 +91,11 @@ package "Wymagania Funkcjonalne" {
 
 package "Wymagania Niefunkcjonalne" {
     requirement NF1 "System musi być wydajny dla sieci do 100 węzłów"
-    requirement NF2 "System musi mieć wysoką niezawodność (testy pokrywają 47 przypadków)"
-    requirement NF 3 "System musi być rozszerzalny poprzez dodawanie nowych klas"
-    requirement NF4 "System musi mieć REST API dla integracji"
+    requirement NF2 "System musi mieć wysoką niezawodność (testy pokrywają 60 przypadków)"
+    requirement NF3 "System musi być rozszerzalny poprzez dodawanie nowych klas"
+    requirement NF4 "System musi mieć REST API dla integracji (29 endpoints)"
     requirement NF5 "System musi być bezpieczny (brak logowania wrażliwych danych)"
+    requirement NF6 "System musi wspierać różne typy sieci (bezprzewodowe, chmurowe, IoT)"
 }
 
 RF1 --> NF3 : refine
@@ -96,7 +111,9 @@ RF3 --> NF4 : derive
 - Konfiguracja sieci: opóźnienia, przepustowość, VLAN, firewall, utrata pakietów.
 - Symulacja zdarzeń: awarie węzłów, kontrola przeciążenia, fragmentacja pakietów.
 - Zarządzanie topologią: eksport/import JSON.
-- API: REST endpoints dla interakcji.
+- API: 29 REST endpoints dla pełnej kontroli sieci.
+- Sieci zaawansowane: bezprzewodowe, chmurowe, IoT.
+- Statystyki i metryki: monitorowanie ruchu, wydajności, utrat pakietów.
 
 #### Wymagania Niefunkcjonalne
 - Wydajność: Obsługa dużych sieci bez znacznego spadku wydajności.
@@ -170,6 +187,12 @@ class Network {
     - firewallRules: map<tuple<string,string,string>, bool>
     - failedNodes: set<string>
     - packetLoss: map<pair<string,string>, double>
+    - nodePacketsSent: map<string, int>
+    - nodePacketsReceived: map<string, int>
+    - linkTraffic: map<pair<string,string>, int>
+    - wirelessRanges: map<string, int>
+    - cloudNodes: set<string>
+    - iotDevices: map<string, int>
     + addNode<T>(args...): shared_ptr<T>
     + connect(a: string, b: string): void
     + findByName(name: string): shared_ptr<Node>
@@ -193,10 +216,36 @@ class Network {
     + setPacketLoss(a: string, b: string, loss: double): void
     + initiateTCPConnection(client: string, server: string): bool
     + sendTCPPacket(src: string, dst: string, pkt: Packet): bool
+    + sendUDPPacket(src: string, dst: string, pkt: Packet): bool
     + setQueueSize(name: string, size: int): void
     + enqueuePacket(name: string, pkt: Packet): void
     + dequeuePacket(name: string): void
     + isCongested(name: string): bool
+    + recordPacketSent(node: string): void
+    + recordPacketReceived(node: string): void
+    + getPacketsSent(node: string): int
+    + getPacketsReceived(node: string): int
+    + getTotalPacketsSent(): int
+    + getTotalPacketsReceived(): int
+    + resetNodeStatistics(node: string): void
+    + resetAllStatistics(): void
+    + getMostActiveNode(): string
+    + getTrafficStats(): TrafficStats
+    + recordLinkTraffic(a: string, b: string): void
+    + setWirelessRange(name: string, range: int): void
+    + isWirelessConnected(a: string, b: string): bool
+    + simulateInterference(name: string, prob: double): void
+    + addCloudNode(name: string, ip: string): void
+    + getCloudNodes(): vector<string>
+    + scaleUp(cloud: string): void
+    + scaleDown(cloud: string): void
+    + addIoTDevice(name: string, ip: string): void
+    + hasIoTDevice(name: string): bool
+    + simulateBatteryDrain(name: string, percent: int): void
+    + getBatteryLevel(name: string): int
+    + getLatency(a: string, b: string): int
+    + getThroughput(a: string, b: string): int
+    + getPacketLossRate(a: string, b: string): double
 }
 
 class Engine {
@@ -204,11 +253,25 @@ class Engine {
     + Engine(net: Network)
     + ping(src: string, dst: string, path: vector<string>&): bool
     + traceroute(src: string, dst: string, path: vector<string>&): bool
+    + multicast(src: string, dests: vector<string>): bool
+}
+
+class RESTServer {
+    - listener: http_listener
+    - network: Network
+    - engine: Engine
+    + RESTServer(port: int)
+    + handleGET(request: http_request): void
+    + handlePOST(request: http_request): void
+    + start(): void
+    + stop(): void
 }
 
 Node ||-- Packet : receives
 Network o-- Node : contains
 Engine --> Network : uses
+RESTServer --> Network : manages
+RESTServer --> Engine : uses
 @enduml
 ```
 
@@ -226,6 +289,46 @@ Engine -> Engine: BFS traversal
 Engine -> API: return success + path
 API -> Frontend: JSON response
 Frontend -> User: Display path
+@enduml
+```
+
+## 2a. Diagram Sekwencji dla REST API - Dodawanie Węzła
+
+```plantuml
+@startuml
+actor Client
+Client -> RESTServer: POST /node/add {"name":"A","ip":"10.0.0.1","type":"host"}
+RESTServer -> RESTServer: Parse JSON
+RESTServer -> Network: addNode<Host>("A", "10.0.0.1", 8080)
+Network -> Node: new Host("A", "10.0.0.1", 8080)
+Node --> Network: shared_ptr<Host>
+Network --> RESTServer: success
+RESTServer --> Client: 200 OK {"result":"node added","name":"A"}
+@enduml
+```
+
+## 2b. Diagram Sekwencji dla REST API - Kompletny Workflow
+
+```plantuml
+@startuml
+actor User
+User -> API: POST /node/add (Host A)
+API -> Network: addNode<Host>()
+User -> API: POST /node/add (Host B)
+API -> Network: addNode<Host>()
+User -> API: POST /link/connect (A-B)
+API -> Network: connect(A, B)
+User -> API: POST /link/delay (A-B, 10ms)
+API -> Network: setLinkDelay(A, B, 10)
+User -> API: POST /ping (A to B)
+API -> Engine: ping(A, B)
+Engine -> Network: BFS search
+Engine --> API: path + success
+API --> User: JSON response with path
+User -> API: GET /statistics
+API -> Network: getTrafficStats()
+Network --> API: statistics
+API --> User: JSON with stats
 @enduml
 ```
 
@@ -329,26 +432,115 @@ Link }o--|| Node
 @enduml
 ```
 
-Te diagramy opisują architekturę projektu. Można je wygenerować w narzędziach jak PlantUML lub Draw.io.
+## 8. Diagram Architektury REST API
 
-Teraz kontynuuję implementację – zaimplementuję **UDP Simulation** zgodnie z testem NetworkTest.UDPSimulation. UDP to protokół bezpołączeniowy, bez retransmisji.
-
-### Zmiany dla UDP:
-- Dodaj metodę `sendUDPPacket` w Network – po prostu wysyła pakiet bez ACK.
-- Brak handshake, zawsze "sukces" (chyba że węzeł failed).
-
-Dodaję kod. 
-
-**Network.hpp** – dodaj deklarację:
-```cpp
-bool sendUDPPacket(const std::string& src, const std::string& dst, Packet pkt);
-```
-
-**Network.cpp** – implementacja:
-```cpp
-bool Network::sendUDPPacket(const std::string& src, const std::string& dst, Packet pkt) {
-    pkt.protocol = "udp";
-    // No handshake, no retransmission - just send
-    return true; // Always succeeds for UDP
+```plantuml
+@startuml
+package "Client Layer" {
+    [Web Browser]
+    [curl/API Client]
+    [Automated Scripts]
 }
+
+package "REST API Layer" {
+    [HTTP Listener :8080]
+    [GET Handler]
+    [POST Handler]
+    [JSON Parser]
+}
+
+package "Business Logic Layer" {
+    [Network Manager]
+    [Simulation Engine]
+    [Statistics Collector]
+}
+
+package "Data Layer" {
+    [Node Graph]
+    [Link Properties]
+    [Statistics Storage]
+}
+
+[Web Browser] --> [HTTP Listener :8080]
+[curl/API Client] --> [HTTP Listener :8080]
+[Automated Scripts] --> [HTTP Listener :8080]
+
+[HTTP Listener :8080] --> [GET Handler]
+[HTTP Listener :8080] --> [POST Handler]
+[GET Handler] --> [JSON Parser]
+[POST Handler] --> [JSON Parser]
+
+[JSON Parser] --> [Network Manager]
+[JSON Parser] --> [Simulation Engine]
+[JSON Parser] --> [Statistics Collector]
+
+[Network Manager] --> [Node Graph]
+[Network Manager] --> [Link Properties]
+[Simulation Engine] --> [Node Graph]
+[Statistics Collector] --> [Statistics Storage]
+@enduml
 ```
+
+## 9. Diagram Komponentów
+
+```plantuml
+@startuml
+package "NetSimCPP System" {
+    component "REST API Server" {
+        [HTTP Listener]
+        [Request Handler]
+        [Response Builder]
+    }
+    
+    component "Core Simulation" {
+        [Network Manager]
+        [Engine]
+        [Node Factory]
+    }
+    
+    component "Network Models" {
+        [Host]
+        [Router]
+        [Packet]
+    }
+    
+    component "Advanced Features" {
+        [Wireless Simulator]
+        [Cloud Manager]
+        [IoT Manager]
+        [Statistics Tracker]
+    }
+    
+    database "In-Memory Storage" {
+        [Node Graph]
+        [Link Properties]
+        [Statistics]
+    }
+}
+
+[HTTP Listener] --> [Request Handler]
+[Request Handler] --> [Network Manager]
+[Request Handler] --> [Engine]
+[Network Manager] --> [Node Factory]
+[Node Factory] --> [Host]
+[Node Factory] --> [Router]
+[Network Manager] --> [Wireless Simulator]
+[Network Manager] --> [Cloud Manager]
+[Network Manager] --> [IoT Manager]
+[Statistics Tracker] --> [Statistics]
+[Network Manager] --> [Node Graph]
+[Network Manager] --> [Link Properties]
+@enduml
+```
+
+Te diagramy opisują kompletną architekturę projektu z 60 testami i 29 endpoints REST API. Można je wygenerować w narzędziach jak PlantUML lub Draw.io.
+
+## Podsumowanie Projektu
+
+NetSimCPP to w pełni funkcjonalny symulator sieci z:
+- **60 testami jednostkowymi** pokrywającymi wszystkie funkcje
+- **29 endpoints REST API** dla pełnej kontroli
+- **Zaawansowanymi funkcjami**: TCP/UDP, VLAN, firewall, fragmentacja pakietów
+- **Symulacją sieci specjalistycznych**: bezprzewodowe, chmurowe, IoT
+- **Kompleksowymi metrykami**: statystyki, wydajność, monitoring ruchu
+- **Architekturą rozszerzalną**: łatwe dodawanie nowych typów węzłów i funkcji

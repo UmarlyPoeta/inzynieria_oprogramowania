@@ -20,7 +20,7 @@ NetSimCPP is a comprehensive network simulator written in C++ that allows you to
 - **Topology Management**: Export/import network topologies to/from JSON.
 - **REST API**: Control the simulator via HTTP endpoints.
 - **Extensible Design**: Easy to add new node types, protocols, and features.
-- **Unit Tests**: Comprehensive test suite with GoogleTest (47 tests covering all implemented features).
+- **Unit Tests**: Comprehensive test suite with GoogleTest (60 tests covering all implemented features).
 
 ## Architecture and Classes
 
@@ -93,19 +93,103 @@ NetSimCPP is a comprehensive network simulator written in C++ that allows you to
 
 ## API Endpoints
 
-- `GET /status`: Check server status.
-- `POST /addNode`: Add a new node (JSON: `{"name": "A", "ip": "10.0.0.1"}`).
-- `POST /ping`: Ping between nodes (JSON: `{"src": "A", "dst": "B"}`).
+The REST API provides comprehensive control over the network simulator:
+
+### Node Management
+- `POST /node/add` - Add a new node (Host or Router)
+  - JSON: `{"name": "A", "ip": "10.0.0.1", "type": "host", "port": 8080}`
+  - JSON: `{"name": "R1", "ip": "10.0.0.254", "type": "router"}`
+- `POST /node/remove` - Remove a node
+  - JSON: `{"name": "A"}`
+- `POST /node/fail` - Simulate node failure
+  - JSON: `{"name": "A"}`
+- `GET /nodes` - List all nodes
+
+### Network Topology
+- `POST /link/connect` - Connect two nodes
+  - JSON: `{"nodeA": "A", "nodeB": "B"}`
+- `POST /link/disconnect` - Disconnect two nodes
+  - JSON: `{"nodeA": "A", "nodeB": "B"}`
+- `POST /link/delay` - Set link delay
+  - JSON: `{"nodeA": "A", "nodeB": "B", "delay": 10}`
+- `POST /link/bandwidth` - Set link bandwidth
+  - JSON: `{"nodeA": "A", "nodeB": "B", "bandwidth": 1000}`
+- `POST /link/packetloss` - Set packet loss probability
+  - JSON: `{"nodeA": "A", "nodeB": "B", "probability": 0.1}`
+- `GET /topology` - Export full topology as JSON
+- `POST /topology/import` - Import topology from JSON
+
+### Network Simulation
+- `POST /ping` - Ping between nodes
+  - JSON: `{"src": "A", "dst": "B"}`
+- `POST /traceroute` - Traceroute to destination
+  - JSON: `{"src": "A", "dst": "B"}`
+- `POST /multicast` - Multicast to multiple destinations
+  - JSON: `{"src": "A", "destinations": ["B", "C", "D"]}`
+- `POST /tcp/connect` - Initiate TCP 3-way handshake
+  - JSON: `{"client": "A", "server": "B"}`
+
+### VLAN & Firewall
+- `POST /vlan/assign` - Assign VLAN to node
+  - JSON: `{"name": "A", "vlanId": 10}`
+- `POST /firewall/rule` - Add firewall rule
+  - JSON: `{"src": "A", "dst": "B", "protocol": "TCP", "allow": true}`
+
+### Wireless Networks
+- `POST /wireless/range` - Set wireless range
+  - JSON: `{"name": "A", "range": 100}`
+- `POST /wireless/interference` - Simulate wireless interference
+  - JSON: `{"name": "A", "lossProb": 0.2}`
+
+### Cloud Integration
+- `POST /cloud/add` - Add cloud node
+  - JSON: `{"name": "Cloud1", "ip": "10.0.1.1"}`
+- `POST /cloud/scaleup` - Scale up cloud resources
+  - JSON: `{"name": "Cloud1"}`
+- `POST /cloud/scaledown` - Scale down cloud resources
+  - JSON: `{"name": "Cloud1"}`
+- `GET /cloudnodes` - List all cloud nodes
+
+### IoT Devices
+- `POST /iot/add` - Add IoT device
+  - JSON: `{"name": "Sensor1", "ip": "10.0.2.1"}`
+- `POST /iot/battery` - Simulate battery drain
+  - JSON: `{"name": "Sensor1", "percent": 10}`
+
+### Statistics & Metrics
+- `GET /statistics` - Get network statistics
+- `POST /statistics/reset` - Reset statistics (all or specific node)
+  - JSON: `{"node": "A"}` or `{}` for all
+- `POST /metrics/performance` - Get performance metrics between nodes
+  - JSON: `{"nodeA": "A", "nodeB": "B"}`
+
+### Server Status
+- `GET /status` - Check server status
 
 Example:
 ```bash
-curl -X POST -H "Content-Type: application/json" -d '{"name":"A","ip":"10.0.0.1"}' http://localhost:8080/addNode
+# Add nodes
+curl -X POST -H "Content-Type: application/json" -d '{"name":"A","ip":"10.0.0.1","type":"host"}' http://localhost:8080/node/add
+curl -X POST -H "Content-Type: application/json" -d '{"name":"B","ip":"10.0.0.2","type":"host"}' http://localhost:8080/node/add
+curl -X POST -H "Content-Type: application/json" -d '{"name":"R1","ip":"10.0.0.254","type":"router"}' http://localhost:8080/node/add
+
+# Connect nodes
+curl -X POST -H "Content-Type: application/json" -d '{"nodeA":"A","nodeB":"R1"}' http://localhost:8080/link/connect
+curl -X POST -H "Content-Type: application/json" -d '{"nodeA":"R1","nodeB":"B"}' http://localhost:8080/link/connect
+
+# Ping
 curl -X POST -H "Content-Type: application/json" -d '{"src":"A","dst":"B"}' http://localhost:8080/ping
+
+# Get topology
+curl http://localhost:8080/topology
+
+# Get statistics
+curl http://localhost:8080/statistics
 ```
 
 ## Testing
 
-The project includes 47 unit tests covering all core classes and implemented features, following TDD principles.
+The project includes 60 unit tests covering all core classes and implemented features, following TDD principles.
 
 **Run tests**:
 ```bash
@@ -166,7 +250,7 @@ NetSimCPP to kompleksowy symulator sieci napisany w C++, który pozwala na tworz
 - **Zarządzanie Topologią**: Eksport/import topologii sieci do/z JSON.
 - **REST API**: Sterowanie symulatorem przez endpoints HTTP.
 - **Rozszerzalny Design**: Łatwe dodawanie nowych typów węzłów, protokołów i funkcji.
-- **Testy Jednostkowe**: Kompletny zestaw testów z GoogleTest (47 testów pokrywających wszystkie zaimplementowane funkcje).
+- **Testy Jednostkowe**: Kompletny zestaw testów z GoogleTest (60 testów pokrywających wszystkie zaimplementowane funkcje).
 
 ## Architektura i Klasy
 
@@ -251,7 +335,7 @@ curl -X POST -H "Content-Type: application/json" -d '{"src":"A","dst":"B"}' http
 
 ## Testowanie
 
-Projekt zawiera 47 testów jednostkowych pokrywających wszystkie główne klasy i zaimplementowane funkcje, zgodnie z zasadami TDD.
+Projekt zawiera 60 testów jednostkowych pokrywających wszystkie główne klasy i zaimplementowane funkcje, zgodnie z zasadami TDD.
 
 **Uruchom testy**:
 ```bash

@@ -473,3 +473,310 @@ void Network::importFromJson(const std::string& jsonStr) {
         connect(a, b);
     }
 }
+
+// ===== Network Statistics Implementation =====
+
+void Network::recordPacketSent(const std::string& nodeName) {
+    // Sprawdź czy węzeł istnieje
+    if (nodesByName.find(nodeName) == nodesByName.end()) {
+        throw std::runtime_error("Node not found: " + nodeName);
+    }
+    packetsSent[nodeName]++;
+}
+
+void Network::recordPacketReceived(const std::string& nodeName) {
+    // Sprawdź czy węzeł istnieje
+    if (nodesByName.find(nodeName) == nodesByName.end()) {
+        throw std::runtime_error("Node not found: " + nodeName);
+    }
+    packetsReceived[nodeName]++;
+}
+
+int Network::getPacketsSent(const std::string& nodeName) const {
+    auto it = packetsSent.find(nodeName);
+    if (it != packetsSent.end()) {
+        return it->second;
+    }
+    return 0;
+}
+
+int Network::getPacketsReceived(const std::string& nodeName) const {
+    auto it = packetsReceived.find(nodeName);
+    if (it != packetsReceived.end()) {
+        return it->second;
+    }
+    return 0;
+}
+
+int Network::getTotalPacketsSent() const {
+    int total = 0;
+    for (const auto& entry : packetsSent) {
+        total += entry.second;
+    }
+    return total;
+}
+
+int Network::getTotalPacketsReceived() const {
+    int total = 0;
+    for (const auto& entry : packetsReceived) {
+        total += entry.second;
+    }
+    return total;
+}
+
+void Network::resetNodeStatistics(const std::string& nodeName) {
+    // Sprawdź czy węzeł istnieje
+    if (nodesByName.find(nodeName) == nodesByName.end()) {
+        throw std::runtime_error("Node not found: " + nodeName);
+    }
+    packetsSent[nodeName] = 0;
+    packetsReceived[nodeName] = 0;
+}
+
+void Network::resetAllStatistics() {
+    packetsSent.clear();
+    packetsReceived.clear();
+}
+
+std::string Network::getMostActiveNode() const {
+    std::string mostActive;
+    int maxPackets = 0;
+    
+    for (const auto& entry : packetsSent) {
+        if (entry.second > maxPackets) {
+            maxPackets = entry.second;
+            mostActive = entry.first;
+        }
+    }
+    
+    return mostActive;
+}
+
+// ===== Traffic Monitoring Implementation =====
+
+void Network::recordLinkTraffic(const std::string& nodeA, const std::string& nodeB) {
+    // Sprawdź czy węzły istnieją
+    if (nodesByName.find(nodeA) == nodesByName.end()) {
+        throw std::runtime_error("Node not found: " + nodeA);
+    }
+    if (nodesByName.find(nodeB) == nodesByName.end()) {
+        throw std::runtime_error("Node not found: " + nodeB);
+    }
+    
+    // Zlicz ruch w obu kierunkach (unormalizowany klucz)
+    auto key = std::make_pair(std::min(nodeA, nodeB), std::max(nodeA, nodeB));
+    linkTrafficCount[key]++;
+}
+
+TrafficStats Network::getTrafficStats() const {
+    TrafficStats stats;
+    
+    // Kopiuj statystyki węzłów
+    stats.nodePacketsSent = packetsSent;
+    stats.nodePacketsReceived = packetsReceived;
+    
+    // Kopiuj statystyki łączy
+    stats.linkTraffic = linkTrafficCount;
+    
+    // Oblicz całkowitą liczbę pakietów
+    stats.totalPackets = getTotalPacketsSent();
+    
+        // Oblicz średnią liczbę pakietów na węzeł
+    if (!nodes.empty()) {
+        stats.averagePacketsPerNode = static_cast<double>(stats.totalPackets) / nodes.size();
+    }
+    
+    return stats;
+}
+
+// ===== Wireless Networks Implementation =====
+
+void Network::setWirelessRange(const std::string& name, int range) {
+    if (nodesByName.find(name) == nodesByName.end()) {
+        throw std::runtime_error("Node not found: " + name);
+    }
+    wirelessNodeRanges[name] = range;
+}
+
+bool Network::isWirelessConnected(const std::string& nameA, const std::string& nameB) const {
+    // Sprawdź czy węzły istnieją
+    if (nodesByName.find(nameA) == nodesByName.end()) {
+        throw std::runtime_error("Node not found: " + nameA);
+    }
+    if (nodesByName.find(nameB) == nodesByName.end()) {
+        throw std::runtime_error("Node not found: " + nameB);
+    }
+    
+    // Sprawdź czy są połączone w grafie
+    if (adj.find(nameA) == adj.end() || adj.at(nameA).find(nameB) == adj.at(nameA).end()) {
+        return false; // Nie ma połączenia
+    }
+    
+    // Sprawdź zasięg bezprzewodowy
+    auto rangeA = wirelessNodeRanges.find(nameA);
+    auto rangeB = wirelessNodeRanges.find(nameB);
+    
+    // Jeśli któryś węzeł ma ustawiony zasięg, połączenie jest wireless
+    if (rangeA != wirelessNodeRanges.end() || rangeB != wirelessNodeRanges.end()) {
+        // Dla uproszczenia, jeśli jest połączenie i jeden ma zasięg, uznajemy za OK
+        // W rzeczywistej symulacji sprawdzalibyśmy odległość fizyczną
+        
+        // Sprawdź interferencje
+        auto interA = interferenceLevel.find(nameA);
+        auto interB = interferenceLevel.find(nameB);
+        
+        // Jeśli interferencje są zbyt duże (>0.5), połączenie nie działa
+        if ((interA != interferenceLevel.end() && interA->second > 0.5) ||
+            (interB != interferenceLevel.end() && interB->second > 0.5)) {
+            return false;
+        }
+        
+        return true;
+    }
+    
+    return true; // Zwykłe połączenie przewodowe
+}
+
+void Network::simulateInterference(const std::string& name, double lossProb) {
+    if (nodesByName.find(name) == nodesByName.end()) {
+        throw std::runtime_error("Node not found: " + name);
+    }
+    interferenceLevel[name] = lossProb;
+}
+
+// ===== Cloud Integration Implementation =====
+
+void Network::addCloudNode(const std::string& name, const std::string& ip) {
+    // Dodaj jako zwykły węzeł
+    addNode<DummyNode>(name, ip);
+    cloudNodes.insert(name);
+    cloudGroups[name] = {name}; // Inicjuj grupę z jedną instancją
+}
+
+std::vector<std::string> Network::getCloudNodes() const {
+    std::vector<std::string> result;
+    for (const auto& group : cloudGroups) {
+        for (const auto& instance : group.second) {
+            result.push_back(instance);
+        }
+    }
+    return result;
+}
+
+void Network::scaleUp(const std::string& cloudName) {
+    if (cloudNodes.find(cloudName) == cloudNodes.end()) {
+        throw std::runtime_error("Cloud node not found: " + cloudName);
+    }
+    
+    // Utwórz nową instancję
+    std::string instanceName = cloudName + "_instance_" + std::to_string(cloudInstanceCounter++);
+    auto baseNode = findByName(cloudName);
+    addNode<DummyNode>(instanceName, baseNode->getIp() + "." + std::to_string(cloudInstanceCounter));
+    
+    cloudGroups[cloudName].push_back(instanceName);
+}
+
+void Network::scaleDown(const std::string& cloudName) {
+    if (cloudNodes.find(cloudName) == cloudNodes.end()) {
+        throw std::runtime_error("Cloud node not found: " + cloudName);
+    }
+    
+    auto& instances = cloudGroups[cloudName];
+    if (instances.size() <= 1) {
+        // Nie usuwaj ostatniej instancji
+        return;
+    }
+    
+    // Usuń ostatnią dodaną instancję (nie bazową)
+    std::string toRemove;
+    for (auto it = instances.rbegin(); it != instances.rend(); ++it) {
+        if (*it != cloudName) {
+            toRemove = *it;
+            break;
+        }
+    }
+    
+    if (!toRemove.empty()) {
+        // Usuń z grupy
+        instances.erase(std::remove(instances.begin(), instances.end(), toRemove), instances.end());
+        
+        // Usuń węzeł (tylko jeśli nie ma połączeń)
+        try {
+            // Najpierw usuń wszystkie połączenia
+            auto neighbors = getNeighbors(toRemove);
+            for (const auto& neighbor : neighbors) {
+                disconnect(toRemove, neighbor);
+            }
+            removeNode(toRemove);
+        } catch (...) {
+            // Ignoruj błędy usuwania
+        }
+    }
+}
+
+// ===== IoT Devices Implementation =====
+
+void Network::addIoTDevice(const std::string& name, const std::string& ip) {
+    // Dodaj jako zwykły węzeł
+    addNode<DummyNode>(name, ip);
+    iotDevices.insert(name);
+    iotBatteries[name] = 100; // Inicjuj baterię na 100%
+}
+
+bool Network::hasIoTDevice(const std::string& name) const {
+    return iotDevices.find(name) != iotDevices.end();
+}
+
+void Network::simulateBatteryDrain(const std::string& name, int percent) {
+    if (!hasIoTDevice(name)) {
+        throw std::runtime_error("IoT device not found: " + name);
+    }
+    
+    iotBatteries[name] -= percent;
+    if (iotBatteries[name] < 0) {
+        iotBatteries[name] = 0;
+    }
+    
+    // Jeśli bateria < 10%, odłącz urządzenie
+    if (iotBatteries[name] < 10) {
+        failNode(name);
+    }
+}
+
+int Network::getBatteryLevel(const std::string& name) const {
+    if (!hasIoTDevice(name)) {
+        throw std::runtime_error("IoT device not found: " + name);
+    }
+    
+    auto it = iotBatteries.find(name);
+    if (it != iotBatteries.end()) {
+        return it->second;
+    }
+    return 100; // Domyślnie pełna bateria
+}
+
+// ===== Performance Metrics Implementation =====
+
+int Network::getLatency(const std::string& nameA, const std::string& nameB) const {
+    // Zwróć opóźnienie łącza
+    return getLinkDelay(nameA, nameB);
+}
+
+int Network::getThroughput(const std::string& nameA, const std::string& nameB) const {
+    // Zwróć liczbę pakietów wysłanych między węzłami
+    try {
+        return const_cast<Network*>(this)->getPacketCount(nameA, nameB);
+    } catch (...) {
+        return 0;
+    }
+}
+
+double Network::getPacketLossRate(const std::string& nameA, const std::string& nameB) const {
+    // Zwróć współczynnik utraty pakietów
+    auto key = std::make_pair(nameA, nameB);
+    auto it = packetLoss.find(key);
+    if (it != packetLoss.end()) {
+        return it->second;
+    }
+    return 0.0; // Brak utraty pakietów
+}

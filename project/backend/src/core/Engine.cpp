@@ -72,5 +72,40 @@ bool Engine::ping(const std::string &src, const std::string &dst, std::vector<st
 }
 
 bool Engine::traceroute(const std::string &src, const std::string &dst, std::vector<std::string> &pathOut) {
-    return ping(src, dst, pathOut); // For simplicity, same as ping
+    return ping(src, dst, pathOut);
+}
+
+int Engine::getTotalDelay(const std::vector<std::string>& path) {
+    int totalDelay = 0;
+    for (size_t i = 0; i < path.size() - 1; ++i) {
+        totalDelay += net.getLinkDelay(path[i], path[i + 1]);
+    }
+    return totalDelay;
+}
+
+// Multicast - wysyłanie pakietów do wielu odbiorców
+bool Engine::multicast(const std::string& srcName, const std::vector<std::string>& destinations) {
+    std::cout << "[MULTICAST] From " << srcName << " to " << destinations.size() << " destinations" << std::endl;
+    
+    if (destinations.empty()) {
+        std::cerr << "No destinations specified for multicast\n";
+        return false;
+    }
+    
+    bool allSuccessful = true;
+    
+    // Wyślij pakiet do każdego odbiorcy
+    for (const auto& dest : destinations) {
+        std::vector<std::string> path;
+        bool success = ping(srcName, dest, path);
+        
+        if (!success) {
+            std::cerr << "Failed to reach destination: " << dest << std::endl;
+            allSuccessful = false;
+        } else {
+            std::cout << "Multicast packet delivered to: " << dest << std::endl;
+        }
+    }
+    
+    return allSuccessful;
 }

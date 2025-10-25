@@ -45,12 +45,64 @@ public:
 
     void routeAll(const std::map<std::string, Node*>& allNodes) {
         for (const auto& entry : allNodes) {
-            if (entry.first != ip) { // Avoid routing to self
-                routingTable[entry.first] = nullptr; // Placeholder for next hop
+            if (entry.first != ip) {
+                routingTable[entry.first] = nullptr;
             }
         }
     }
 
+    void exchangeRoutingInfo(Router* otherRouter) {
+        if (!otherRouter) return;
+        for (const auto& entry : routingTable) {
+            if (!otherRouter->hasRouteTo(entry.first)) {
+                otherRouter->addRoute(entry.first, this);
+            }
+        }
+    }
 
+    bool hasRouteTo(const std::string& dst) const {
+        return routingTable.find(dst) != routingTable.end();
+    }
     
+    // Dynamic Routing - aktualizacja tras
+    void updateRoute(const std::string& dst, Node* newNextHop) {
+        if (routingTable.find(dst) != routingTable.end()) {
+            std::cout << "Updating route to " << dst << " via " << newNextHop->getName() << std::endl;
+            routingTable[dst] = newNextHop;
+        } else {
+            addRoute(dst, newNextHop);
+        }
+    }
+    
+    // Load Balancing - wybór następnego węzła na podstawie obciążenia
+    std::string getBalancedNextHop(const std::string& dst) {
+        // Znajdź wszystkie możliwe trasy do danego celu
+        std::vector<Node*> possibleNextHops;
+        
+        for (const auto& entry : routingTable) {
+            // Sprawdź czy trasa prowadzi do sieci docelowej (uproszczona wersja)
+            if (entry.first.find(dst.substr(0, dst.find_last_of('.'))) != std::string::npos) {
+                if (entry.second != nullptr) {
+                    possibleNextHops.push_back(entry.second);
+                }
+            }
+        }
+        
+        if (possibleNextHops.empty()) {
+            return "";
+        }
+        
+        // Wybierz węzeł z najmniejszym obciążeniem (najmniejsza liczba pakietów)
+        Node* bestNextHop = possibleNextHops[0];
+        int minPackets = bestNextHop->getPacketCount();
+        
+        for (auto* nextHop : possibleNextHops) {
+            if (nextHop->getPacketCount() < minPackets) {
+                minPackets = nextHop->getPacketCount();
+                bestNextHop = nextHop;
+            }
+        }
+        
+        return bestNextHop->getName();
+    }
 };
