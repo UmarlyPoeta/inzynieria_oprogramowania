@@ -12,7 +12,7 @@ jobs:
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     
     - name: Install dependencies
       run: |
@@ -45,7 +45,7 @@ jobs:
         files: project/backend/test-results.xml
     
     - name: Upload test results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: test-results
@@ -57,7 +57,7 @@ jobs:
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     
     - name: Install dependencies
       run: |
@@ -77,10 +77,11 @@ jobs:
       run: |
         cmake .
         make -j$(nproc)
+        make netsim_perf_tests
     
     - name: Run performance tests
       working-directory: project/backend
-      run: ./netsim_tests --gtest_filter=*Performance*
+      run: ./netsim_perf_tests
     
     - name: Memory leak check
       working-directory: project/backend
@@ -93,10 +94,10 @@ jobs:
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     
     - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v2
+      uses: docker/setup-buildx-action@v3
     
     - name: Build Docker image
       run: docker build -t netsim:latest .
@@ -114,13 +115,13 @@ jobs:
       run: |
         curl -f http://localhost:8080/status || exit 1
         docker stop netsim-test
-        
+
   code-quality:
     runs-on: ubuntu-22.04
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     
     - name: Install cppcheck
       run: sudo apt-get install -y cppcheck
