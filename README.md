@@ -1,184 +1,234 @@
-# NetSimCPP - Network Simulator in C++
+# NetSimCPP - Advanced Network Simulator
 
-NetSimCPP is a comprehensive network simulator written in C++ that allows you to create, modify, and test network topologies, simulate packet transmission between nodes, and analyze network behavior. It includes advanced features like congestion control, TCP/UDP simulation, time-based events, packet fragmentation, and more. It's designed for learning network fundamentals, testing network algorithms, and simulating real-world network scenarios.
+<div align="center">
 
-## Features
+![Build Status](https://github.com/UmarlyPoeta/inzynieria_oprogramowania/actions/workflows/ci-cd.yml/badge.svg)
+![C++17](https://img.shields.io/badge/C++-17-blue.svg)
+![License](https://img.shields.io/badge/license-MIT-green.svg)
+![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Docker-lightgrey.svg)
 
-- **Node Management**: Create and manage different types of network nodes (Hosts, Routers, DummyNodes).
-- **Topology Creation**: Connect nodes to form network topologies, with support for removal and disconnection.
-- **Packet Simulation**: Simulate packet transmission with ping, traceroute, multicast, and advanced routing.
-- **Advanced Networking Features**:
-  - Link delays and bandwidth simulation
-  - VLAN isolation
-  - Firewall rules
-  - Packet loss and statistics
-  - Node failure simulation
-  - Congestion control with packet queuing
-  - TCP/UDP protocol simulation (including 3-way handshake)
-  - Time-based simulation with event scheduling
-  - Packet fragmentation and reassembly
-- **Topology Management**: Export/import network topologies to/from JSON.
-- **REST API**: Control the simulator via HTTP endpoints.
-- **Extensible Design**: Easy to add new node types, protocols, and features.
-- **Unit Tests**: Comprehensive test suite with GoogleTest (60 tests covering all implemented features).
+**A comprehensive C++ network simulator with REST API, Docker support, and extensive testing**
 
-## Architecture and Classes
+[English](#english) | [Polski](#polski)
 
-### Core Classes
+</div>
 
-- **Packet**: Represents network packets with fields like source, destination, type, protocol, payload, delay, TTL, priority, TCP flags (seqNum, ackNum, syn, ack), and fragmentation fields (fragmentId, isLast). Supports fragmentation and reassembly.
-- **Node**: Abstract base class for all network nodes. Defines interface for receiving packets. Includes packet queuing for congestion control.
-  - **Host**: Represents end-user devices (e.g., computers). Receives packets and can send pings. Constructor: Host(name, address, port).
-  - **Router**: Represents routing devices. Forwards packets based on routing tables. Supports adding routes and dynamic routing.
-  - **DummyNode**: Simple node for testing purposes.
-- **Network**: Manages the entire network graph. Handles adding/removing nodes, connections/disconnections, packet routing, link properties (delays, bandwidth, loss), VLANs, firewalls, and advanced simulations.
-- **Engine**: Core simulation engine. Performs ping, traceroute, multicast operations using BFS and supports delays.
+---
 
-### Key Methods
+<a name="english"></a>
 
-- `Network::addNode<T>(args...)`: Creates and adds a node of type T (e.g., Host, Router).
-- `Network::removeNode(name)`: Removes a node from the network.
-- `Network::connect(nameA, nameB)`: Connects two nodes.
-- `Network::disconnect(nameA, nameB)`: Disconnects two nodes.
-- `Network::setLinkDelay(nameA, nameB, delay)`: Sets link delay in ms.
-- `Network::setBandwidth(nameA, nameB, bw)`: Sets link bandwidth.
-- `Network::setPacketLoss(nameA, nameB, prob)`: Sets packet loss probability.
-- `Network::assignVLAN(name, vlanId)`: Assigns VLAN to a node.
-- `Network::addFirewallRule(src, dst, protocol, allow)`: Adds firewall rule.
-- `Network::exportToJson()`: Exports topology to JSON.
-- `Network::importFromJson(json)`: Imports topology from JSON.
-- `Network::failNode(name)`: Simulates node failure.
-- `Network::enqueuePacket(name, pkt)`: Enqueues packet for congestion control.
-- `Network::initiateTCPConnection(src, dst)`: Simulates TCP 3-way handshake.
-- `Network::sendUDPPacket(src, dst, pkt)`: Sends UDP packet.
-- `Network::advanceTime(ms)`: Advances simulation time.
-- `Network::schedulePacketDelivery(pkt, delay)`: Schedules packet delivery.
-- `Engine::ping(src, dst, path)`: Simulates ping with delays, returns success and path.
-- `Engine::traceroute(src, dst, path)`: Returns full path to destination.
-- `Engine::multicast(src, destinations)`: Sends packet to multiple destinations.
-- `Packet::fragmentPacket(mtu)`: Fragments packet into smaller packets.
-- `Packet::reassemblePacket(fragments)`: Reassembles fragments into original packet.
-- `Router::addRoute(dst, nextHop)`: Adds route to routing table.
-- `Router::exchangeRoutingInfo(other)`: Exchanges routing info for dynamic routing.
+## 🌍 English Version
 
-## Requirements
+### 📋 Table of Contents
+- [Overview](#overview)
+- [Features](#features)
+- [Architecture](#architecture)
+- [Quick Start](#quick-start)
+- [API Documentation](#api-documentation)
+- [Testing](#testing)
+- [CI/CD Pipeline](#cicd-pipeline)
+- [Documentation](#documentation)
+- [Contributing](#contributing)
+- [License](#license)
 
-- CMake >= 3.16
-- C++17 compatible compiler (GCC, Clang)
-- cpprestsdk (Microsoft C++ REST SDK)
-- nlohmann/json
-- GoogleTest (for tests)
+---
 
-## Installation and Running
+### 🎯 Overview
 
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/UmarlyPoeta/inzynieria_oprogramowania.git
-   cd inzynieria_oprogramowania
-   ```
+**NetSimCPP** is a production-ready network simulator built with modern C++17. It provides a comprehensive platform for:
 
-2. **Build the project**:
-   ```bash
-   cd project/backend
-   mkdir -p build && cd build
-   cmake ..
-   cmake --build .
-   ```
+- 🌐 Creating and managing complex network topologies
+- 📡 Simulating realistic network protocols (TCP, UDP, ICMP)
+- 🔍 Analyzing network behavior and performance
+- 🚀 RESTful API for programmatic control
+- 🐳 Full Docker containerization
+- ✅ Extensive test coverage (60 unit tests + 10 performance tests)
 
-3. **Run the simulator**:
-   ```bash
-   ./netsim
-   ```
-   The server starts on `http://0.0.0.0:8080`.
+**Perfect for**: Network engineers, students, researchers, and developers learning network fundamentals or testing network algorithms.
 
-## API Endpoints
+---
 
-The REST API provides comprehensive control over the network simulator:
+### ✨ Features
 
-### Node Management
-- `POST /node/add` - Add a new node (Host or Router)
-  - JSON: `{"name": "A", "ip": "10.0.0.1", "type": "host", "port": 8080}`
-  - JSON: `{"name": "R1", "ip": "10.0.0.254", "type": "router"}`
-- `POST /node/remove` - Remove a node
-  - JSON: `{"name": "A"}`
-- `POST /node/fail` - Simulate node failure
-  - JSON: `{"name": "A"}`
-- `GET /nodes` - List all nodes
+#### 🔧 Core Capabilities
+- **Multi-Node Support**: Host, Router, Cloud, IoT devices
+- **Advanced Routing**: Dynamic routing tables, load balancing
+- **Protocol Simulation**: TCP 3-way handshake, UDP, ICMP ping
+- **Network Properties**: Link delays, bandwidth limits, packet loss
+- **VLAN & Firewall**: Network isolation and security rules
 
-### Network Topology
-- `POST /link/connect` - Connect two nodes
-  - JSON: `{"nodeA": "A", "nodeB": "B"}`
-- `POST /link/disconnect` - Disconnect two nodes
-  - JSON: `{"nodeA": "A", "nodeB": "B"}`
-- `POST /link/delay` - Set link delay
-  - JSON: `{"nodeA": "A", "nodeB": "B", "delay": 10}`
-- `POST /link/bandwidth` - Set link bandwidth
-  - JSON: `{"nodeA": "A", "nodeB": "B", "bandwidth": 1000}`
-- `POST /link/packetloss` - Set packet loss probability
-  - JSON: `{"nodeA": "A", "nodeB": "B", "probability": 0.1}`
-- `GET /topology` - Export full topology as JSON
-- `POST /topology/import` - Import topology from JSON
+#### 🎨 Advanced Features
+- **Congestion Control**: Packet queuing and flow control
+- **Packet Fragmentation**: MTU-aware fragmentation/reassembly
+- **Time-Based Events**: Discrete event simulation
+- **Cloud Integration**: Auto-scaling cloud node simulation
+- **IoT Devices**: Battery-aware wireless sensor simulation
+- **Topology Import/Export**: JSON-based configuration
 
-### Network Simulation
-- `POST /ping` - Ping between nodes
-  - JSON: `{"src": "A", "dst": "B"}`
-- `POST /traceroute` - Traceroute to destination
-  - JSON: `{"src": "A", "dst": "B"}`
-- `POST /multicast` - Multicast to multiple destinations
-  - JSON: `{"src": "A", "destinations": ["B", "C", "D"]}`
-- `POST /tcp/connect` - Initiate TCP 3-way handshake
-  - JSON: `{"client": "A", "server": "B"}`
+#### 🌐 REST API (29 Endpoints)
+- Node management (add, remove, fail)
+- Link configuration (connect, delay, bandwidth)
+- Network operations (ping, traceroute, multicast)
+- Statistics and monitoring
+- Topology management
 
-### VLAN & Firewall
-- `POST /vlan/assign` - Assign VLAN to node
-  - JSON: `{"name": "A", "vlanId": 10}`
-- `POST /firewall/rule` - Add firewall rule
-  - JSON: `{"src": "A", "dst": "B", "protocol": "TCP", "allow": true}`
+#### 🐳 Production Ready
+- Docker containerization
+- CI/CD with GitHub Actions
+- Memory leak detection (Valgrind)
+- Static code analysis (cppcheck)
+- Performance benchmarking
 
-### Wireless Networks
-- `POST /wireless/range` - Set wireless range
-  - JSON: `{"name": "A", "range": 100}`
-- `POST /wireless/interference` - Simulate wireless interference
-  - JSON: `{"name": "A", "lossProb": 0.2}`
+---
 
-### Cloud Integration
-- `POST /cloud/add` - Add cloud node
-  - JSON: `{"name": "Cloud1", "ip": "10.0.1.1"}`
-- `POST /cloud/scaleup` - Scale up cloud resources
-  - JSON: `{"name": "Cloud1"}`
-- `POST /cloud/scaledown` - Scale down cloud resources
-  - JSON: `{"name": "Cloud1"}`
-- `GET /cloudnodes` - List all cloud nodes
+### 🏗️ Architecture
 
-### IoT Devices
-- `POST /iot/add` - Add IoT device
-  - JSON: `{"name": "Sensor1", "ip": "10.0.2.1"}`
-- `POST /iot/battery` - Simulate battery drain
-  - JSON: `{"name": "Sensor1", "percent": 10}`
+#### Class Diagram
+![Class Diagram](project/docs/UML/CLASSES.png)
 
-### Statistics & Metrics
-- `GET /statistics` - Get network statistics
-- `POST /statistics/reset` - Reset statistics (all or specific node)
-  - JSON: `{"node": "A"}` or `{}` for all
-- `POST /metrics/performance` - Get performance metrics between nodes
-  - JSON: `{"nodeA": "A", "nodeB": "B"}`
+#### Component Architecture
+![Components](project/docs/UML/COMPONENTS.png)
 
-### Server Status
-- `GET /status` - Check server status
+#### REST API Architecture
+![REST API](project/docs/UML/REST_API_ARCHITECTURE.png)
 
-Example:
+#### Core Components
+
+```cpp
+// Packet - Network packet representation
+class Packet {
+    std::string source, destination;
+    std::string type;           // "ping", "data", "tcp", "udp"
+    std::string protocol;       // "tcp", "udp", "icmp"
+    std::string payload;
+    int delay = 0;
+    int ttl = 64;
+    int priority = 0;
+    
+    // TCP fields
+    bool syn = false, ack = false;
+    int seqNum = 0, ackNum = 0;
+    
+    // Fragmentation
+    int fragmentId = 0;
+    bool isLast = false;
+};
+
+// Node - Abstract base class
+class Node {
+    std::string name;
+    std::vector<Packet> queue;  // Congestion control
+    virtual void receivePacket(Packet& p) = 0;
+};
+
+// Network - Main network manager
+class Network {
+    void addNode<T>(args...);
+    void connect(nameA, nameB);
+    std::string ping(source, dest);
+    void exportToJson();
+};
+
+// Engine - Simulation engine
+class Engine {
+    std::string ping(src, dst, delay);
+    std::vector<std::string> traceroute(src, dst);
+    void multicast(src, destinations);
+};
+```
+
+#### Use Case Diagram
+![Use Cases](project/docs/UML/USECASE.png)
+
+#### Activity Diagram - Simulation Flow
+![Activity Diagram](project/docs/UML/ACTIVITY_SIM.png)
+
+#### TCP Handshake Sequence
+![TCP Handshake](project/docs/UML/TCP_HANDSHAKE.png)
+
+#### Packet State Diagram
+![Packet States](project/docs/UML/PACKAGE_STATE.png)
+
+---
+
+### 🚀 Quick Start
+
+#### Prerequisites
+- **C++17** compiler (GCC 9+ or Clang 10+)
+- **CMake** 3.10+
+- **Dependencies**: cpprestsdk, nlohmann-json, GoogleTest, OpenSSL
+
+#### Option 1: Docker (Recommended)
+
 ```bash
+# Build and run
+docker-compose up
+
+# Test the API
+curl http://localhost:8080/status
+```
+
+#### Option 2: Local Build
+
+```bash
+# Install dependencies (Ubuntu/Debian)
+sudo apt-get update && sudo apt-get install -y \
+    build-essential cmake g++ \
+    libcpprest-dev nlohmann-json3-dev \
+    libssl-dev libgtest-dev
+
+# Build
+cd project/backend
+cmake .
+make -j$(nproc)
+
+# Run server
+./netsim
+# Server running at http://0.0.0.0:8080
+
+# Run tests
+./netsim_tests
+./netsim_perf_tests
+```
+
+#### Option 3: Using Test Scripts
+
+```bash
+# Test Docker setup
+./scripts/test_docker.sh
+
+# Test CI/CD locally
+./scripts/test_ci_cd.sh
+```
+
+---
+
+### 📡 API Documentation
+
+#### Quick Examples
+
+```bash
+# Check server status
+curl http://localhost:8080/status
+
 # Add nodes
-curl -X POST -H "Content-Type: application/json" -d '{"name":"A","ip":"10.0.0.1","type":"host"}' http://localhost:8080/node/add
-curl -X POST -H "Content-Type: application/json" -d '{"name":"B","ip":"10.0.0.2","type":"host"}' http://localhost:8080/node/add
-curl -X POST -H "Content-Type: application/json" -d '{"name":"R1","ip":"10.0.0.254","type":"router"}' http://localhost:8080/node/add
+curl -X POST http://localhost:8080/node/add \
+  -H "Content-Type: application/json" \
+  -d '{"name":"H1", "type":"host", "address":"10.0.0.1", "port":8080}'
+
+curl -X POST http://localhost:8080/node/add \
+  -H "Content-Type: application/json" \
+  -d '{"name":"H2", "type":"host", "address":"10.0.0.2", "port":8080}'
 
 # Connect nodes
-curl -X POST -H "Content-Type: application/json" -d '{"nodeA":"A","nodeB":"R1"}' http://localhost:8080/link/connect
-curl -X POST -H "Content-Type: application/json" -d '{"nodeA":"R1","nodeB":"B"}' http://localhost:8080/link/connect
+curl -X POST http://localhost:8080/link/connect \
+  -H "Content-Type: application/json" \
+  -d '{"nodeA":"H1", "nodeB":"H2"}'
 
 # Ping
-curl -X POST -H "Content-Type: application/json" -d '{"src":"A","dst":"B"}' http://localhost:8080/ping
+curl -X POST http://localhost:8080/ping \
+  -H "Content-Type: application/json" \
+  -d '{"source":"H1", "destination":"H2"}'
 
 # Get topology
 curl http://localhost:8080/topology
@@ -187,196 +237,620 @@ curl http://localhost:8080/topology
 curl http://localhost:8080/statistics
 ```
 
-## Testing
+#### Full API Reference (29 Endpoints)
 
-The project includes 60 unit tests covering all core classes and implemented features, following TDD principles.
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/status` | Server health check |
+| GET | `/nodes` | List all nodes |
+| GET | `/topology` | Export network topology |
+| GET | `/statistics` | Network statistics |
+| GET | `/cloudnodes` | List cloud nodes |
+| POST | `/node/add` | Add new node |
+| POST | `/node/remove` | Remove node |
+| POST | `/node/fail` | Simulate node failure |
+| POST | `/link/connect` | Connect two nodes |
+| POST | `/link/disconnect` | Disconnect nodes |
+| POST | `/link/delay` | Set link delay |
+| POST | `/link/bandwidth` | Set bandwidth limit |
+| POST | `/link/packetloss` | Configure packet loss |
+| POST | `/vlan/assign` | Assign VLAN to node |
+| POST | `/firewall/rule` | Add firewall rule |
+| POST | `/ping` | ICMP ping |
+| POST | `/traceroute` | Trace route |
+| POST | `/multicast` | Multicast packet |
+| POST | `/tcp/connect` | TCP connection |
+| POST | `/topology/import` | Import topology |
+| POST | `/wireless/range` | Set wireless range |
+| POST | `/wireless/interference` | Simulate interference |
+| POST | `/cloud/add` | Add cloud node |
+| POST | `/cloud/scaleup` | Scale up cloud |
+| POST | `/cloud/scaledown` | Scale down cloud |
+| POST | `/iot/add` | Add IoT device |
+| POST | `/iot/battery` | Battery drain |
+| POST | `/statistics/reset` | Reset statistics |
+| POST | `/metrics/performance` | Performance metrics |
 
-**Run tests**:
-```bash
-cd project/backend/build
-ctest
-# or
-./netsim_tests
-# Run single test: ./netsim_tests --gtest_filter=TestName
-```
-
-**Test Coverage**:
-- Packet construction, fields, QoS priority, and fragmentation/reassembly
-- Node creation, packet reception, and queuing
-- Network topology management (add/remove nodes, connect/disconnect, find nodes)
-- Engine ping/traceroute/multicast simulation with delays
-- Advanced features: link delays, bandwidth, packet loss, VLAN isolation, firewall rules, export/import JSON, node failure, congestion control, TCP/UDP simulation, time-based events
-- Error handling and edge cases
-
-## Documentation
-
-- [AGENTS.md](AGENTS.md): Development guidelines, build commands, and code style conventions for AI agents.
-- [Architecture Overview](project/docs/architecture.md): Detailed description of the system architecture.
-- [Diagrams](project/docs/diagrams.md): UML class diagrams, sequence diagrams, use cases, and more.
-
-## Contributing
-
-1. Fork the repository and create a feature branch (`git checkout -b feature/new-functionality`).
-2. Follow the code style in `AGENTS.md`.
-3. Add tests for new features using TDD approach.
-4. Run tests and ensure they pass: `ctest`.
-5. Submit a Pull Request with a description of changes.
-
-## License
-
-This project is licensed under the MIT License.
+See [API Full Workflow](project/docs/UML/API_FULL_WORKFLOW.png) for detailed sequence diagrams.
 
 ---
 
-# NetSimCPP - Symulator Sieci w C++ (Wersja Polska)
+### 🧪 Testing
 
-NetSimCPP to kompleksowy symulator sieci napisany w C++, który pozwala na tworzenie, modyfikowanie i testowanie topologii sieci, symulację transmisji pakietów między węzłami oraz analizę zachowania sieci. Zawiera zaawansowane funkcje jak kontrola przeciążenia, symulacja TCP/UDP, symulacja czasowa, fragmentacja pakietów i więcej. Jest przeznaczony do nauki podstaw sieci, testowania algorytmów sieciowych oraz symulacji scenariuszy rzeczywistych sieci.
+#### Test Coverage
+- **60 Unit Tests** (100% pass rate)
+  - NetworkTest: 34 tests
+  - EngineTest: 7 tests
+  - RouterTest: 7 tests
+  - HostTest: 3 tests
+  - PacketTest: 6 tests
+  - NodeTest: 3 tests
 
-## Funkcjonalności
+- **10 Performance Tests** (all passing)
+  - Node creation: <1ms per node
+  - Link creation: <0.5ms per link
+  - Ping latency: <5ms through 20-node chain
+  - Large network: 100 nodes setup <500ms
+  - Topology export: <100ms for 50 nodes
+  - Memory usage validation
+  - Concurrent statistics access
+  - Stress testing
 
-- **Zarządzanie Węzłami**: Tworzenie i zarządzanie różnymi typami węzłów sieciowych (Hosty, Routery, DummyNodes).
-- **Tworzenie Topologii**: Łączenie węzłów w topologie sieciowe, z wsparciem dla usuwania i rozłączania.
-- **Symulacja Pakietów**: Symulacja transmisji pakietów z ping, traceroute, multicast i zaawansowanym routingiem.
-- **Zaawansowane Funkcje Sieciowe**:
-  - Symulacja opóźnień i przepustowości łączy
-  - Izolacja VLAN
-  - Reguły firewall
-  - Utrata pakietów i statystyki
-  - Symulacja awarii węzłów
-  - Kontrola przeciążenia z kolejkowaniem pakietów
-  - Symulacja protokołów TCP/UDP (włącznie z 3-way handshake)
-  - Symulacja czasowa z planowaniem zdarzeń
-  - Fragmentacja i reassemblacja pakietów
-- **Zarządzanie Topologią**: Eksport/import topologii sieci do/z JSON.
-- **REST API**: Sterowanie symulatorem przez endpoints HTTP.
-- **Rozszerzalny Design**: Łatwe dodawanie nowych typów węzłów, protokołów i funkcji.
-- **Testy Jednostkowe**: Kompletny zestaw testów z GoogleTest (60 testów pokrywających wszystkie zaimplementowane funkcje).
+#### Running Tests
 
-## Architektura i Klasy
-
-### Główne Klasy
-
-- **Packet**: Reprezentuje pakiety sieciowe z polami jak źródło, cel, typ, protokół, payload, opóźnienie, TTL, priorytet, flagi TCP (seqNum, ackNum, syn, ack) oraz pola fragmentacji (fragmentId, isLast). Wspiera fragmentację i reassemblację.
-- **Node**: Abstrakcyjna klasa bazowa dla wszystkich węzłów sieciowych. Definiuje interfejs do odbioru pakietów. Zawiera kolejkowanie pakietów dla kontroli przeciążenia.
-  - **Host**: Reprezentuje urządzenia końcowe (np. komputery). Odbiera pakiety i może wysyłać pingi. Konstruktor: Host(name, address, port).
-  - **Router**: Reprezentuje urządzenia routingu. Przesyła pakiety na podstawie tabel routingu. Wspiera dodawanie tras i dynamiczne routing.
-  - **DummyNode**: Prosty węzeł do celów testowych.
-- **Network**: Zarządza całym grafem sieci. Obsługuje dodawanie/usuwanie węzłów, połączenia/rozłączenia, routing pakietów, właściwości łączy (opóźnienia, przepustowość, utrata), VLANy, firewalle i zaawansowane symulacje.
-- **Engine**: Główny silnik symulacji. Wykonuje operacje ping, traceroute, multicast używając BFS i wspiera opóźnienia.
-
-### Kluczowe Metody
-
-- `Network::addNode<T>(args...)`: Tworzy i dodaje węzeł typu T (np. Host, Router).
-- `Network::removeNode(name)`: Usuwa węzeł z sieci.
-- `Network::connect(nameA, nameB)`: Łączy dwa węzły.
-- `Network::disconnect(nameA, nameB)`: Rozłącza dwa węzły.
-- `Network::setLinkDelay(nameA, nameB, delay)`: Ustawia opóźnienie łącza w ms.
-- `Network::setBandwidth(nameA, nameB, bw)`: Ustawia przepustowość łącza.
-- `Network::setPacketLoss(nameA, nameB, prob)`: Ustawia prawdopodobieństwo utraty pakietów.
-- `Network::assignVLAN(name, vlanId)`: Przypisuje VLAN do węzła.
-- `Network::addFirewallRule(src, dst, protocol, allow)`: Dodaje regułę firewall.
-- `Network::exportToJson()`: Eksportuje topologię do JSON.
-- `Network::importFromJson(json)`: Importuje topologię z JSON.
-- `Network::failNode(name)`: Symuluje awarię węzła.
-- `Network::enqueuePacket(name, pkt)`: Kolejkuje pakiet dla kontroli przeciążenia.
-- `Network::initiateTCPConnection(src, dst)`: Symuluje 3-way handshake TCP.
-- `Network::sendUDPPacket(src, dst, pkt)`: Wysyła pakiet UDP.
-- `Network::advanceTime(ms)`: Przesuwa czas symulacji.
-- `Network::schedulePacketDelivery(pkt, delay)`: Planuje dostarczenie pakietu.
-- `Engine::ping(src, dst, path)`: Symuluje ping z opóźnieniami, zwraca sukces i ścieżkę.
-- `Engine::traceroute(src, dst, path)`: Zwraca pełną ścieżkę do celu.
-- `Engine::multicast(src, destinations)`: Wysyła pakiet do wielu celów.
-- `Packet::fragmentPacket(mtu)`: Fragmentuje pakiet na mniejsze pakiety.
-- `Packet::reassemblePacket(fragments)`: Reassembluje fragmenty w oryginalny pakiet.
-- `Router::addRoute(dst, nextHop)`: Dodaje trasę do tabeli routingu.
-- `Router::exchangeRoutingInfo(other)`: Wymienia informacje o routing dla dynamicznego routingu.
-
-## Wymagania
-
-- CMake >= 3.16
-- Kompilator zgodny z C++17 (GCC, Clang)
-- cpprestsdk (Microsoft C++ REST SDK)
-- nlohmann/json
-- GoogleTest (do testów)
-
-## Instalacja i Uruchomienie
-
-1. **Sklonuj repozytorium**:
-   ```bash
-   git clone https://github.com/UmarlyPoeta/inzynieria_oprogramowania.git
-   cd inzynieria_oprogramowania
-   ```
-
-2. **Zbuduj projekt**:
-   ```bash
-   cd project/backend
-   mkdir -p build && cd build
-   cmake ..
-   cmake --build .
-   ```
-
-3. **Uruchom symulator**:
-   ```bash
-   ./netsim
-   ```
-   Serwer uruchamia się na `http://0.0.0.0:8080`.
-
-## Endpoints API
-
-- `GET /status`: Sprawdź status serwera.
-- `POST /addNode`: Dodaj nowy węzeł (JSON: `{"name": "A", "ip": "10.0.0.1"}`).
-- `POST /ping`: Ping między węzłami (JSON: `{"src": "A", "dst": "B"}`).
-
-Przykład:
 ```bash
-curl -X POST -H "Content-Type: application/json" -d '{"name":"A","ip":"10.0.0.1"}' http://localhost:8080/addNode
-curl -X POST -H "Content-Type: application/json" -d '{"src":"A","dst":"B"}' http://localhost:8080/ping
-```
-
-## Testowanie
-
-Projekt zawiera 60 testów jednostkowych pokrywających wszystkie główne klasy i zaimplementowane funkcje, zgodnie z zasadami TDD.
-
-**Uruchom testy**:
-```bash
-cd project/backend/build
-ctest
-# lub
+# Unit tests
+cd project/backend
 ./netsim_tests
-# Uruchom pojedynczy test: ./netsim_tests --gtest_filter=NazwaTestu
+
+# Performance tests
+./netsim_perf_tests
+
+# With XML output
+./netsim_tests --gtest_output=xml:test-results.xml
+
+# Memory leak check
+valgrind --leak-check=full ./netsim_tests
+
+# Docker tests
+./scripts/test_docker.sh
 ```
 
-**Pokrycie Testów**:
-- Konstrukcja pakietów, pól, priorytetu QoS oraz fragmentacji/reassemblacji
-- Tworzenie węzłów, odbiór pakietów i kolejkowanie
-- Zarządzanie topologią sieci (dodawanie/usuwanie węzłów, łączenie/rozłączanie, wyszukiwanie węzłów)
-- Symulacja ping/traceroute/multicast w Engine z opóźnieniami
-- Zaawansowane funkcje: opóźnienia łączy, przepustowość, utrata pakietów, izolacja VLAN, reguły firewall, eksport/import JSON, awarie węzłów, kontrola przeciążenia, symulacja TCP/UDP, zdarzenia czasowe
-- Obsługa błędów i przypadków brzegowych
+#### Test Results Example
+```
+[==========] Running 60 tests from 6 test suites.
+[----------] 34 tests from NetworkTest
+[  PASSED  ] 60 tests.
+```
 
-## Dokumentacja
+See [docs/testing.md](docs/testing.md) for comprehensive testing guide.
 
-- [AGENTS.md](AGENTS.md): Wytyczne rozwoju, komendy budowania i konwencje stylu kodu dla agentów AI.
-- [Przegląd Architektury](project/docs/architecture.md): Szczegółowy opis architektury systemu.
-- [Diagramy](project/docs/diagrams.md): Diagramy UML klas, sekwencji, przypadków użycia i więcej.
+---
 
-## Jak Kontrybuować
+### 🔄 CI/CD Pipeline
 
-1. Zrób fork repozytorium i utwórz gałąź funkcji (`git checkout -b feature/nowa-funkcjonalnosc`).
-2. Postępuj zgodnie ze stylem kodu w `AGENTS.md`.
-3. Dodaj testy dla nowych funkcji używając podejścia TDD.
-4. Uruchom testy i upewnij się, że przechodzą: `ctest`.
-5. Prześlij Pull Request z opisem zmian.
+#### GitHub Actions Workflow
 
-## Future Enhancements
+Our CI/CD pipeline runs on every push and PR:
 
-- Implement routing protocols (OSPF, BGP) with full dynamic routing.
-- Add wireless network simulation with interference and range.
-- Integrate cloud and IoT device simulations.
-- Add performance metrics collection and monitoring.
-- Develop a web UI for topology visualization.
-- Integrate with monitoring tools (Grafana, Prometheus).
+![CI/CD Status](https://github.com/UmarlyPoeta/inzynieria_oprogramowania/actions/workflows/ci-cd.yml/badge.svg)
 
-## Licencja
+#### Pipeline Jobs
 
-Projekt jest dostępny na licencji MIT.
+1. **Build & Test** (60 unit tests)
+   - Compile project
+   - Run all unit tests
+   - Publish test results
+   - Upload artifacts
+
+2. **Performance Tests**
+   - Run 10 performance benchmarks
+   - Memory leak detection (Valgrind)
+   - Performance validation
+
+3. **Docker Build**
+   - Build Docker image
+   - Test containerized app
+   - Validate API endpoints
+
+4. **Code Quality**
+   - Static analysis (cppcheck)
+   - Code style validation
+   - Security checks
+
+#### Workflow File
+```yaml
+# .github/workflows/ci-cd.yml
+name: NetSimCPP CI/CD
+on: [push, pull_request]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-22.04
+    steps:
+      - Compile & Test
+      - Publish Results
+      
+  performance-tests:
+    steps:
+      - Performance Benchmarks
+      - Valgrind Memory Check
+      
+  docker-build:
+    steps:
+      - Build Image
+      - Test Container
+      
+  code-quality:
+    steps:
+      - cppcheck Analysis
+```
+
+---
+
+### 📚 Documentation
+
+- **[Architecture Documentation](project/docs/architecture.md)** - System design and patterns
+- **[Testing Guide](docs/testing.md)** - Comprehensive testing documentation
+- **[API Documentation](project/docs/overview.md)** - REST API details
+- **[Diagrams](project/docs/diagrams.md)** - UML diagrams and flowcharts
+
+---
+
+### 🤝 Contributing
+
+1. Fork the repository
+2. Create feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing-feature`)
+5. Open Pull Request
+
+All contributions must pass CI/CD checks!
+
+---
+
+### 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+---
+
+### 👥 Authors
+
+- **Patryk Kozłowski** - BACKEND, REST API, CI/CD, SCRIPTS, DOCS, UML
+- **Adrian Lorek** - DATABASE
+- **Oliwier Kruczek** - FRONTEND 
+
+---
+
+### 🙏 Acknowledgments
+
+- Built with [cpprestsdk](https://github.com/microsoft/cpprestsdk) for REST API
+- Testing with [GoogleTest](https://github.com/google/googletest)
+- JSON handling with [nlohmann/json](https://github.com/nlohmann/json)
+
+---
+
+<a name="polski"></a>
+
+## Wersja Polska
+
+### 📋 Spis Treści
+- [Przegląd](#przegląd-pl)
+- [Funkcje](#funkcje-pl)
+- [Architektura](#architektura-pl)
+- [Szybki Start](#szybki-start-pl)
+- [Dokumentacja API](#dokumentacja-api-pl)
+- [Testowanie](#testowanie-pl)
+- [Pipeline CI/CD](#pipeline-cicd-pl)
+- [Dokumentacja](#dokumentacja-pl)
+- [Współpraca](#współpraca-pl)
+- [Licencja](#licencja-pl)
+
+---
+
+### 🎯 Przegląd {#przegląd-pl}
+
+**NetSimCPP** to gotowy do produkcji symulator sieci zbudowany w nowoczesnym C++17. Zapewnia kompleksową platformę do:
+
+- 🌐 Tworzenia i zarządzania złożonymi topologiami sieciowymi
+- 📡 Symulacji realistycznych protokołów sieciowych (TCP, UDP, ICMP)
+- 🔍 Analizy zachowania i wydajności sieci
+- 🚀 API RESTful do programistycznej kontroli
+- 🐳 Pełna konteneryzacja Docker
+- ✅ Rozbudowane pokrycie testami (60 testów jednostkowych + 10 testów wydajnościowych)
+
+**Idealne dla**: Inżynierów sieciowych, studentów, naukowców i programistów uczących się podstaw sieci lub testujących algorytmy sieciowe.
+
+---
+
+### ✨ Funkcje {#funkcje-pl}
+
+#### 🔧 Główne Możliwości
+- **Wsparcie Wielu Węzłów**: Host, Router, Cloud, urządzenia IoT
+- **Zaawansowane Routowanie**: Dynamiczne tablice routingu, balansowanie obciążenia
+- **Symulacja Protokołów**: TCP 3-way handshake, UDP, ICMP ping
+- **Właściwości Sieci**: Opóźnienia linków, limity przepustowości, utrata pakietów
+- **VLAN i Firewall**: Izolacja sieci i reguły bezpieczeństwa
+
+#### 🎨 Zaawansowane Funkcje
+- **Kontrola Przeciążenia**: Kolejkowanie pakietów i kontrola przepływu
+- **Fragmentacja Pakietów**: Fragmentacja/składanie z uwzględnieniem MTU
+- **Zdarzenia Czasowe**: Symulacja zdarzeń dyskretnych
+- **Integracja z Chmurą**: Symulacja automatycznego skalowania węzłów chmury
+- **Urządzenia IoT**: Symulacja czujników bezprzewodowych z uwzględnieniem baterii
+- **Import/Export Topologii**: Konfiguracja oparta na JSON
+
+#### 🌐 REST API (29 Endpointów)
+- Zarządzanie węzłami (dodawanie, usuwanie, awarie)
+- Konfiguracja linków (połączenia, opóźnienia, przepustowość)
+- Operacje sieciowe (ping, traceroute, multicast)
+- Statystyki i monitorowanie
+- Zarządzanie topologią
+
+#### 🐳 Gotowe do Produkcji
+- Konteneryzacja Docker
+- CI/CD z GitHub Actions
+- Detekcja wycieków pamięci (Valgrind)
+- Statyczna analiza kodu (cppcheck)
+- Benchmarking wydajności
+
+---
+
+### 🏗️ Architektura {#architektura-pl}
+
+#### Diagram Klas
+![Diagram Klas](project/docs/UML/CLASSES.png)
+
+#### Architektura Komponentów
+![Komponenty](project/docs/UML/COMPONENTS.png)
+
+#### Architektura REST API
+![REST API](project/docs/UML/REST_API_ARCHITECTURE.png)
+
+#### Główne Komponenty
+
+```cpp
+// Packet - Reprezentacja pakietu sieciowego
+class Packet {
+    std::string source, destination;
+    std::string type;           // "ping", "data", "tcp", "udp"
+    std::string protocol;       // "tcp", "udp", "icmp"
+    std::string payload;
+    int delay = 0;
+    int ttl = 64;
+    int priority = 0;
+    
+    // Pola TCP
+    bool syn = false, ack = false;
+    int seqNum = 0, ackNum = 0;
+    
+    // Fragmentacja
+    int fragmentId = 0;
+    bool isLast = false;
+};
+
+// Node - Abstrakcyjna klasa bazowa
+class Node {
+    std::string name;
+    std::vector<Packet> queue;  // Kontrola przeciążenia
+    virtual void receivePacket(Packet& p) = 0;
+};
+
+// Network - Główny menedżer sieci
+class Network {
+    void addNode<T>(args...);
+    void connect(nameA, nameB);
+    std::string ping(source, dest);
+    void exportToJson();
+};
+
+// Engine - Silnik symulacji
+class Engine {
+    std::string ping(src, dst, delay);
+    std::vector<std::string> traceroute(src, dst);
+    void multicast(src, destinations);
+};
+```
+
+#### Diagram Przypadków Użycia
+![Przypadki Użycia](project/docs/UML/USECASE.png)
+
+#### Diagram Aktywności - Przepływ Symulacji
+![Diagram Aktywności](project/docs/UML/ACTIVITY_SIM.png)
+
+#### Sekwencja TCP Handshake
+![TCP Handshake](project/docs/UML/TCP_HANDSHAKE.png)
+
+#### Diagram Stanów Pakietu
+![Stany Pakietu](project/docs/UML/PACKAGE_STATE.png)
+
+---
+
+### 🚀 Szybki Start {#szybki-start-pl}
+
+#### Wymagania
+- **C++17** kompilator (GCC 9+ lub Clang 10+)
+- **CMake** 3.10+
+- **Zależności**: cpprestsdk, nlohmann-json, GoogleTest, OpenSSL
+
+#### Opcja 1: Docker (Zalecane)
+
+```bash
+# Zbuduj i uruchom
+docker-compose up
+
+# Przetestuj API
+curl http://localhost:8080/status
+```
+
+#### Opcja 2: Lokalna Kompilacja
+
+```bash
+# Zainstaluj zależności (Ubuntu/Debian)
+sudo apt-get update && sudo apt-get install -y \
+    build-essential cmake g++ \
+    libcpprest-dev nlohmann-json3-dev \
+    libssl-dev libgtest-dev
+
+# Kompilacja
+cd project/backend
+cmake .
+make -j$(nproc)
+
+# Uruchom serwer
+./netsim
+# Serwer działa na http://0.0.0.0:8080
+
+# Uruchom testy
+./netsim_tests
+./netsim_perf_tests
+```
+
+#### Opcja 3: Używając Skryptów Testowych
+
+```bash
+# Testuj konfigurację Docker
+./scripts/test_docker.sh
+
+# Testuj CI/CD lokalnie
+./scripts/test_ci_cd.sh
+```
+
+---
+
+### 📡 Dokumentacja API {#dokumentacja-api-pl}
+
+#### Szybkie Przykłady
+
+```bash
+# Sprawdź status serwera
+curl http://localhost:8080/status
+
+# Dodaj węzły
+curl -X POST http://localhost:8080/node/add \
+  -H "Content-Type: application/json" \
+  -d '{"name":"H1", "type":"host", "address":"10.0.0.1", "port":8080}'
+
+curl -X POST http://localhost:8080/node/add \
+  -H "Content-Type: application/json" \
+  -d '{"name":"H2", "type":"host", "address":"10.0.0.2", "port":8080}'
+
+# Połącz węzły
+curl -X POST http://localhost:8080/link/connect \
+  -H "Content-Type: application/json" \
+  -d '{"nodeA":"H1", "nodeB":"H2"}'
+
+# Ping
+curl -X POST http://localhost:8080/ping \
+  -H "Content-Type: application/json" \
+  -d '{"source":"H1", "destination":"H2"}'
+
+# Pobierz topologię
+curl http://localhost:8080/topology
+
+# Pobierz statystyki
+curl http://localhost:8080/statistics
+```
+
+#### Pełna Dokumentacja API (29 Endpointów)
+
+| Metoda | Endpoint | Opis |
+|--------|----------|------|
+| GET | `/status` | Sprawdzenie stanu serwera |
+| GET | `/nodes` | Lista wszystkich węzłów |
+| GET | `/topology` | Eksport topologii sieci |
+| GET | `/statistics` | Statystyki sieci |
+| GET | `/cloudnodes` | Lista węzłów chmury |
+| POST | `/node/add` | Dodaj nowy węzeł |
+| POST | `/node/remove` | Usuń węzeł |
+| POST | `/node/fail` | Symuluj awarię węzła |
+| POST | `/link/connect` | Połącz dwa węzły |
+| POST | `/link/disconnect` | Rozłącz węzły |
+| POST | `/link/delay` | Ustaw opóźnienie linku |
+| POST | `/link/bandwidth` | Ustaw limit przepustowości |
+| POST | `/link/packetloss` | Skonfiguruj utratę pakietów |
+| POST | `/vlan/assign` | Przypisz VLAN do węzła |
+| POST | `/firewall/rule` | Dodaj regułę firewall |
+| POST | `/ping` | ICMP ping |
+| POST | `/traceroute` | Śledzenie trasy |
+| POST | `/multicast` | Pakiet multicast |
+| POST | `/tcp/connect` | Połączenie TCP |
+| POST | `/topology/import` | Importuj topologię |
+| POST | `/wireless/range` | Ustaw zasięg bezprzewodowy |
+| POST | `/wireless/interference` | Symuluj zakłócenia |
+| POST | `/cloud/add` | Dodaj węzeł chmury |
+| POST | `/cloud/scaleup` | Skaluj w górę chmurę |
+| POST | `/cloud/scaledown` | Skaluj w dół chmurę |
+| POST | `/iot/add` | Dodaj urządzenie IoT |
+| POST | `/iot/battery` | Rozładowanie baterii |
+| POST | `/statistics/reset` | Zresetuj statystyki |
+| POST | `/metrics/performance` | Metryki wydajności |
+
+Zobacz [API Full Workflow](project/docs/UML/API_FULL_WORKFLOW.png) dla szczegółowych diagramów sekwencji.
+
+---
+
+### 🧪 Testowanie {#testowanie-pl}
+
+#### Pokrycie Testami
+- **60 Testów Jednostkowych** (100% wskaźnik przejścia)
+  - NetworkTest: 34 testy
+  - EngineTest: 7 testów
+  - RouterTest: 7 testów
+  - HostTest: 3 testy
+  - PacketTest: 6 testów
+  - NodeTest: 3 testy
+
+- **10 Testów Wydajnościowych** (wszystkie przechodzą)
+  - Tworzenie węzłów: <1ms na węzeł
+  - Tworzenie linków: <0.5ms na link
+  - Opóźnienie ping: <5ms przez łańcuch 20 węzłów
+  - Duża sieć: 100 węzłów setup <500ms
+  - Eksport topologii: <100ms dla 50 węzłów
+  - Walidacja użycia pamięci
+  - Współbieżny dostęp do statystyk
+  - Testy obciążeniowe
+
+#### Uruchamianie Testów
+
+```bash
+# Testy jednostkowe
+cd project/backend
+./netsim_tests
+
+# Testy wydajnościowe
+./netsim_perf_tests
+
+# Z wyjściem XML
+./netsim_tests --gtest_output=xml:test-results.xml
+
+# Sprawdzanie wycieków pamięci
+valgrind --leak-check=full ./netsim_tests
+
+# Testy Dockera
+./scripts/test_docker.sh
+```
+
+#### Przykład Wyników Testów
+```
+[==========] Uruchamianie 60 testów z 6 zestawów testowych.
+[----------] 34 testy z NetworkTest
+[  PASSED  ] 60 testów.
+```
+
+Zobacz [docs/testing.md](docs/testing.md) dla kompleksowego przewodnika po testowaniu.
+
+---
+
+### 🔄 Pipeline CI/CD {#pipeline-cicd-pl}
+
+#### Workflow GitHub Actions
+
+Nasz pipeline CI/CD uruchamia się przy każdym push i PR:
+
+![Status CI/CD](https://github.com/UmarlyPoeta/inzynieria_oprogramowania/actions/workflows/ci-cd.yml/badge.svg)
+
+#### Zadania Pipeline
+
+1. **Build & Test** (60 testów jednostkowych)
+   - Kompilacja projektu
+   - Uruchomienie wszystkich testów jednostkowych
+   - Publikacja wyników testów
+   - Upload artefaktów
+
+2. **Testy Wydajnościowe**
+   - Uruchomienie 10 benchmarków wydajności
+   - Detekcja wycieków pamięci (Valgrind)
+   - Walidacja wydajności
+
+3. **Build Docker**
+   - Budowanie obrazu Docker
+   - Testowanie aplikacji w kontenerze
+   - Walidacja endpointów API
+
+4. **Jakość Kodu**
+   - Analiza statyczna (cppcheck)
+   - Walidacja stylu kodu
+   - Sprawdzenia bezpieczeństwa
+
+#### Plik Workflow
+```yaml
+# .github/workflows/ci-cd.yml
+name: NetSimCPP CI/CD
+on: [push, pull_request]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-22.04
+    steps:
+      - Kompilacja i Testy
+      - Publikacja Wyników
+      
+  performance-tests:
+    steps:
+      - Benchmarki Wydajności
+      - Sprawdzanie Pamięci Valgrind
+      
+  docker-build:
+    steps:
+      - Budowanie Obrazu
+      - Testowanie Kontenera
+      
+  code-quality:
+    steps:
+      - Analiza cppcheck
+```
+
+---
+
+### 📚 Dokumentacja {#dokumentacja-pl}
+
+- **[Dokumentacja Architektury](project/docs/architecture.md)** - Projekt systemu i wzorce
+- **[Przewodnik Testowania](docs/testing.md)** - Kompleksowa dokumentacja testów
+- **[Dokumentacja API](project/docs/overview.md)** - Szczegóły REST API
+- **[Diagramy](project/docs/diagrams.md)** - Diagramy UML i schematy blokowe
+
+---
+
+### 🤝 Współpraca {#współpraca-pl}
+
+1. Zforkuj repozytorium
+2. Utwórz branch funkcjonalności (`git checkout -b feature/amazing-feature`)
+3. Commituj zmiany (`git commit -m 'Dodaj niesamowitą funkcję'`)
+4. Push do brancha (`git push origin feature/amazing-feature`)
+5. Otwórz Pull Request
+
+Wszystkie kontrybucje muszą przejść sprawdzenia CI/CD!
+
+---
+
+### 📄 Licencja {#licencja-pl}
+
+Ten projekt jest licencjonowany na licencji MIT - zobacz plik LICENSE dla szczegółów.
+
+---
+
+### 👥 Autorzy
+
+- **Patryk Kozłowski** - BACKEND, REST API, CI/CD, SCRIPTS, DOCS, UML
+- **Adrian Lorek** - DATABASE
+- **Oliwier Kruczek** - FRONTEND 
+
+---
+
+### 🙏 Podziękowania
+
+- Zbudowane z [cpprestsdk](https://github.com/microsoft/cpprestsdk) dla REST API
+- Testowanie z [GoogleTest](https://github.com/google/googletest)
+- Obsługa JSON z [nlohmann/json](https://github.com/nlohmann/json)
+
+---
+
+<div align="center">
+
+**Made with ❤️ by Software Engineering Team**
+
+⭐ Star this repo if you find it helpful! ⭐
+
+</div>
