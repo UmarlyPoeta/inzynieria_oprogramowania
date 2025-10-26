@@ -2,12 +2,7 @@ name: NetSimCPP CI/CD
 
 on:
   push:
-    b    - name: Publish Test Results
-      uses: EnricoMi/publish-unit-test-result-action@v2
-      if: always()
-      continue-on-error: true
-      with:
-        files: project/backend/test-results.xmles: [ main, develop ]
+    branches: [ main, develop ]
   pull_request:
     branches: [ main, develop ]
 
@@ -46,6 +41,7 @@ jobs:
     - name: Publish test results
       uses: EnricoMi/publish-unit-test-result-action@v2
       if: always()
+      continue-on-error: true
       with:
         files: project/backend/test-results.xml
     
