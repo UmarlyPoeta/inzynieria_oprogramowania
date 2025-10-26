@@ -39,3 +39,17 @@ add_executable(netsim_tests
 target_include_directories(netsim_tests PRIVATE src)
 target_link_libraries(netsim_tests PRIVATE GTest::gtest_main cpprestsdk::cpprest nlohmann_json::nlohmann_json)
 add_test(NAME netsim_tests COMMAND netsim_tests)
+
+# Performance tests
+add_executable(netsim_perf_tests
+    src/performance_tests.cpp
+    src/core/Node.cpp
+    src/core/Packet.cpp
+    src/core/Network.cpp
+    src/core/Engine.cpp
+    src/core/Host.cpp
+    src/core/Router.cpp
+)
+target_include_directories(netsim_perf_tests PRIVATE src)
+target_link_libraries(netsim_perf_tests PRIVATE GTest::gtest_main cpprestsdk::cpprest nlohmann_json::nlohmann_json)
+add_test(NAME netsim_perf_tests COMMAND netsim_perf_tests)

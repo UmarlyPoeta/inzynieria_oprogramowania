@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  netsim:
+    build: .
+    container_name: netsim-server
+    ports:
+      - "8080:8080"
+    environment:
+      - SERVER_PORT=8080
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - netsim-network
+
+  # Test runner service
+  netsim-tests:
+    build: .
+    container_name: netsim-tests
+    command: ["./netsim_tests"]
+    networks:
+      - netsim-network
+
+networks:
+  netsim-network:
+    driver: bridge

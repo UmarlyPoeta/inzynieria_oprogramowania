@@ -1,0 +1,132 @@
+name: NetSimCPP CI/CD
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-22.04
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          cmake \
+          g++ \
+          libcpprest-dev \
+          nlohmann-json3-dev \
+          libssl-dev \
+          libgtest-dev
+    
+    - name: Configure CMake
+      working-directory: project/backend
+      run: cmake .
+    
+    - name: Build project
+      working-directory: project/backend
+      run: make -j$(nproc)
+    
+    - name: Run unit tests
+      working-directory: project/backend
+      run: ./netsim_tests --gtest_output=xml:test-results.xml
+    
+    - name: Publish test results
+      uses: EnricoMi/publish-unit-test-result-action@v2
+      if: always()
+      with:
+        files: project/backend/test-results.xml
+    
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: test-results
+        path: project/backend/test-results.xml
+
+  performance-tests:
+    runs-on: ubuntu-22.04
+    needs: build-and-test
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          cmake \
+          g++ \
+          libcpprest-dev \
+          nlohmann-json3-dev \
+          libssl-dev \
+          libgtest-dev \
+          valgrind
+    
+    - name: Build project
+      working-directory: project/backend
+      run: |
+        cmake .
+        make -j$(nproc)
+    
+    - name: Run performance tests
+      working-directory: project/backend
+      run: ./netsim_tests --gtest_filter=*Performance*
+    
+    - name: Memory leak check
+      working-directory: project/backend
+      run: |
+        valgrind --leak-check=full --error-exitcode=1 ./netsim_tests --gtest_filter=NetworkTest.AddNode
+
+  docker-build:
+    runs-on: ubuntu-22.04
+    needs: build-and-test
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+    
+    - name: Build Docker image
+      run: docker build -t netsim:latest .
+    
+    - name: Test Docker image
+      run: |
+        docker run --rm netsim:latest ./netsim_tests
+    
+    - name: Start server in Docker
+      run: |
+        docker run -d --name netsim-test -p 8080:8080 netsim:latest
+        sleep 5
+    
+    - name: Test Docker API
+      run: |
+        curl -f http://localhost:8080/status || exit 1
+        docker stop netsim-test
+        
+  code-quality:
+    runs-on: ubuntu-22.04
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Install cppcheck
+      run: sudo apt-get install -y cppcheck
+    
+    - name: Run cppcheck
+      run: |
+        cppcheck --enable=all --error-exitcode=1 \
+          --suppress=missingIncludeSystem \
+          project/backend/src/
