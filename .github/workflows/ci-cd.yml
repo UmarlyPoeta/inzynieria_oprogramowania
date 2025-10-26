@@ -110,7 +110,17 @@ jobs:
     - name: Start server in Docker
       run: |
         docker run -d --name netsim-test -p 8080:8080 netsim:latest
-        sleep 5
+        echo "Waiting for server to start..."
+        for i in {1..30}; do
+          if curl -f http://localhost:8080/status 2>/dev/null; then
+            echo "✅ Server started successfully!"
+            break
+          fi
+          echo "Attempt $i/30: Server not ready yet..."
+          sleep 2
+        done
+        echo "Server logs:"
+        docker logs netsim-test
     
     - name: Test Docker API
       run: |

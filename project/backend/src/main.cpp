@@ -1,5 +1,6 @@
 #include <iostream>
 #include <memory>
+#include <future>
 #include <cpprest/http_listener.h>
 #include <cpprest/json.h>
 
@@ -664,9 +665,14 @@ int main() {
         std::cout << "POST /iot/battery         - Battery drain" << std::endl;
         std::cout << "POST /statistics/reset    - Reset statistics" << std::endl;
         std::cout << "POST /metrics/performance - Performance metrics" << std::endl;
-        std::cout << "\nPress Enter to stop server..." << std::endl;
+        std::cout << "\nServer running. Press Ctrl+C to stop..." << std::endl;
         std::cout << "==================================================" << std::endl;
-        std::cin.get();
+        
+        // Keep server running (daemon mode for Docker)
+        std::promise<void> exitSignal;
+        std::future<void> futureObj = exitSignal.get_future();
+        futureObj.wait();
+        
         listener.close().wait();
     } catch (const std::exception& e) {
         std::cerr << "Listener error: " << e.what() << std::endl;
