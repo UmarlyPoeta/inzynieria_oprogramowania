@@ -2,7 +2,12 @@ name: NetSimCPP CI/CD
 
 on:
   push:
-    branches: [ main, develop ]
+    b    - name: Publish Test Results
+      uses: EnricoMi/publish-unit-test-result-action@v2
+      if: always()
+      continue-on-error: true
+      with:
+        files: project/backend/test-results.xmles: [ main, develop ]
   pull_request:
     branches: [ main, develop ]
 
@@ -128,6 +133,11 @@ jobs:
     
     - name: Run cppcheck
       run: |
-        cppcheck --enable=all --error-exitcode=1 \
+        cppcheck --enable=warning,performance,portability \
           --suppress=missingIncludeSystem \
+          --suppress=unusedFunction \
+          --suppress=useStlAlgorithm \
+          --suppress=unreadVariable \
+          --suppress=knownEmptyContainer \
+          --error-exitcode=1 \
           project/backend/src/

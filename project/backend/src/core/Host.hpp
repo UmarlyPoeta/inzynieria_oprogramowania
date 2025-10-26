@@ -7,7 +7,6 @@
 
 class Host : public Node {
     public:
-        Packet packet;
         int port;
         std::string address;
 
