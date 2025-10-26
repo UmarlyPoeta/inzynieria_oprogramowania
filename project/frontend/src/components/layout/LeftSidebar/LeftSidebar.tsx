@@ -14,6 +14,7 @@ import {
   Trash2,
   Move
 } from "lucide-react";
+import { useContextMenu } from "@/context/ContextualMenuContext";
 
 const SidebarWrapper = styled.div`
   display: flex;
@@ -152,6 +153,7 @@ const DeviceRow = styled.div`
 
 const LayersPanel: React.FC = () => {
   const { devices, groups, toggleGroupCollapsed, renameGroup } = useEditor();
+  const { openMenu } = useContextMenu();
   const [editingGroupId, setEditingGroupId] = React.useState<string | null>(null);
   const [tempName, setTempName] = React.useState<string>("");
 
@@ -168,6 +170,8 @@ const LayersPanel: React.FC = () => {
     groups.forEach(g => toggleGroupCollapsed(g.id, true)); 
   };
 
+  const ungroupedDevices = devices.filter(d => !d.groupId);
+
   return (
     <LayersPanelWrapper>
       <SectionTitle>Layers</SectionTitle>
@@ -179,6 +183,10 @@ const LayersPanel: React.FC = () => {
             onDoubleClick={() => {
               setEditingGroupId(group.id);
               setTempName(group.name);
+            }}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              openMenu("group", group, e);
             }}
           >
             {editingGroupId === group.id ? (
@@ -212,7 +220,16 @@ const LayersPanel: React.FC = () => {
               <DeviceRow key={device.id}>{device.name || device.type}</DeviceRow>
             ))}
         </div>
-      ))} <br />
+      ))}
+      {ungroupedDevices.length > 0 && (
+      <>
+        <GroupRow collapsed={false}> Others </GroupRow>
+        {ungroupedDevices.map(device => (
+          <DeviceRow key={device.id}>{device.name || device.type}</DeviceRow>
+        ))}
+      </>
+      )} 
+      <br />
       <button onClick={showAll} style={{border: "1px dashed #b2b2b6ff", padding: "2px"}}> Show / Hide All Layers </button>
     </LayersPanelWrapper>
   );
@@ -227,6 +244,7 @@ const LeftSidebar = () => {
     addGroup({ id: "routers", name: "Routers", collapsed: false });
     addGroup({ id: "switches", name: "Switches", collapsed: false });
 
+    addDevice({ id: "router-2", type: "router", x: 300, y: 25 });
     addDevice({ id: "router-1", type: "router", x: 300, y: 25, groupId: "routers" });
     addDevice({ id: "switch-1", type: "switch", x: 500, y: 50, groupId: "switches" });
     addDevice({ id: "switch-2", type: "switch", x: 700, y: 50, groupId: "switches" });
