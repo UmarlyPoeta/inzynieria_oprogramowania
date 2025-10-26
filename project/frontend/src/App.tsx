@@ -3,13 +3,18 @@ import { ThemeProvider } from 'styled-components';
 import { GlobalStyle } from '@/styles';
 import { Workspace } from '@/pages';
 import { Theme } from '@/styles';
+import { ContextMenuProvider } from './context/ContextualMenuContext';
+import { GlobalContextMenu } from './components';
 
 const App = () => {
   return (
     <ThemeProvider theme={Theme}>
       <EditorProvider>
-        <GlobalStyle />
-        <Workspace />
+        <ContextMenuProvider>
+          <GlobalStyle />
+          <Workspace />
+          <GlobalContextMenu />
+        </ContextMenuProvider>
       </EditorProvider>
     </ThemeProvider>
   )
