@@ -152,7 +152,7 @@ const DeviceRow = styled.div`
 `;
 
 const LayersPanel: React.FC = () => {
-  const { devices, groups, toggleGroupCollapsed, renameGroup } = useEditor();
+  const { devices, groups, toggleGroupCollapsed, renameGroup, selectDevice } = useEditor();
   const { openMenu } = useContextMenu();
   const [editingGroupId, setEditingGroupId] = React.useState<string | null>(null);
   const [tempName, setTempName] = React.useState<string>("");
@@ -217,11 +217,13 @@ const LayersPanel: React.FC = () => {
           </GroupRow>
           {!group.collapsed &&
             devicesByGroup[group.id]?.map(device => (
-              <DeviceRow onContextMenu={(e) => {
-                e.preventDefault();
-                openMenu("device", device, e);
-                }}key={device.id}>{device.name || device.type}
-              </DeviceRow>
+              <DeviceRow 
+                onClick={() => selectDevice(device.id)}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  openMenu("device", device, e);
+                  }}key={device.id}>{device.name || device.type}
+                </DeviceRow>
             ))}
         </div>
       ))}
@@ -229,10 +231,12 @@ const LayersPanel: React.FC = () => {
       <>
         <GroupRow collapsed={false}> Others </GroupRow>
         {ungroupedDevices.map(device => (
-          <DeviceRow onContextMenu={(e) => {
-            e.preventDefault();
-            openMenu("device", device, e);
-            }} key={device.id}>{device.name || device.type }
+          <DeviceRow 
+            onClick={() => selectDevice(device.id)}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              openMenu("device", device, e);
+              }} key={device.id}>{device.name || device.type }
         </DeviceRow>
         ))}
       </>

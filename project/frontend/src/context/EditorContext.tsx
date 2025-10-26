@@ -36,6 +36,8 @@ interface EditorContextType {
   renameGroup: (id: string, name: string) => void;
   deleteGroup: (id: string) => void;
   toggleGroupCollapsed: (id: string, coll: boolean) => void;
+  selectedDeviceId?: string; 
+  selectDevice: (id: string | undefined) => void; 
 }
 
 const EditorContext = createContext<EditorContextType | undefined>(undefined);
@@ -44,6 +46,9 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [devices, setDevices] = useState<Device[]>([]);
   const [links, setLinks] = useState<Link[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
+  const [selectedDeviceId, setSelectedDeviceId] = useState<string | undefined>(undefined);
+
+  const selectDevice = (id?: string) => setSelectedDeviceId(id);
 
   const addDevice = (device: Device) => { 
     setDevices(prev => {
@@ -86,7 +91,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   return (
     <EditorContext.Provider
-      value={{ devices, links, groups, deleteGroup, deleteDevice, addDevice, addLink, addGroup, renameGroup, toggleGroupCollapsed, moveDevice, removeDeviceFromGroup, moveDeviceToGroup }}
+      value={{ devices, links, groups, deleteGroup, deleteDevice, addDevice, addLink, addGroup, renameGroup, toggleGroupCollapsed, moveDevice, removeDeviceFromGroup, moveDeviceToGroup, selectedDeviceId, selectDevice }}
     >
       {children}
     </EditorContext.Provider>

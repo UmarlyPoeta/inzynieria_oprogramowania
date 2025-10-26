@@ -3,7 +3,7 @@ import { type Device, useEditor } from "@/context/EditorContext";
 import { useState, useEffect } from "react";
 
 const DeviceNode: React.FC<{ device: Device, scale: number }> = ({ device, scale }) => {
-  const { moveDevice } = useEditor();
+  const { moveDevice, selectDevice, selectedDeviceId } = useEditor();
   const [dragging, setDragging] = useState(false);
   const [startPos, setStartPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 
@@ -33,7 +33,7 @@ const DeviceNode: React.FC<{ device: Device, scale: number }> = ({ device, scale
     };
   }, [dragging, startPos, device.x, device.y, scale]);
 
-  return <Node style={{ left: device.x, top: device.y }} onMouseDown={handleMouseDown}>{device.type}</Node>;
+  return <Node style={{ left: device.x, top: device.y, border: selectedDeviceId === device.id ? "3px solid #121212" : "none" }} onMouseDown={handleMouseDown} onClick={() => selectDevice(device.id)}>{device.type}</Node>;
 };
 
 const Node = styled.div`
