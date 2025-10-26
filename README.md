@@ -17,7 +17,7 @@
 
 <a name="english"></a>
 
-## 🌍 English Version
+## English Version
 
 ### 📋 Table of Contents
 - [Overview](#overview)
@@ -33,31 +33,31 @@
 
 ---
 
-### 🎯 Overview
+### Overview
 
 **NetSimCPP** is a production-ready network simulator built with modern C++17. It provides a comprehensive platform for:
 
-- 🌐 Creating and managing complex network topologies
-- 📡 Simulating realistic network protocols (TCP, UDP, ICMP)
-- 🔍 Analyzing network behavior and performance
-- 🚀 RESTful API for programmatic control
-- 🐳 Full Docker containerization
-- ✅ Extensive test coverage (60 unit tests + 10 performance tests)
+- Creating and managing complex network topologies
+- Simulating realistic network protocols (TCP, UDP, ICMP)
+- Analyzing network behavior and performance
+- RESTful API for programmatic control
+- Full Docker containerization
+- Extensive test coverage (60 unit tests + 10 performance tests)
 
 **Perfect for**: Network engineers, students, researchers, and developers learning network fundamentals or testing network algorithms.
 
 ---
 
-### ✨ Features
+### Features
 
-#### 🔧 Core Capabilities
+#### Core Capabilities
 - **Multi-Node Support**: Host, Router, Cloud, IoT devices
 - **Advanced Routing**: Dynamic routing tables, load balancing
 - **Protocol Simulation**: TCP 3-way handshake, UDP, ICMP ping
 - **Network Properties**: Link delays, bandwidth limits, packet loss
 - **VLAN & Firewall**: Network isolation and security rules
 
-#### 🎨 Advanced Features
+#### Advanced Features
 - **Congestion Control**: Packet queuing and flow control
 - **Packet Fragmentation**: MTU-aware fragmentation/reassembly
 - **Time-Based Events**: Discrete event simulation
@@ -65,14 +65,14 @@
 - **IoT Devices**: Battery-aware wireless sensor simulation
 - **Topology Import/Export**: JSON-based configuration
 
-#### 🌐 REST API (29 Endpoints)
+#### REST API (29 Endpoints)
 - Node management (add, remove, fail)
 - Link configuration (connect, delay, bandwidth)
 - Network operations (ping, traceroute, multicast)
 - Statistics and monitoring
 - Topology management
 
-#### 🐳 Production Ready
+#### Production Ready
 - Docker containerization
 - CI/CD with GitHub Actions
 - Memory leak detection (Valgrind)
@@ -81,7 +81,7 @@
 
 ---
 
-### 🏗️ Architecture
+### Architecture
 
 #### Class Diagram
 ![Class Diagram](project/docs/UML/CLASSES.png)
@@ -151,7 +151,7 @@ class Engine {
 
 ---
 
-### 🚀 Quick Start
+### Quick Start
 
 #### Prerequisites
 - **C++17** compiler (GCC 9+ or Clang 10+)
@@ -275,7 +275,7 @@ See [API Full Workflow](project/docs/UML/API_FULL_WORKFLOW.png) for detailed seq
 
 ---
 
-### 🧪 Testing
+### Testing
 
 #### Test Coverage
 - **60 Unit Tests** (100% pass rate)
@@ -327,7 +327,7 @@ See [docs/testing.md](docs/testing.md) for comprehensive testing guide.
 
 ---
 
-### 🔄 CI/CD Pipeline
+### CI/CD Pipeline
 
 #### GitHub Actions Workflow
 
@@ -388,7 +388,7 @@ jobs:
 
 ---
 
-### 📚 Documentation
+### Documentation
 
 - **[Architecture Documentation](project/docs/architecture.md)** - System design and patterns
 - **[Testing Guide](docs/testing.md)** - Comprehensive testing documentation
@@ -397,7 +397,7 @@ jobs:
 
 ---
 
-### 🤝 Contributing
+### Contributing
 
 1. Fork the repository
 2. Create feature branch (`git checkout -b feature/amazing-feature`)
@@ -409,13 +409,13 @@ All contributions must pass CI/CD checks!
 
 ---
 
-### 📄 License
+### License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
 ---
 
-### 👥 Authors
+### Authors
 
 - **Patryk Kozłowski** - BACKEND, REST API, CI/CD, SCRIPTS, DOCS, UML
 - **Adrian Lorek** - DATABASE
@@ -423,7 +423,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ---
 
-### 🙏 Acknowledgments
+### Acknowledgments
 
 - Built with [cpprestsdk](https://github.com/microsoft/cpprestsdk) for REST API
 - Testing with [GoogleTest](https://github.com/google/googletest)
@@ -435,7 +435,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Wersja Polska
 
-### 📋 Spis Treści
+### Spis Treści
 - [Przegląd](#przegląd-pl)
 - [Funkcje](#funkcje-pl)
 - [Architektura](#architektura-pl)
@@ -449,31 +449,31 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ---
 
-### 🎯 Przegląd {#przegląd-pl}
+### Przegląd {#przegląd-pl}
 
 **NetSimCPP** to gotowy do produkcji symulator sieci zbudowany w nowoczesnym C++17. Zapewnia kompleksową platformę do:
 
-- 🌐 Tworzenia i zarządzania złożonymi topologiami sieciowymi
-- 📡 Symulacji realistycznych protokołów sieciowych (TCP, UDP, ICMP)
-- 🔍 Analizy zachowania i wydajności sieci
-- 🚀 API RESTful do programistycznej kontroli
-- 🐳 Pełna konteneryzacja Docker
-- ✅ Rozbudowane pokrycie testami (60 testów jednostkowych + 10 testów wydajnościowych)
+- Tworzenia i zarządzania złożonymi topologiami sieciowymi
+- Symulacji realistycznych protokołów sieciowych (TCP, UDP, ICMP)
+- Analizy zachowania i wydajności sieci
+- API RESTful do programistycznej kontroli
+- Pełna konteneryzacja Docker
+- Rozbudowane pokrycie testami (60 testów jednostkowych + 10 testów wydajnościowych)
 
 **Idealne dla**: Inżynierów sieciowych, studentów, naukowców i programistów uczących się podstaw sieci lub testujących algorytmy sieciowe.
 
 ---
 
-### ✨ Funkcje {#funkcje-pl}
+### Funkcje {#funkcje-pl}
 
-#### 🔧 Główne Możliwości
+#### Główne Możliwości
 - **Wsparcie Wielu Węzłów**: Host, Router, Cloud, urządzenia IoT
 - **Zaawansowane Routowanie**: Dynamiczne tablice routingu, balansowanie obciążenia
 - **Symulacja Protokołów**: TCP 3-way handshake, UDP, ICMP ping
 - **Właściwości Sieci**: Opóźnienia linków, limity przepustowości, utrata pakietów
 - **VLAN i Firewall**: Izolacja sieci i reguły bezpieczeństwa
 
-#### 🎨 Zaawansowane Funkcje
+#### Zaawansowane Funkcje
 - **Kontrola Przeciążenia**: Kolejkowanie pakietów i kontrola przepływu
 - **Fragmentacja Pakietów**: Fragmentacja/składanie z uwzględnieniem MTU
 - **Zdarzenia Czasowe**: Symulacja zdarzeń dyskretnych
@@ -481,14 +481,14 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - **Urządzenia IoT**: Symulacja czujników bezprzewodowych z uwzględnieniem baterii
 - **Import/Export Topologii**: Konfiguracja oparta na JSON
 
-#### 🌐 REST API (29 Endpointów)
+#### REST API (29 Endpointów)
 - Zarządzanie węzłami (dodawanie, usuwanie, awarie)
 - Konfiguracja linków (połączenia, opóźnienia, przepustowość)
 - Operacje sieciowe (ping, traceroute, multicast)
 - Statystyki i monitorowanie
 - Zarządzanie topologią
 
-#### 🐳 Gotowe do Produkcji
+#### Gotowe do Produkcji
 - Konteneryzacja Docker
 - CI/CD z GitHub Actions
 - Detekcja wycieków pamięci (Valgrind)
@@ -497,7 +497,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ---
 
-### 🏗️ Architektura {#architektura-pl}
+### Architektura {#architektura-pl}
 
 #### Diagram Klas
 ![Diagram Klas](project/docs/UML/CLASSES.png)
@@ -567,7 +567,7 @@ class Engine {
 
 ---
 
-### 🚀 Szybki Start {#szybki-start-pl}
+### Szybki Start {#szybki-start-pl}
 
 #### Wymagania
 - **C++17** kompilator (GCC 9+ lub Clang 10+)
@@ -691,7 +691,7 @@ Zobacz [API Full Workflow](project/docs/UML/API_FULL_WORKFLOW.png) dla szczegó�
 
 ---
 
-### 🧪 Testowanie {#testowanie-pl}
+### Testowanie {#testowanie-pl}
 
 #### Pokrycie Testami
 - **60 Testów Jednostkowych** (100% wskaźnik przejścia)
@@ -743,7 +743,7 @@ Zobacz [docs/testing.md](docs/testing.md) dla kompleksowego przewodnika po testo
 
 ---
 
-### 🔄 Pipeline CI/CD {#pipeline-cicd-pl}
+### Pipeline CI/CD {#pipeline-cicd-pl}
 
 #### Workflow GitHub Actions
 
@@ -804,7 +804,7 @@ jobs:
 
 ---
 
-### 📚 Dokumentacja {#dokumentacja-pl}
+### Dokumentacja {#dokumentacja-pl}
 
 - **[Dokumentacja Architektury](project/docs/architecture.md)** - Projekt systemu i wzorce
 - **[Przewodnik Testowania](docs/testing.md)** - Kompleksowa dokumentacja testów
@@ -813,7 +813,7 @@ jobs:
 
 ---
 
-### 🤝 Współpraca {#współpraca-pl}
+### Współpraca {#współpraca-pl}
 
 1. Zforkuj repozytorium
 2. Utwórz branch funkcjonalności (`git checkout -b feature/amazing-feature`)
@@ -825,13 +825,13 @@ Wszystkie kontrybucje muszą przejść sprawdzenia CI/CD!
 
 ---
 
-### 📄 Licencja {#licencja-pl}
+### Licencja {#licencja-pl}
 
 Ten projekt jest licencjonowany na licencji MIT - zobacz plik LICENSE dla szczegółów.
 
 ---
 
-### 👥 Autorzy
+### Autorzy
 
 - **Patryk Kozłowski** - BACKEND, REST API, CI/CD, SCRIPTS, DOCS, UML
 - **Adrian Lorek** - DATABASE
@@ -839,7 +839,7 @@ Ten projekt jest licencjonowany na licencji MIT - zobacz plik LICENSE dla szczeg
 
 ---
 
-### 🙏 Podziękowania
+### Podziękowania
 
 - Zbudowane z [cpprestsdk](https://github.com/microsoft/cpprestsdk) dla REST API
 - Testowanie z [GoogleTest](https://github.com/google/googletest)
@@ -851,6 +851,6 @@ Ten projekt jest licencjonowany na licencji MIT - zobacz plik LICENSE dla szczeg
 
 **Made with ❤️ by Software Engineering Team**
 
-⭐ Star this repo if you find it helpful! ⭐
+Star this repo if you find it helpful!
 
 </div>
