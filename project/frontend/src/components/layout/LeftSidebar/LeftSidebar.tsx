@@ -217,7 +217,11 @@ const LayersPanel: React.FC = () => {
           </GroupRow>
           {!group.collapsed &&
             devicesByGroup[group.id]?.map(device => (
-              <DeviceRow key={device.id}>{device.name || device.type}</DeviceRow>
+              <DeviceRow onContextMenu={(e) => {
+                e.preventDefault();
+                openMenu("device", device, e);
+                }}key={device.id}>{device.name || device.type}
+              </DeviceRow>
             ))}
         </div>
       ))}
@@ -225,7 +229,11 @@ const LayersPanel: React.FC = () => {
       <>
         <GroupRow collapsed={false}> Others </GroupRow>
         {ungroupedDevices.map(device => (
-          <DeviceRow key={device.id}>{device.name || device.type}</DeviceRow>
+          <DeviceRow onContextMenu={(e) => {
+            e.preventDefault();
+            openMenu("device", device, e);
+            }} key={device.id}>{device.name || device.type }
+        </DeviceRow>
         ))}
       </>
       )} 

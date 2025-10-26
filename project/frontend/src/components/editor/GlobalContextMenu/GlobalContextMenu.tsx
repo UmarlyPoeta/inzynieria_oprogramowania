@@ -1,8 +1,8 @@
 import React, { useEffect } from "react";
 import styled from "styled-components";
 import { useContextMenu } from "@/context/ContextualMenuContext";
-import { ContextGroupMenu } from "@/components";
-import type { Group } from "@/context/EditorContext";
+import { ContextGroupMenu, ContextDeviceMenu } from "@/components";
+import type { Group, Device } from "@/context/EditorContext";
 
 const MenuWrapper = styled.div<{ x: number; y: number }>`
   position: fixed;
@@ -30,6 +30,7 @@ const GlobalContextMenu: React.FC = () => {
   return (
     <MenuWrapper x={menu.x} y={menu.y}>
       {menu.type === "group" && <ContextGroupMenu group={menu.data as Group} />}
+      {menu.type === "device" && <ContextDeviceMenu device={menu.data as Device} />}
     </MenuWrapper>
   );
 };

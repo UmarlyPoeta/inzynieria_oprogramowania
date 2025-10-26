@@ -27,6 +27,9 @@ interface EditorContextType {
   links: Link[];
   groups: Group[];
   addDevice: (device: Device) => void;
+  deleteDevice: (id: string) => void;
+  removeDeviceFromGroup: (deviceId: string) => void;
+  moveDeviceToGroup: (deviceId: string, groupId: string) => void;
   addLink: (link: Link) => void;
   moveDevice: (id: string, x: number, y: number) => void;
   addGroup: (group: Group) => void;
@@ -52,7 +55,20 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       return [...prev, { ...device, name }];
     });
   };
-    
+
+  const removeDeviceFromGroup = (deviceId: string) => {
+    setDevices(prev => prev.map(d => (d.id === deviceId ? { ...d, groupId: undefined } : d)));
+  };
+
+  const moveDeviceToGroup = (deviceId: string, groupId: string) => {
+    setDevices(prev => prev.map(d => (d.id === deviceId ? { ...d, groupId } : d)));
+  };
+  
+  const deleteDevice = (id: string) => {
+    setDevices(prev => prev.filter(d => d.id !== id));
+    setLinks(prev => prev.filter(l => l.from !== id && l.to !== id));
+  }
+
   const deleteGroup = (id: string) => {
     setGroups(prev => prev.filter(g => g.id !== id));
     setDevices(prev => prev.map(d => (d.groupId === id ? { ...d, groupId: undefined } : d)));
@@ -70,7 +86,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   return (
     <EditorContext.Provider
-      value={{ devices, links, groups, deleteGroup, addDevice, addLink, addGroup, renameGroup, toggleGroupCollapsed, moveDevice }}
+      value={{ devices, links, groups, deleteGroup, deleteDevice, addDevice, addLink, addGroup, renameGroup, toggleGroupCollapsed, moveDevice, removeDeviceFromGroup, moveDeviceToGroup }}
     >
       {children}
     </EditorContext.Provider>
