@@ -5,6 +5,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(cpprestsdk REQUIRED) # Microsoft C++ REST SDK
 find_package(nlohmann_json REQUIRED)
+find_package(MySQLConnectorCPP REQUIRED)  # <-- dodane: MySQL Connector/C++
 
 add_executable(netsim
     src/main.cpp
@@ -18,7 +19,11 @@ add_executable(netsim
 
 target_include_directories(netsim PRIVATE src)
 
-target_link_libraries(netsim PRIVATE cpprestsdk::cpprest nlohmann_json::nlohmann_json)
+target_link_libraries(netsim PRIVATE
+    cpprestsdk::cpprest
+    nlohmann_json::nlohmann_json
+    mysqlcppconn               # <-- dodane: link do klienta MySQL
+)
 
 # Optional: install rules
 install(TARGETS netsim DESTINATION bin)
@@ -36,5 +41,10 @@ add_executable(netsim_tests
     src/core/Router.cpp
 )
 target_include_directories(netsim_tests PRIVATE src)
-target_link_libraries(netsim_tests PRIVATE GTest::gtest_main cpprestsdk::cpprest nlohmann_json::nlohmann_json)
+target_link_libraries(netsim_tests PRIVATE
+    GTest::gtest_main
+    cpprestsdk::cpprest
+    nlohmann_json::nlohmann_json
+    mysqlcppconn               # <-- dodane dla testów
+)
 add_test(NAME netsim_tests COMMAND netsim_tests)
