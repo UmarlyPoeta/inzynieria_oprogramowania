@@ -2,6 +2,31 @@ import React, { createContext, useContext, useState } from "react";
 
 import type { Device, RouterConfig, SwitchConfig, PCConfig, Link, Group } from "@/types"
 
+const defaultRouterConfig = (): RouterConfig => ({
+  hostname: "Router",
+  domainName: "local",
+  interfaces: [
+    { name: "GigabitEthernet0/0", status: "down", dhcpEnabled: false },
+    { name: "GigabitEthernet0/1", status: "down", dhcpEnabled: false },
+  ],
+  routingProtocol: "None",
+  ospf: { processId: 1, area: 0, networks: [] },
+  rip: { version: 2, networks: [] },
+  eigrp: { asNumber: 1, networks: [] },
+  bgp: { asNumber: 65000, neighbors: [] },
+  staticRoutes: [],
+  natEnabled: false,
+  natRules: [],
+  firewallEnabled: false,
+  firewallRules: [],
+  dhcpEnabled: false,
+  dhcpPools: [],
+  vpnEnabled: false,
+  vpnTunnels: [],
+  qosEnabled: false,
+  qosPolicies: [],
+});
+
 interface EditorContextType {
   devices: Device[];
   links: Link[];
@@ -32,11 +57,11 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const selectDevice = (id?: string) => setSelectedDeviceId(id);
 
   const defaultConfig = (type: Device["type"]) => {
-    switch(type) {
+    switch (type) {
       case "router":
-        return { interfaces: [], routingProtocol: "None" } as RouterConfig;
+        return defaultRouterConfig();
       case "switch":
-        return { vlans: [], stpEnabled: false } as SwitchConfig;
+        return { vlans: [{ id: 1, name: "default" }], stpEnabled: true } as SwitchConfig;
       case "pc":
         return { ip: "", gateway: "" } as PCConfig;
     }
