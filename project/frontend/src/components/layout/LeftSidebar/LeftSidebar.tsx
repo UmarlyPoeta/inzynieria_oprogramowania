@@ -255,8 +255,10 @@ const LeftSidebar = () => {
     // It affect rerender so be sure to reload website after changes (its info for you, Patryk and Adrian)
     addGroup({ id: "routers", name: "Routers", collapsed: false });
     addGroup({ id: "switches", name: "Switches", collapsed: false });
+    addGroup({ id: "pcs", name: "PCs", collapsed: false });
 
-    addDevice({ id: "router-2", type: "router", x: 300, y: 25 });
+
+    addDevice({ id: "pc-1", type: "pc", x: 523, y: 431, groupId: "pcs" });
     addDevice({ id: "router-1", type: "router", x: 300, y: 25, groupId: "routers" });
     addDevice({ id: "switch-1", type: "switch", x: 500, y: 50, groupId: "switches" });
     addDevice({ id: "switch-2", type: "switch", x: 700, y: 50, groupId: "switches" });
