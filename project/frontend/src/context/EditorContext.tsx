@@ -43,6 +43,11 @@ interface EditorContextType {
   toggleGroupCollapsed: (id: string, coll: boolean) => void;
   selectedDeviceId?: string; 
   selectDevice: (id: string | undefined) => void; 
+  connectingDeviceId?: string | null;
+  startConnecting: () => void;
+  selectDeviceForLink: (id: string) => void;
+  stopConnecting: () => void;
+  connectingModeActive: boolean;
   updateDeviceConfig: (id: string, configUpdate: Partial<Device["config"]>) => void;
 }
 
@@ -53,8 +58,37 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [links, setLinks] = useState<Link[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | undefined>(undefined);
+  const [connectingDeviceId, setConnectingDeviceId] = useState<string | null>(null);
+  const [connectingModeActive, setConnectingModeActive] = useState(false);
 
   const selectDevice = (id?: string) => setSelectedDeviceId(id);
+
+  const startConnecting = () => {
+    setConnectingModeActive(true);
+    setConnectingDeviceId(null);
+  };
+
+  const stopConnecting = () => {
+    setConnectingModeActive(false);
+    setConnectingDeviceId(null);
+  };
+
+  const selectDeviceForLink = (id: string) => {
+    if (!connectingDeviceId) {
+      console.log("First device selected for link:", id);
+      setConnectingDeviceId(id); 
+    } else if (connectingDeviceId !== id) {
+      console.log("Second device selected for link:", id);
+      const newLink = { id: Math.random().toString(36).substring(2, 9), from: connectingDeviceId, to: id };
+      console.log("Adding link:", newLink);
+      addLink(newLink);
+      setConnectingDeviceId(null);
+      setConnectingModeActive(false);
+    } else {
+      console.log("Clicked the same device twice:", id);
+    }
+  };
+
 
   const defaultConfig = (type: Device["type"]) => {
     switch (type) {
@@ -117,10 +151,30 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   return (
-    <EditorContext.Provider
-      value={{ devices, links, groups, deleteGroup, deleteDevice, addDevice, addLink, addGroup, renameGroup, toggleGroupCollapsed, moveDevice, removeDeviceFromGroup, moveDeviceToGroup, selectedDeviceId, selectDevice, updateDeviceConfig }}
-    >
-      {children}
+    <EditorContext.Provider value={{
+      devices,
+      links,
+      groups,
+      deleteGroup,
+      deleteDevice,
+      addDevice,
+      addLink,
+      addGroup,
+      renameGroup,
+      toggleGroupCollapsed,
+      moveDevice,
+      removeDeviceFromGroup,
+      moveDeviceToGroup,
+      selectedDeviceId,
+      selectDevice,
+      updateDeviceConfig,
+      startConnecting,
+      stopConnecting,
+      connectingModeActive,
+      connectingDeviceId,
+      selectDeviceForLink
+    }}>
+    {children}
     </EditorContext.Provider>
   );
 };

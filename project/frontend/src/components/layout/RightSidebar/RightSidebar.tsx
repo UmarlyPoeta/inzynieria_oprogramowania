@@ -207,6 +207,8 @@ const DeviceDetailsPanel: React.FC = () => {
     }
   };
 
+  const { startConnecting } = useEditor();
+
   const renderTabContent = () => {
     if (device.type === "router") return renderRouterTab(activeTab);
     return <Section>Configuration for {device.type} coming soon...</Section>;
@@ -215,7 +217,7 @@ const DeviceDetailsPanel: React.FC = () => {
   return (
     <PanelWrapper>
       <h3>{device.name || device.type}</h3>
-      <TabsWrapper>
+      <TabsWrapper style={{ borderBottom: "2px solid #ededf5", paddingBottom: "4px" }}>
         {tabs.map((tab) => (
           <TabButton key={tab} active={tab === activeTab} onClick={() => setActiveTab(tab)}>
             {tab}
@@ -223,6 +225,10 @@ const DeviceDetailsPanel: React.FC = () => {
         ))}
       </TabsWrapper>
       {renderTabContent()}
+      <br />
+      <IconButton title="Connect" onClick={startConnecting} style={{border: "2px solid #e0e0e0a6"}}>
+         Connect Nodes
+      </IconButton>
     </PanelWrapper>
   );
 };

@@ -1,9 +1,10 @@
 import styled from "styled-components";
-import { type Device, useEditor } from "@/context/EditorContext";
+import { useEditor } from "@/context/EditorContext";
 import { useState, useEffect } from "react";
+import type { Device } from "@/types";
 
 const DeviceNode: React.FC<{ device: Device, scale: number }> = ({ device, scale }) => {
-  const { moveDevice, selectDevice, selectedDeviceId } = useEditor();
+  const { moveDevice, selectDevice, selectedDeviceId, connectingModeActive, selectDeviceForLink } = useEditor();
   const [dragging, setDragging] = useState(false);
   const [startPos, setStartPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 
@@ -33,8 +34,15 @@ const DeviceNode: React.FC<{ device: Device, scale: number }> = ({ device, scale
     };
   }, [dragging, startPos, device.x, device.y, scale]);
 
-  return <Node style={{ left: device.x, top: device.y, border: selectedDeviceId === device.id ? "3px solid #121212" : "none" }} onMouseDown={handleMouseDown} onClick={() => selectDevice(device.id)}>{device.type}</Node>;
-};
+  return <Node style={{ left: device.x, top: device.y, border: selectedDeviceId === device.id ? "3px solid #121212" : "none" }} onMouseDown={handleMouseDown} 
+    onClick={() => {
+      if (connectingModeActive) {
+        selectDeviceForLink(device.id);
+      } else {
+        selectDevice(device.id);
+      }
+    }}>{device.type}</Node>;
+  };
 
 const Node = styled.div`
   position: absolute;
