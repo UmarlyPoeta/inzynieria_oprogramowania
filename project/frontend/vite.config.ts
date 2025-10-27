@@ -17,6 +17,7 @@ export default defineConfig({
       '@/assets': resolve(__dirname, 'src/assets/index.ts'),
       '@/api': resolve(__dirname, 'src/api/index.ts'),
       '@/styles': resolve(__dirname, 'src/styles/index.ts'),
+      '@/types': resolve(__dirname, 'src/types/index.ts'),
     },
   },
   plugins: [

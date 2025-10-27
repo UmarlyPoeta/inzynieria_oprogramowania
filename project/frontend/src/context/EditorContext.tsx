@@ -1,26 +1,6 @@
 import React, { createContext, useContext, useState } from "react";
 
-export interface Device {
-  id: string;
-  type: "router" | "switch" | "pc";
-  x: number;
-  y: number;
-  name?: string;       
-  groupId?: string;   
-}
-
-export interface Group {
-  id: string;
-  name: string;
-  collapsed: boolean;
-  parentGroupId?: string; 
-}
-
-export interface Link {
-  id: string;
-  from: string;
-  to: string;
-}
+import type { Device, RouterConfig, SwitchConfig, PCConfig, Link, Group } from "@/types"
 
 interface EditorContextType {
   devices: Device[];
@@ -38,6 +18,7 @@ interface EditorContextType {
   toggleGroupCollapsed: (id: string, coll: boolean) => void;
   selectedDeviceId?: string; 
   selectDevice: (id: string | undefined) => void; 
+  updateDeviceConfig: (id: string, configUpdate: Partial<Device["config"]>) => void;
 }
 
 const EditorContext = createContext<EditorContextType | undefined>(undefined);
@@ -50,15 +31,36 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const selectDevice = (id?: string) => setSelectedDeviceId(id);
 
-  const addDevice = (device: Device) => { 
+  const defaultConfig = (type: Device["type"]) => {
+    switch(type) {
+      case "router":
+        return { interfaces: [], routingProtocol: "None" } as RouterConfig;
+      case "switch":
+        return { vlans: [], stpEnabled: false } as SwitchConfig;
+      case "pc":
+        return { ip: "", gateway: "" } as PCConfig;
+    }
+  };
+
+  const addDevice = (device: Device) => {
     setDevices(prev => {
       let name = device.name;
       if (!name) { 
         const count = prev.filter(d => d.type === device.type).length;
         name = `${device.type.charAt(0).toUpperCase() + device.type.slice(1)} ${count + 1}`;
       }
-      return [...prev, { ...device, name }];
+      return [...prev, { ...device, name, config: device.config ?? defaultConfig(device.type) }];
     });
+  };
+
+  const updateDeviceConfig = (id: string, configUpdate: Partial<Device["config"]>) => {
+    setDevices(prev =>
+      prev.map(d => 
+        d.id === id 
+          ? { ...d, config: { ...defaultConfig(d.type), ...d.config, ...configUpdate } } 
+          : d
+      )
+    );
   };
 
   const removeDeviceFromGroup = (deviceId: string) => {
@@ -91,7 +93,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   return (
     <EditorContext.Provider
-      value={{ devices, links, groups, deleteGroup, deleteDevice, addDevice, addLink, addGroup, renameGroup, toggleGroupCollapsed, moveDevice, removeDeviceFromGroup, moveDeviceToGroup, selectedDeviceId, selectDevice }}
+      value={{ devices, links, groups, deleteGroup, deleteDevice, addDevice, addLink, addGroup, renameGroup, toggleGroupCollapsed, moveDevice, removeDeviceFromGroup, moveDeviceToGroup, selectedDeviceId, selectDevice, updateDeviceConfig }}
     >
       {children}
     </EditorContext.Provider>
