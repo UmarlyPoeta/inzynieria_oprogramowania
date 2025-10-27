@@ -1,11 +1,11 @@
+import React, { useState } from "react";
 import styled from "styled-components";
-import { Play } from 'lucide-react';
 import { useEditor } from "@/context/EditorContext";
-import type { Device } from "@/types";
-import React from "react";
+import type { RouterConfig } from "@/types";
+import { Play } from "lucide-react";
 
 const Sidebar = styled.div`
-  width: 260px;
+  width: 280px;
   background-color: ${(props: any) => props.theme.colors.surface};
   border-left: 2px solid #ededf5;
   overflow-y: auto;
@@ -37,7 +37,7 @@ const IconButton = styled.button`
   justify-content: center;
   cursor: pointer;
   transition: background 0.2s;
-  
+
   &:hover {
     background-color: rgba(255, 174, 0, 0.25);
     svg {
@@ -52,35 +52,178 @@ const IconButton = styled.button`
   }
 `;
 
-// Prosta mapa zakładek dla konfiguracji według typu urządzenia
-const deviceTabMap: Record<Device["type"], string[]> = {
-  router: ["Interfaces", "Routing Protocol"],
-  switch: ["VLANs", "STP"],
-  pc: ["IP", "Gateway"],
-};
+const PanelWrapper = styled.div`
+  padding: 12px;
+`;
+
+const TabsWrapper = styled.div`
+  display: flex;
+  gap: 4px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+`;
+
+const TabButton = styled.button<{ active: boolean }>`
+  padding: 6px 12px;
+  border: 1px solid ${(props) => (props.active ? "#FFA500" : "#ccc")};
+  border-bottom: ${(props) => (props.active ? "2px solid orange" : "1px solid #ccc")};
+  border-radius: 6px 6px 0 0;
+  background-color: ${(props) => (props.active ? "#fff" : "#f7f7f7")};
+  cursor: pointer;
+  font-weight: ${(props) => (props.active ? "bold" : "normal")};
+  font-size: 0.85rem;
+`;
+
+const Section = styled.div`
+  margin-bottom: 12px;
+`;
+
+const Input = styled.input`
+  width: 100%;
+  margin-top: 4px;
+  margin-bottom: 8px;
+  padding: 4px 6px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+`;
+
+const Select = styled.select`
+  width: 100%;
+  margin-top: 4px;
+  margin-bottom: 8px;
+  padding: 4px 6px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+`;
 
 const DeviceDetailsPanel: React.FC = () => {
-  const { devices, selectedDeviceId } = useEditor();
-  const device = devices.find(d => d.id === selectedDeviceId);
+  const { devices, selectedDeviceId, updateDeviceConfig } = useEditor();
+  const device = devices.find((d) => d.id === selectedDeviceId);
+  const [activeTab, setActiveTab] = useState<string>("General");
 
-  if (!device) return <p style={{ padding: '10px' }}>Select a device to see details</p>;
+  if (!device) return <p style={{ padding: "10px" }}>Select a device to see details</p>;
 
-  const tabs = deviceTabMap[device.type] || [];
+  const handleInputChange = (key: string, value: any) => {
+    updateDeviceConfig(device.id, { [key]: value });
+  };
+
+  // zakładki
+  let tabs: string[] = ["General"];
+  if (device.type === "router") tabs.push("Interfaces", "Routing", "NAT", "DHCP", "Security", "Services");
+
+  const renderRouterTab = (tab: string) => {
+    const config = device.config as RouterConfig;
+    switch (tab) {
+      case "General":
+        return (
+          <Section>
+            <label>Hostname</label>
+            <Input
+              value={config?.hostname || ""}
+              onChange={(e) => handleInputChange("hostname", e.target.value)}
+            />
+            <label>Domain Name</label>
+            <Input
+              value={config?.domainName || ""}
+              onChange={(e) => handleInputChange("domainName", e.target.value)}
+            />
+          </Section>
+        );
+      case "Interfaces":
+        return (
+          <Section>
+            {config?.interfaces?.map((intf, idx) => (
+              <div key={idx} style={{ marginBottom: "10px" }}>
+                <label>{intf.name} IP</label>
+                <Input
+                  value={intf.ip || ""}
+                  onChange={(e) => {
+                    const newIfs = [...(config.interfaces || [])];
+                    newIfs[idx] = { ...newIfs[idx], ip: e.target.value };
+                    handleInputChange("interfaces", newIfs);
+                  }}
+                />
+                <label>Subnet</label>
+                <Input
+                  value={intf.subnet || ""}
+                  onChange={(e) => {
+                    const newIfs = [...(config.interfaces || [])];
+                    newIfs[idx] = { ...newIfs[idx], subnet: e.target.value };
+                    handleInputChange("interfaces", newIfs);
+                  }}
+                />
+                <label>Status</label>
+                <Select
+                  value={intf.status || "up"}
+                  onChange={(e) => {
+                    const newIfs = [...(config.interfaces || [])];
+                    newIfs[idx] = { ...newIfs[idx], status: e.target.value as "up" | "down" };
+                    handleInputChange("interfaces", newIfs);
+                  }}
+                >
+                  <option value="up">Up</option>
+                  <option value="down">Down</option>
+                </Select>
+              </div>
+            ))}
+          </Section>
+        );
+      case "Routing":
+        return (
+          <Section>
+            <label>Routing Protocol</label>
+            <Select
+              value={config?.routingProtocol || "None"}
+              onChange={(e) => handleInputChange("routingProtocol", e.target.value)}
+            >
+              <option value="None">None</option>
+              <option value="RIP">RIP</option>
+              <option value="OSPF">OSPF</option>
+              <option value="EIGRP">EIGRP</option>
+              <option value="BGP">BGP</option>
+            </Select>
+            <label>Static Routes</label>
+            <Input
+              value={config?.staticRoutes?.join(", ") || ""}
+              onChange={(e) =>
+                handleInputChange(
+                  "staticRoutes",
+                  e.target.value.split(",").map((r) => r.trim())
+                )
+              }
+            />
+          </Section>
+        );
+      case "NAT":
+        return <Section>NAT configuration inputs...</Section>;
+      case "DHCP":
+        return <Section>DHCP configuration inputs...</Section>;
+      case "Security":
+        return <Section>Firewall / ACL configuration...</Section>;
+      case "Services":
+        return <Section>DNS, HTTP, SNMP services...</Section>;
+      default:
+        return null;
+    }
+  };
+
+  const renderTabContent = () => {
+    if (device.type === "router") return renderRouterTab(activeTab);
+    return <Section>Configuration for {device.type} coming soon...</Section>;
+  };
 
   return (
-    <div>
-      <div style={{ padding: '10px', borderBottom: '2px solid #ededf5'}}>
-        {device.name || device.type} (ID: {device.id})
-      </div>
-      <div style={{ paddingLeft: '10px', paddingTop: '8px' }}>
-        <h4>Configuration</h4>
-        {tabs.map(tab => (
-          <div key={tab} style={{ marginBottom: '6px', fontSize: '0.9rem' }}>
-            <strong>{tab}:</strong> {/* Tutaj później będzie formularz lub inputy */}
-          </div>
+    <PanelWrapper>
+      <h3>{device.name || device.type}</h3>
+      <TabsWrapper>
+        {tabs.map((tab) => (
+          <TabButton key={tab} active={tab === activeTab} onClick={() => setActiveTab(tab)}>
+            {tab}
+          </TabButton>
         ))}
-      </div>
-    </div>
+      </TabsWrapper>
+      {renderTabContent()}
+    </PanelWrapper>
   );
 };
 
@@ -99,5 +242,7 @@ const RightSidebar: React.FC = () => {
 };
 
 export default RightSidebar;
+
+
 
 
