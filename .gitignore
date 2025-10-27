@@ -1,4 +1,43 @@
-build
-.vscode
+# Build directories
+build/
+**/build/
+dist/
+**/dist/
+out/
+**/out/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Project specific
 project/AGENTS.md
 AGENTS.md
+project/backend/netsim
+project/backend/netsim_tests
+
+
+# Dependencies
+node_modules/
+**/node_modules/
+venv/
+**/venv/
+__pycache__/
+**/__pycache__/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# CMake files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.cmake
+!CMakeLists.txt
+CTestTestfile.cmake
+_deps/

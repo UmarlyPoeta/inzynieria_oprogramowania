@@ -9,6 +9,15 @@
 #include "Node.hpp"
 #include <algorithm>
 
+// Struktura dla statystyk ruchu sieciowego
+struct TrafficStats {
+    std::map<std::string, int> nodePacketsSent;      // węzeł -> liczba wysłanych pakietów
+    std::map<std::string, int> nodePacketsReceived;  // węzeł -> liczba odebranych pakietów
+    std::map<std::pair<std::string, std::string>, int> linkTraffic; // para węzłów -> ruch między nimi
+    int totalPackets = 0;                            // całkowita liczba pakietów w sieci
+    double averagePacketsPerNode = 0.0;              // średnia liczba pakietów na węzeł
+};
+
 // DummyNode for testing
 class DummyNode : public Node {
 public:
@@ -26,7 +35,7 @@ public:
 
     // Połączenie dwóch node’ów po wskaźnikach
     void connect(std::shared_ptr<Node> a, std::shared_ptr<Node> b);
-
+    void disconnect(const std::string& nameA, const std::string& nameB);
     // Połączenie dwóch node’ów po nazwie (REST-friendly)
     void connect(const std::string& nameA, const std::string& nameB);
 
@@ -43,8 +52,8 @@ public:
     const std::map<std::string, std::set<std::string>>& getAdjacency() const;
 
     void removeNode(const std::string& name);
-    void disconnect(const std::string& nameA, const std::string& nameB);
-
+    
+    // links
     void setLinkDelay(const std::string& nameA, const std::string& nameB, int delayMs);
     int getLinkDelay(const std::string& nameA, const std::string& nameB) const;
     void removeLinkDelay(const std::string& nameA, const std::string& nameB);
@@ -100,6 +109,42 @@ public:
 
     void connectWirelessRange(const std::string& nameA, const std::string& nameB, int range);
     void connectWireless(const std::string& nameA, const std::string& nameB);
+    void setWirelessRange(const std::string& name, int range);
+    bool isWirelessConnected(const std::string& nameA, const std::string& nameB) const;
+    void simulateInterference(const std::string& name, double lossProb);
+
+    // Network Statistics
+    void recordPacketSent(const std::string& nodeName);
+    void recordPacketReceived(const std::string& nodeName);
+    int getPacketsSent(const std::string& nodeName) const;
+    int getPacketsReceived(const std::string& nodeName) const;
+    int getTotalPacketsSent() const;
+    int getTotalPacketsReceived() const;
+    void resetNodeStatistics(const std::string& nodeName);
+    void resetAllStatistics();
+    std::string getMostActiveNode() const;
+    
+    // Traffic Monitoring
+    TrafficStats getTrafficStats() const;
+    void recordLinkTraffic(const std::string& nodeA, const std::string& nodeB);
+    
+    // Cloud Integration
+    void addCloudNode(const std::string& name, const std::string& ip);
+    std::vector<std::string> getCloudNodes() const;
+    void scaleUp(const std::string& cloudName);
+    void scaleDown(const std::string& cloudName);
+    
+    // IoT Devices
+    void addIoTDevice(const std::string& name, const std::string& ip);
+    bool hasIoTDevice(const std::string& name) const;
+    void simulateBatteryDrain(const std::string& name, int percent);
+    int getBatteryLevel(const std::string& name) const;
+    
+    // Performance Metrics
+    int getLatency(const std::string& nameA, const std::string& nameB) const;
+    int getThroughput(const std::string& nameA, const std::string& nameB) const;
+    double getPacketLossRate(const std::string& nameA, const std::string& nameB) const;
+
 private:
     std::vector<std::shared_ptr<Node>> nodes;                // wszystkie węzły
     std::map<std::string, std::shared_ptr<Node>> nodesByName; // szybki lookup
@@ -113,7 +158,25 @@ private:
     int currentTime = 0; // current simulation time
     std::map<int, std::vector<Packet>> scheduledPackets; // time -> packets to deliver
     std::map<std::string, bool> arrivedPackets; // node -> has packet arrived
-
+    std::map<std::pair<std::string, std::string>, int> wirelessRanges; // link -> wireless range
+    
+    // Network Statistics
+    std::map<std::string, int> packetsSent; // node -> number of packets sent
+    std::map<std::string, int> packetsReceived; // node -> number of packets received
+    std::map<std::pair<std::string, std::string>, int> linkTrafficCount; // link traffic counter
+    
+    // Wireless Networks
+    std::map<std::string, int> wirelessNodeRanges; // node -> wireless range
+    std::map<std::string, double> interferenceLevel; // node -> interference loss probability
+    
+    // Cloud Integration
+    std::set<std::string> cloudNodes; // cloud node names
+    std::map<std::string, std::vector<std::string>> cloudGroups; // cloud group -> instances
+    int cloudInstanceCounter = 0; // for unique instance names
+    
+    // IoT Devices
+    std::set<std::string> iotDevices; // IoT device names
+    std::map<std::string, int> iotBatteries; // device -> battery level (0-100)
 };
 
 // Implementacja szablonu w headerze

@@ -6,7 +6,8 @@ Ten plik opisuje konfigurację i uruchomienie bazy danych **NetSim** w MySQL.
 
 ## ⚙️ 1. Wymagania
 
-- MySQL 8.0+
+- MySQL 8.0+ (lub XAMPP z modułem MySQL)
+- Alternatywnie: Docker (zalecane dla spójności między środowiskami)
 
 Sprawdź wersję MySQL:
 ```bash
@@ -26,9 +27,9 @@ mysql --version
    CREATE DATABASE netsim;
    USE netsim;
    ```
-3. Zainportuj strukturę z pliku `NetSimDB.sql`:
+3. Zainportuj strukturę z pliku `schema.sql`:
    ```bash
-   mysql -u root -p netsim < database/NetSimDB.sql
+   mysql -u root -p netsim < database/schema.sql
    ```
 
 ---
@@ -37,9 +38,9 @@ mysql --version
 
 ```
 database/
-├── sNetSimDB.sql          # Struktura bazy danych
-├── README.md              # Ten plik z instrukcjami
-└── .env                   # Plik konfiguracji
+├── schema.sql         # Struktura bazy danych
+├── README.md          # Ten plik z instrukcjami
+└── .env.example       # Przykładowy plik konfiguracji
 ```
 
 ---
@@ -65,6 +66,25 @@ Dodaj `.env` do `.gitignore`:
 
 ---
 
+## 🐳 5. Uruchomienie przez Dockera
+
+Jeśli nie chcesz instalować MySQL lokalnie:
+
+```bash
+docker run --name netsim-db -e MYSQL_ROOT_PASSWORD=root -e MYSQL_DATABASE=netsim -p 3306:3306 -d mysql:8.0
+```
+
+Zaimportuj strukturę:
+```bash
+docker exec -i netsim-db mysql -uroot -proot netsim < database/schema.sql
+```
+
+Sprawdź tabele:
+```bash
+docker exec -it netsim-db mysql -uroot -proot -e "SHOW TABLES IN netsim;"
+```
+
+---
 
 ## 🧩 6. Eksport i aktualizacja
 
