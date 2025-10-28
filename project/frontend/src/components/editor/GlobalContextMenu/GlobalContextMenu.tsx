@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import styled from "styled-components";
 import { useContextMenu } from "@/context/ContextualMenuContext";
 import { ContextGroupMenu, ContextDeviceMenu } from "@/components";
-import type { Group, Device } from "@/context/EditorContext";
+import type { Group, Device } from "@/types";
 
 const MenuWrapper = styled.div<{ x: number; y: number }>`
   position: fixed;
