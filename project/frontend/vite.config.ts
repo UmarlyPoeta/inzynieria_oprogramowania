@@ -1,8 +1,10 @@
+/// <reference types="vitest/config" />
 import { defineConfig } from 'vite'
 import { resolve } from 'path';
 import react from '@vitejs/plugin-react'
 
 export default defineConfig({
+  plugins: [react()],
   resolve: { 
     alias: { 
       '@': resolve(__dirname, "src"),
@@ -19,5 +21,10 @@ export default defineConfig({
       '@/types': resolve(__dirname, 'src/types/index.ts'),
     },
   },
-  plugins: [react()],
+  test: { 
+    globals: true,
+    enviroment: 'jsdom',
+    setupFiles: './src/setupTests.ts',
+    include: ['**/*.test.{ts,tsx}'],
+  } as any,
 })
