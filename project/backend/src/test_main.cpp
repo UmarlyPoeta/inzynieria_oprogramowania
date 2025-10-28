@@ -452,22 +452,6 @@ TEST(NetworkTest, UDPSimulation) {
     EXPECT_TRUE(sent); // Always true for UDP, no guarantee
 }
 
-<<<<<<< HEAD
-// 24. Time-Based Simulation: Dodaj symulację czasu
-//    - Pakiety podróżują z opóźnieniem czasowym
-//    - Metody: advanceTime, schedulePacketDelivery
-TEST(NetworkTest, TimeBasedSimulation) {
-    Network net;
-    net.addNode<DummyNode>("A", "10.0.0.1");
-    net.addNode<DummyNode>("B", "10.0.0.2");
-    net.connect("A", "B");
-    net.setLinkDelay("A", "B", 100); // 100ms
-    // Schedule packet
-    net.schedulePacketDelivery(Packet("A", "B", "data", "tcp", "msg"), 100);
-    // Advance time
-    net.advanceTime(50);
-    EXPECT_FALSE(net.hasPacketArrived("B"));
-=======
 // 24. Time-Based Simulation: Dodaj symulację czasu rzeczywistego dla pakietów
 //    - Pakiety są planowane do dostarczenia po opóźnieniu (delayMs pakietu + linkDelay między węzłami)
 //    - Metody: advanceTime(ms: int) - przesuwa czas symulacji o ms milisekund
@@ -494,84 +478,10 @@ TEST(NetworkTest, TimeBasedSimulation) {
     EXPECT_FALSE(net.hasPacketArrived("B")); // Pakiet nie powinien jeszcze dotrzeć
 
     // Przesuń czas do 160ms (100 + 60 = 160) - pakiet powinien dotrzeć (160 >= 150)
->>>>>>> fe3dcd3711bf4fde6258fb81b968e5d4a5626880
     net.advanceTime(60);
     EXPECT_TRUE(net.hasPacketArrived("B")); // Pakiet powinien już dotrzeć
 }
 
-<<<<<<< HEAD
-// 25. Routing Protocols: Dodaj symulację OSPF/BGP
-//    - Router wymienia informacje o trasach
-//    - Metody: exchangeRoutingInfo, updateRoutingTable
-TEST(RouterTest, RoutingProtocols) {
-    Network net;
-    auto r1 = net.addNode<Router>("R1", "192.168.0.1");
-    auto r2 = net.addNode<Router>("R2", "192.168.0.2");
-    Router* router1 = dynamic_cast<Router*>(r1.get());
-    Router* router2 = dynamic_cast<Router*>(r2.get());
-    // Exchange info
-    router1->exchangeRoutingInfo(router2);
-    // Assume routing table updated
-    EXPECT_TRUE(router1->hasRouteTo("192.168.0.2"));
-}
-
-// 26. Packet Fragmentation: Dodaj dzielenie pakietów na fragmenty
-//    - Duże pakiety dzielone na mniejsze
-//    - Metody: fragmentPacket, reassemblePacket
-TEST(PacketTest, PacketFragmentation) {
-    Packet largePkt("A", "B", "data", "tcp", std::string(2000, 'x')); // Large payload
-    std::vector<Packet> fragments = largePkt.fragmentPacket(500); // Assume method
-    EXPECT_EQ(fragments.size(), 4); // 2000 / 500
-    Packet reassembled = Packet::reassemblePacket(fragments); // Assume static method
-    EXPECT_EQ(reassembled.payload, largePkt.payload);
-}
-
-// 27. Wireless Networks: Dodaj symulację Wi-Fi
-//    - Zakłócenia, zasięg, interferencje
-//    - Metody: setWirelessRange, simulateInterference
-TEST(NetworkTest, WirelessNetworks) {
-    Network net;
-    net.addNode<DummyNode>("AP", "192.168.1.1"); // Access Point
-    net.addNode<DummyNode>("Client", "192.168.1.2");
-    net.connectWireless("AP", "Client"); // Assume wireless connect
-    net.setWirelessRange("AP", 50); // 50m range
-    // Simulate interference
-    net.simulateInterference("AP", 0.2); // 20% loss
-    bool connected = net.isWirelessConnected("AP", "Client");
-    EXPECT_TRUE(connected);
-}
-
-// 28. Cloud Integration: Dodaj symulację chmury
-//    - Węzły w chmurze z autoscaling
-//    - Metody: addCloudNode, scaleUp, scaleDown
-TEST(NetworkTest, CloudIntegration) {
-    Network net;
-    net.addCloudNode("Cloud1", "cloud.example.com"); // Assume method
-    EXPECT_EQ(net.getCloudNodes().size(), 1);
-    // Scale up
-    net.scaleUp("Cloud1");
-    EXPECT_EQ(net.getCloudNodes().size(), 2);
-    // Scale down
-    net.scaleDown("Cloud1");
-    EXPECT_EQ(net.getCloudNodes().size(), 1);
-}
-
-// 29. IoT Devices: Dodaj symulację urządzeń IoT
-//    - Niskie zasilanie, sporadyczne połączenia
-//    - Metody: addIoTDevice, simulateBatteryDrain
-TEST(NetworkTest, IoTDevices) {
-    Network net;
-    net.addIoTDevice("Sensor1", "10.0.0.10"); // Assume method
-    EXPECT_TRUE(net.hasIoTDevice("Sensor1"));
-    // Simulate battery
-    net.simulateBatteryDrain("Sensor1", 20); // 20% drain
-    EXPECT_EQ(net.getBatteryLevel("Sensor1"), 80);
-}
-
-// 30. Performance Metrics: Dodaj metryki wydajności
-//    - Latency, throughput, packet loss rate
-//    - Metody: getLatency, getThroughput, getPacketLossRate
-=======
 // 25. Routing Protocols: Dodaj symulację protokołów routingu jak OSPF/BGP
 //    - Router wymienia informacje o trasach z sąsiednimi routerami
 //    - Metody w Router: exchangeRoutingInfo(otherRouter: Router*) - wysyła swoją tablicę routingu
@@ -702,23 +612,11 @@ TEST(NetworkTest, IoTDevices) {
 //    - getPacketLossRate(a: string, b: string) -> double - procent utraconych pakietów (0.0-1.0)
 //    - Używa map dla zbierania statystyk podczas symulacji (np. totalPackets, lostPackets, delays)
 //    - Symuluje monitoring sieci (jak w narzędziach Wireshark lub SNMP)
->>>>>>> fe3dcd3711bf4fde6258fb81b968e5d4a5626880
 TEST(NetworkTest, PerformanceMetrics) {
     Network net;
     net.addNode<DummyNode>("A", "10.0.0.1");
     net.addNode<DummyNode>("B", "10.0.0.2");
     net.connect("A", "B");
-<<<<<<< HEAD
-    net.setLinkDelay("A", "B", 50);
-    // Send packets
-    for (int i = 0; i < 10; ++i) {
-        net.incrementPacketCount("A", "B");
-    }
-    // Metrics
-    EXPECT_EQ(net.getLatency("A", "B"), 50);
-    EXPECT_EQ(net.getThroughput("A", "B"), 10); // Packets sent
-    EXPECT_EQ(net.getPacketLossRate("A", "B"), 0.0); // No loss
-=======
     net.setLinkDelay("A", "B", 50); // 50ms delay
     // Simulate sending packets
     for (int i = 0; i < 10; ++i) {
@@ -731,7 +629,6 @@ TEST(NetworkTest, PerformanceMetrics) {
     // With loss
     net.setPacketLoss("A", "B", 0.2); // 20% loss
     EXPECT_EQ(net.getPacketLossRate("A", "B"), 0.2);
->>>>>>> fe3dcd3711bf4fde6258fb81b968e5d4a5626880
 }
 
 int main(int argc, char **argv) {

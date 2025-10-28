@@ -107,40 +107,8 @@ int main() {
         auto path = request.relative_uri().path();
         auto query = uri::split_query(request.request_uri().query());
 
-<<<<<<< HEAD
-        if (path == U("/vlan") && query.count(U("name"))) {
-            std::string name = utility::conversions::to_utf8string(query[U("name")]);
-            int vlanId = -1;
-            const auto& vlans = net.getVLANs();
-            auto it = vlans.find(name);
-            if (it != vlans.end()) vlanId = it->second;
-
-            web::json::value resp;
-            resp[U("name")] = web::json::value::string(query[U("name")]);
-            resp[U("vlanId")] = web::json::value::number(vlanId);
-            request.reply(status_codes::OK, resp);
-            return;
-        } else if (path == U("/vlans")) {
-            web::json::value resp;
-            web::json::value vlanMap = web::json::value::object();
-            std::map<int, std::vector<std::string>> vlanGroups;
-            for (const auto& [name, vlanId] : net.getVLANs()) {
-                vlanGroups[vlanId].push_back(name);
-            }
-            for (const auto& [vlanId, members] : vlanGroups) {
-                web::json::value arr = web::json::value::array();
-                for (size_t i = 0; i < members.size(); ++i)
-                    arr[i] = web::json::value::string(utility::conversions::to_string_t(members[i]));
-                vlanMap[utility::conversions::to_string_t(std::to_string(vlanId))] = arr;
-            }
-            resp[U("vlans")] = vlanMap;
-            request.reply(status_codes::OK, resp);
-            return;
-        } else if (path == U("/addNode")) {
-=======
         // POST /node/add - Add a new node
         if (path == U("/node/add")) {
->>>>>>> fe3dcd3711bf4fde6258fb81b968e5d4a5626880
             request.extract_json().then([&](web::json::value jv) {
                 try {
                     auto name = utility::conversions::to_utf8string(jv[U("name")].as_string());
