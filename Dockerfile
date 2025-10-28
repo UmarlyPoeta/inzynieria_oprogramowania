@@ -14,7 +14,6 @@ RUN apt-get update && apt-get install -y \
     libssl-dev \
     libgtest-dev \
     libmysqlcppconn-dev \
-    libmysqlcppconn8-2 \
     mysql-client \
     git \
     curl \

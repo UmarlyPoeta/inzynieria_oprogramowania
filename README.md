@@ -294,7 +294,7 @@ sudo apt-get update && sudo apt-get install -y \
     build-essential cmake g++ \
     libcpprest-dev nlohmann-json3-dev \
     libssl-dev libgtest-dev \
-    libmysqlcppconn-dev libmysqlcppconn8-2 \
+    libmysqlcppconn-dev \
     mysql-client
 
 # Start MySQL (Docker)

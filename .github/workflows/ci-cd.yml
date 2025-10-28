@@ -40,7 +40,6 @@ jobs:
           libssl-dev \
           libgtest-dev \
           libmysqlcppconn-dev \
-          libmysqlcppconn8-2 \
           mysql-client
     
     - name: Setup database schema
