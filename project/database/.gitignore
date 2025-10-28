@@ -1,0 +1,5 @@
+# Ignore actual .env file (contains sensitive credentials)
+.env
+
+# Keep .env.example (template)
+!.env.example

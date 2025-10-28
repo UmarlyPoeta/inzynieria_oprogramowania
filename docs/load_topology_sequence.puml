@@ -1,0 +1,69 @@
+@startuml load_topology_sequence
+!theme plain
+skinparam sequenceMessageAlign center
+
+actor Client
+participant "REST API" as API
+participant "Network" as Net
+participant "NodeRepo" as NodeRepo
+participant "LinkRepo" as LinkRepo
+database "MySQL" as DB
+
+Client -> API : GET /db/load
+activate API
+
+API -> Net : loadTopologyFromDB()
+activate Net
+
+Net -> Net : clear()\n(Clear in-memory topology)
+note right
+  • nodes.clear()
+  • adjacency.clear()
+  • linkDelays.clear()
+end note
+
+Net -> NodeRepo : getAllNodes()
+activate NodeRepo
+NodeRepo -> DB : SELECT * FROM nodes
+activate DB
+DB --> NodeRepo : ResultSet (nodes)
+deactivate DB
+NodeRepo --> Net : List<Node>
+deactivate NodeRepo
+
+loop For each node row
+    Net -> Net : addNode<Host/Router>()
+    note right
+      • Create appropriate node type
+      • Rebuild nodesByName map
+      • Add to nodes vector
+    end note
+end
+
+Net -> LinkRepo : getAllLinks()
+activate LinkRepo
+LinkRepo -> DB : SELECT * FROM links
+activate DB
+DB --> LinkRepo : ResultSet (links)
+deactivate DB
+LinkRepo --> Net : List<Link>
+deactivate LinkRepo
+
+loop For each link row
+    Net -> Net : connect(nameA, nameB)
+    note right
+      • Rebuild adjacency map
+    end note
+    
+    Net -> Net : setLinkDelay(delay)
+    Net -> Net : setBandwidth(bw)
+    Net -> Net : setPacketLoss(loss)
+end
+
+Net --> API : ✅ Success\n(nodes loaded, links restored)
+deactivate Net
+
+API --> Client : {"status":"success",\n"nodes":X,"links":Y}
+deactivate API
+
+@enduml

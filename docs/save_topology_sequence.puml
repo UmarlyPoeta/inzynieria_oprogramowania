@@ -1,0 +1,77 @@
+@startuml save_topology_sequence
+!theme plain
+skinparam sequenceMessageAlign center
+
+actor Client
+participant "REST API" as API
+participant "Network" as Net
+participant "DatabaseMgr" as DBMgr
+participant "NodeRepo" as NodeRepo
+participant "LinkRepo" as LinkRepo
+participant "StatsRepo" as StatsRepo
+database "MySQL" as DB
+
+Client -> API : GET /db/save
+activate API
+
+API -> Net : saveTopologyToDB()
+activate Net
+
+Net -> DBMgr : beginTransaction()
+activate DBMgr
+DBMgr -> DB : START TRANSACTION
+activate DB
+DB --> DBMgr : OK
+deactivate DB
+DBMgr --> Net : Transaction started
+deactivate DBMgr
+
+loop For each node
+    Net -> NodeRepo : createNode(node)
+    activate NodeRepo
+    NodeRepo -> DB : INSERT INTO nodes...
+    activate DB
+    DB --> NodeRepo : Node ID
+    deactivate DB
+    NodeRepo --> Net : Created
+    deactivate NodeRepo
+end
+
+loop For each link
+    Net -> LinkRepo : createLink(nodeA, nodeB)
+    activate LinkRepo
+    LinkRepo -> DB : INSERT INTO links...
+    activate DB
+    DB --> LinkRepo : Link ID
+    deactivate DB
+    LinkRepo --> Net : Created
+    deactivate LinkRepo
+end
+
+loop For each statistic
+    Net -> StatsRepo : recordPacket(src, dst, count)
+    activate StatsRepo
+    StatsRepo -> DB : INSERT INTO packet_stats...
+    activate DB
+    DB --> StatsRepo : OK
+    deactivate DB
+    StatsRepo --> Net : Recorded
+    deactivate StatsRepo
+end
+
+Net -> DBMgr : commit()
+activate DBMgr
+DBMgr -> DB : COMMIT
+activate DB
+DB --> DBMgr : Success
+deactivate DB
+DBMgr --> Net : Committed
+deactivate DBMgr
+
+Net --> API : ✅ Success
+deactivate Net
+
+API --> Client : {"status":"success",\n"message":"Topology saved"}
+deactivate API
+
+@enduml

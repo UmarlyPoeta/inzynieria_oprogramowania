@@ -1,0 +1,87 @@
+@startuml system_overview
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam packageStyle rectangle
+
+package "CLIENT LAYER" as client {
+  component "Web Browser\n(Adminer GUI)" as browser
+  component "curl / Postman\n(API Testing)" as curl
+  component "Custom Applications\n(REST API)" as apps
+}
+
+package "APPLICATION LAYER" as app {
+  package "REST API Server\n(main.cpp)" as rest {
+    note right
+      • 34 HTTP Endpoints
+      • Request routing
+      • JSON serialization
+    end note
+  }
+  
+  package "Network Manager\n(Network.cpp)" as network {
+    note right
+      • Topology management
+      • In-memory graph
+      • Persistence orchestration
+    end note
+  }
+  
+  package "Engine.cpp" as engine {
+    note right
+      • Routing
+      • Algorithms
+      • Simulation
+    end note
+  }
+  
+  package "DatabaseManager" as dbmgr {
+    note right
+      • Connection pool
+      • Transactions
+      • SQL execution
+    end note
+  }
+  
+  package "Repositories" as repos {
+    component "NodeRepo" as noderepo
+    component "LinkRepo" as linkrepo
+    component "StatsRepo" as statsrepo
+  }
+}
+
+package "PERSISTENCE LAYER" as persist {
+  database "MySQL 8.0 Database" as mysql {
+    folder "Tables" {
+      card "nodes\n----\nid (PK)\nname\nip\ntype\nvlan_id\nfailed" as nodes
+      card "links\n----\nid (PK)\nnode_a_id (FK)\nnode_b_id (FK)\ndelay_ms\nbandwidth\npacket_loss" as links
+      card "packet_stats\n----\nid (PK)\nsrc_id (FK)\ndst_id (FK)\ncount\ntimestamp" as stats
+      card "vlans\n----\nid (PK)\nvlan_id\nname\ndescription" as vlans
+      card "congestion\n----\nid (PK)\nnode_id (FK)\nqueue_size\nis_congested" as congestion
+    }
+  }
+  
+  component "Adminer Web GUI\n(Port 8081)" as adminer {
+    note right
+      • Visual database management
+      • SQL query interface
+    end note
+  }
+}
+
+' Connections
+client -down-> rest : HTTP/REST
+rest -down-> network
+network -down-> engine
+network -down-> dbmgr
+dbmgr -down-> repos
+repos -down-> mysql : MySQL\nConnector/C++
+adminer -up-> mysql
+
+' Relationships
+links -up-> nodes : FK: node_a_id
+links -up-> nodes : FK: node_b_id
+stats -up-> nodes : FK: src_id
+stats -up-> nodes : FK: dst_id
+congestion -up-> nodes : FK: node_id
+
+@enduml

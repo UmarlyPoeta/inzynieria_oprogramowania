@@ -780,3 +780,187 @@ double Network::getPacketLossRate(const std::string& nameA, const std::string& n
     }
     return 0.0; // Brak utraty pakietów
 }
+
+// Database Persistence Implementation
+#include "../database/DatabaseManager.hpp"
+#include "../database/Config.hpp"
+#include "../database/NodeRepository.hpp"
+#include "../database/LinkRepository.hpp"
+#include "../database/StatsRepository.hpp"
+
+void Network::enablePersistence(const std::string& dbHost, int dbPort,
+                                const std::string& dbUser, const std::string& dbPassword,
+                                const std::string& dbName) {
+    try {
+        auto& dbManager = netsim::db::DatabaseManager::getInstance();
+        dbManager.connect(dbHost, dbPort, dbUser, dbPassword, dbName);
+        persistenceEnabled = true;
+        std::cout << "[Network] Database persistence enabled" << std::endl;
+    } catch (const std::exception& e) {
+        std::cerr << "[Network] Failed to enable persistence: " << e.what() << std::endl;
+        throw;
+    }
+}
+
+bool Network::saveTopologyToDB() {
+    if (!persistenceEnabled) {
+        std::cerr << "[Network] Persistence not enabled" << std::endl;
+        return false;
+    }
+
+    try {
+        auto& dbManager = netsim::db::DatabaseManager::getInstance();
+        netsim::db::NodeRepository nodeRepo(dbManager);
+        netsim::db::LinkRepository linkRepo(dbManager);
+        netsim::db::StatsRepository statsRepo(dbManager);
+
+        // Start transaction
+        dbManager.beginTransaction();
+
+        // Clear existing data
+        linkRepo.deleteAllLinks();
+        nodeRepo.deleteAllNodes();
+        statsRepo.deleteAllStats();
+
+        // Save all nodes
+        std::map<std::string, int64_t> nodeIdMap; // name -> database ID
+        for (const auto& node : nodes) {
+            int64_t dbId = nodeRepo.createNode(*node);
+            nodeIdMap[node->getName()] = dbId;
+            std::cout << "[Network] Saved node: " << node->getName() << " (ID: " << dbId << ")" << std::endl;
+        }
+
+        // Save all links
+        for (const auto& [nodeName, neighbors] : adj) {
+            int64_t nodeAId = nodeIdMap[nodeName];
+            
+            for (const auto& neighborName : neighbors) {
+                // Only save each link once (avoid duplicates)
+                if (nodeName < neighborName) {
+                    int64_t nodeBId = nodeIdMap[neighborName];
+                    
+                    // Get link properties
+                    int delay = getLinkDelay(nodeName, neighborName);
+                    int bandwidth = getBandwidth(nodeName, neighborName);
+                    float loss = static_cast<float>(getPacketLossRate(nodeName, neighborName));
+                    
+                    linkRepo.createLink(nodeAId, nodeBId, delay, bandwidth, loss);
+                    std::cout << "[Network] Saved link: " << nodeName << " <-> " << neighborName << std::endl;
+                }
+            }
+        }
+
+        // Save packet statistics
+        for (const auto& [link, count] : linkTrafficCount) {
+            const auto& [srcName, dstName] = link;
+            if (nodeIdMap.count(srcName) && nodeIdMap.count(dstName)) {
+                int64_t srcId = nodeIdMap[srcName];
+                int64_t dstId = nodeIdMap[dstName];
+                statsRepo.recordPacket(srcId, dstId, count);
+            }
+        }
+
+        // Commit transaction
+        dbManager.commit();
+        std::cout << "[Network] Topology saved to database successfully" << std::endl;
+        return true;
+
+    } catch (const std::exception& e) {
+        auto& dbManager = netsim::db::DatabaseManager::getInstance();
+        dbManager.rollback();
+        std::cerr << "[Network] Failed to save topology: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+bool Network::loadTopologyFromDB() {
+    if (!persistenceEnabled) {
+        std::cerr << "[Network] Persistence not enabled" << std::endl;
+        return false;
+    }
+
+    try {
+        auto& dbManager = netsim::db::DatabaseManager::getInstance();
+        netsim::db::NodeRepository nodeRepo(dbManager);
+        netsim::db::LinkRepository linkRepo(dbManager);
+
+        // Clear current topology
+        nodes.clear();
+        nodesByName.clear();
+        adj.clear();
+        linkDelays.clear();
+        bandwidths.clear();
+        packetLoss.clear();
+        linkTrafficCount.clear();
+
+        // Load all nodes from database
+        auto dbNodes = nodeRepo.getAllNodes();
+        std::map<int64_t, std::string> idToNameMap; // database ID -> name
+
+        for (const auto& [dbId, name, ip, type] : dbNodes) {
+            // Create appropriate node type based on database type
+            if (type == "host") {
+                auto node = addNode<Host>(name, ip, 8080);
+                idToNameMap[dbId] = name;
+                std::cout << "[Network] Loaded host: " << name << " (" << ip << ")" << std::endl;
+            } else if (type == "router") {
+                auto node = addNode<Router>(name);
+                idToNameMap[dbId] = name;
+                std::cout << "[Network] Loaded router: " << name << std::endl;
+            } else {
+                // Unknown type - skip or create as DummyNode
+                auto node = addNode<DummyNode>(name, ip);
+                idToNameMap[dbId] = name;
+                std::cout << "[Network] Loaded node: " << name << " (type: " << type << ")" << std::endl;
+            }
+        }
+
+        // Load all links from database
+        auto dbLinks = linkRepo.getAllLinks();
+        for (const auto& [linkId, nodeAId, nodeBId, delay, bandwidth, loss] : dbLinks) {
+            if (idToNameMap.count(nodeAId) && idToNameMap.count(nodeBId)) {
+                const std::string& nameA = idToNameMap[nodeAId];
+                const std::string& nameB = idToNameMap[nodeBId];
+                
+                // Connect nodes
+                connect(nameA, nameB);
+                
+                // Restore link properties
+                if (delay > 0) {
+                    setLinkDelay(nameA, nameB, delay);
+                }
+                if (bandwidth > 0) {
+                    setBandwidth(nameA, nameB, bandwidth);
+                }
+                if (loss > 0.0) {
+                    setPacketLoss(nameA, nameB, loss);
+                }
+                
+                std::cout << "[Network] Loaded link: " << nameA << " <-> " << nameB 
+                         << " (delay: " << delay << "ms, bw: " << bandwidth << "Mbps)" << std::endl;
+            }
+        }
+
+        std::cout << "[Network] Topology loaded from database successfully" << std::endl;
+        std::cout << "[Network] Loaded " << nodes.size() << " nodes and " 
+                  << (dbLinks.size()) << " links" << std::endl;
+        return true;
+
+    } catch (const std::exception& e) {
+        std::cerr << "[Network] Failed to load topology: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+void Network::disablePersistence() {
+    if (persistenceEnabled) {
+        auto& dbManager = netsim::db::DatabaseManager::getInstance();
+        dbManager.disconnect();
+        persistenceEnabled = false;
+        std::cout << "[Network] Database persistence disabled" << std::endl;
+    }
+}
+
+bool Network::isPersistenceEnabled() const {
+    return persistenceEnabled;
+}

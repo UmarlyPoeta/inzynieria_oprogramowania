@@ -7,6 +7,10 @@ find_package(cpprestsdk REQUIRED) # Microsoft C++ REST SDK
 find_package(nlohmann_json REQUIRED)
 find_package(OpenSSL REQUIRED)
 
+# MySQL Connector/C++ - for database persistence
+find_library(MYSQLCPPCONN_LIB mysqlcppconn REQUIRED)
+find_path(MYSQLCPPCONN_INCLUDE mysql_driver.h PATH_SUFFIXES mysql-cppconn-8 mysql-cppconn)
+
 add_executable(netsim
     src/main.cpp
     src/core/Node.cpp
@@ -17,9 +21,15 @@ add_executable(netsim
     src/core/Router.cpp
 )
 
-target_include_directories(netsim PRIVATE src)
+target_include_directories(netsim PRIVATE src ${MYSQLCPPCONN_INCLUDE})
 
-target_link_libraries(netsim PRIVATE cpprestsdk::cpprest nlohmann_json::nlohmann_json OpenSSL::SSL OpenSSL::Crypto)
+target_link_libraries(netsim PRIVATE 
+    cpprestsdk::cpprest 
+    nlohmann_json::nlohmann_json 
+    OpenSSL::SSL 
+    OpenSSL::Crypto
+    ${MYSQLCPPCONN_LIB}
+)
 
 # Optional: install rules
 install(TARGETS netsim DESTINATION bin)

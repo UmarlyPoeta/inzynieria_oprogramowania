@@ -1,0 +1,77 @@
+@startuml hybrid_architecture
+!theme plain
+
+package "NetSimCPP Hybrid Architecture" {
+  
+  frame "IN-MEMORY\n(Fast Operations)" as memory #E8F5E9 {
+    component "Network Topology" as topo
+    note right of topo
+      • Current nodes
+      • Adjacency map
+      • nodesByName
+    end note
+    
+    component "Packet Queues" as queues
+    note right of queues
+      • Per-node queues
+      • Congestion control
+      • Priority queues
+    end note
+    
+    component "Routing Engine" as routing
+    note right of routing
+      • BFS algorithm
+      • Dijkstra algorithm
+      • Path computation
+    end note
+    
+    component "Simulation State" as state
+    note right of state
+      • Current time
+      • Scheduled events
+      • TCP connections
+    end note
+  }
+  
+  frame "IN DATABASE\n(Persistent)" as db #E3F2FD {
+    database "MySQL 8.0" as mysql {
+      storage "Historical\nConfigurations" as history
+      storage "Packet Statistics\nover Time" as stats
+      storage "Node/Link\nMetadata" as metadata
+      storage "VLAN\nConfigurations" as vlans
+      storage "Congestion\nRecords" as congestion
+    }
+  }
+  
+  component "Synchronization\nLayer" as sync #FFF9C4 {
+    note right
+      • Save: Memory → Database
+      • Load: Database → Memory
+      • Optional auto-sync
+      • Transaction support
+    end note
+  }
+}
+
+' Connections
+memory -down-> sync : saveTopologyToDB()
+sync -down-> db : INSERT/UPDATE
+db -up-> sync : SELECT
+sync -up-> memory : loadTopologyFromDB()
+
+note bottom of memory
+  **Benefits:**
+  ✓ Fast simulation
+  ✓ Low latency
+  ✓ Real-time response
+end note
+
+note bottom of db
+  **Benefits:**
+  ✓ Survive restarts
+  ✓ Historical analysis
+  ✓ Multi-user support
+  ✓ Backup/Recovery
+end note
+
+@enduml

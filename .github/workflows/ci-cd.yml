@@ -10,6 +10,20 @@ jobs:
   build-and-test:
     runs-on: ubuntu-22.04
     
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: NetSimCPP1234
+          MYSQL_DATABASE: netsim
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -pNetSimCPP1234"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -24,7 +38,19 @@ jobs:
           libcpprest-dev \
           nlohmann-json3-dev \
           libssl-dev \
-          libgtest-dev
+          libgtest-dev \
+          libmysqlcppconn-dev \
+          libmysqlcppconn8-2 \
+          mysql-client
+    
+    - name: Setup database schema
+      run: |
+        mysql -h 127.0.0.1 -u root -pNetSimCPP1234 netsim < project/database/NetSimDB.sql
+        echo "Database schema loaded successfully"
+    
+    - name: Verify database
+      run: |
+        mysql -h 127.0.0.1 -u root -pNetSimCPP1234 netsim -e "SHOW TABLES;"
     
     - name: Configure CMake
       working-directory: project/backend
@@ -37,6 +63,12 @@ jobs:
     - name: Run unit tests
       working-directory: project/backend
       run: ./netsim_tests --gtest_output=xml:test-results.xml
+      env:
+        DB_HOST: 127.0.0.1
+        DB_PORT: 3306
+        DB_USER: root
+        DB_PASS: NetSimCPP1234
+        DB_NAME: netsim
     
     - name: Publish test results
       uses: EnricoMi/publish-unit-test-result-action@v2
@@ -56,6 +88,20 @@ jobs:
     runs-on: ubuntu-22.04
     needs: build-and-test
     
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: NetSimCPP1234
+          MYSQL_DATABASE: netsim
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -pNetSimCPP1234"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -71,6 +117,7 @@ jobs:
           nlohmann-json3-dev \
           libssl-dev \
           libgtest-dev \
+          libmysqlcppconn-dev \
           valgrind
     
     - name: Build project
@@ -107,25 +154,50 @@ jobs:
       run: |
         docker run --rm netsim:latest ./netsim_tests
     
-    - name: Start server in Docker
+    - name: Start full stack with Docker Compose
       run: |
-        docker run -d --name netsim-test -p 8080:8080 netsim:latest
-        echo "Waiting for server to start..."
-        for i in {1..30}; do
-          if curl -f http://localhost:8080/status 2>/dev/null; then
-            echo "✅ Server started successfully!"
-            break
-          fi
-          echo "Attempt $i/30: Server not ready yet..."
-          sleep 2
-        done
-        echo "Server logs:"
-        docker logs netsim-test
+        docker-compose up -d
+        echo "Waiting for services to be healthy..."
+        sleep 30
+    
+    - name: Check MySQL health
+      run: |
+        docker-compose exec -T mysql mysqladmin ping -h localhost -pNetSimCPP1234
     
     - name: Test Docker API
       run: |
+        echo "Testing server status..."
         curl -f http://localhost:8080/status || exit 1
-        docker stop netsim-test
+        
+        echo "Testing database status..."
+        curl -f http://localhost:8080/db/status || exit 1
+        
+        echo "Enabling database persistence..."
+        curl -X POST http://localhost:8080/db/enable \
+          -H "Content-Type: application/json" \
+          -d '{"host":"mysql","port":3306,"user":"root","password":"NetSimCPP1234","database":"netsim"}'
+        
+        echo "Creating test node..."
+        curl -X POST http://localhost:8080/node/add \
+          -H "Content-Type: application/json" \
+          -d '{"name":"TestNode","type":"host","ip":"10.0.0.1"}'
+        
+        echo "Saving topology to database..."
+        curl -f http://localhost:8080/db/save || exit 1
+        
+        echo "✅ All Docker tests passed!"
+    
+    - name: Show container logs
+      if: failure()
+      run: |
+        echo "=== NetSim Server Logs ==="
+        docker-compose logs netsim
+        echo "=== MySQL Logs ==="
+        docker-compose logs mysql
+    
+    - name: Cleanup
+      if: always()
+      run: docker-compose down -v
 
   code-quality:
     runs-on: ubuntu-22.04

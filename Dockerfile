@@ -13,6 +13,9 @@ RUN apt-get update && apt-get install -y \
     nlohmann-json3-dev \
     libssl-dev \
     libgtest-dev \
+    libmysqlcppconn-dev \
+    libmysqlcppconn8-2 \
+    mysql-client \
     git \
     curl \
     && rm -rf /var/lib/apt/lists/*
@@ -22,6 +25,7 @@ WORKDIR /app
 
 # Copy project files
 COPY project/backend /app/backend
+COPY project/database /app/database
 COPY README.md /app/
 
 # Build the project

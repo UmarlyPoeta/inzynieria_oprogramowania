@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: netsim-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: NetSimCPP1234
+      MYSQL_DATABASE: netsim
+      MYSQL_ROOT_HOST: '%'
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./NetSimDB.sql:/docker-entrypoint-initdb.d/schema.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-pNetSimCPP1234"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - netsim-network
+
+  adminer:
+    image: adminer
+    container_name: netsim-adminer
+    restart: always
+    ports:
+      - "8081:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - netsim-network
+    environment:
+      ADMINER_DEFAULT_SERVER: mysql
+
+volumes:
+  mysql_data:
+    driver: local
+
+networks:
+  netsim-network:
+    driver: bridge

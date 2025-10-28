@@ -7,7 +7,9 @@
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Docker-lightgrey.svg)
 
-**A comprehensive C++ network simulator with REST API, Docker support, and extensive testing**
+**A comprehensive C++ network simulator with REST API, Docker support, MySQL database, and extensive testing**
+
+📖 **[Quick Start Guide](QUICKSTART.md)** - Get started in 5 minutes!
 
 [English](#english) | [Polski](#polski)
 
@@ -41,7 +43,8 @@
 - Simulating realistic network protocols (TCP, UDP, ICMP)
 - Analyzing network behavior and performance
 - RESTful API for programmatic control
-- Full Docker containerization
+- Full Docker containerization with MySQL database
+- Persistent topology storage and statistics tracking
 - Extensive test coverage (60 unit tests + 10 performance tests)
 
 **Perfect for**: Network engineers, students, researchers, and developers learning network fundamentals or testing network algorithms.
@@ -65,32 +68,94 @@
 - **IoT Devices**: Battery-aware wireless sensor simulation
 - **Topology Import/Export**: JSON-based configuration
 
-#### REST API (29 Endpoints)
+#### Database Persistence 
+- **MySQL Integration**: Full topology persistence
+- **Statistics Tracking**: Packet transmission history
+- **Save/Load**: Preserve network state across restarts
+- **Web GUI**: Adminer for database management
+- **5 Tables**: nodes, links, packet_stats, vlans, congestion
+- **REST Endpoints**: `/db/enable`, `/db/save`, `/db/load`, `/db/status`
+
+#### REST API (34 Endpoints)
 - Node management (add, remove, fail)
 - Link configuration (connect, delay, bandwidth)
 - Network operations (ping, traceroute, multicast)
 - Statistics and monitoring
 - Topology management
+- **Database operations** (enable, save, load, status) 
 
 #### Production Ready
-- Docker containerization
-- CI/CD with GitHub Actions
+- Docker containerization with MySQL
+- CI/CD with GitHub Actions (database tests included)
 - Memory leak detection (Valgrind)
 - Static code analysis (cppcheck)
 - Performance benchmarking
+- Database schema versioning
 
 ---
 
 ### Architecture
 
-#### Class Diagram
-![Class Diagram](project/docs/UML/CLASSES.png)
+NetSimCPP uses a **hybrid architecture** combining in-memory performance with database persistence.
 
-#### Component Architecture
-![Components](project/docs/UML/COMPONENTS.png)
+#### System Overview
+
+Complete system architecture showing all layers (Client, Application, Persistence):
+
+![System Overview](docs/UML/system_overview.png)
+
+#### Database Schema
+
+MySQL 8.0 database with 5 tables for persistent storage:
+
+![Database Schema](docs/UML/database_schema.png)
+
+**Tables:**
+- `nodes` - Network nodes (Host, Router, DummyNode)
+- `links` - Network connections with properties
+- `packet_stats` - Packet transmission statistics
+- `vlans` - VLAN configurations
+- `congestion` - Congestion tracking
+
+#### Hybrid Architecture
+
+In-memory (fast) + Database (persistent) approach:
+
+![Hybrid Architecture](docs/UML/hybrid_architecture.png)
+
+**In-Memory:**
+- Network topology (nodes, adjacency map)
+- Packet queues
+- Routing algorithms (BFS, Dijkstra)
+- Real-time simulation state
+
+**In Database:**
+- Historical network configurations
+- Packet statistics over time
+- Node/Link metadata
+- VLAN configurations
+- Congestion records
+
+#### Data Flow - Save Topology
+
+How network topology is saved to database:
+
+![Save Topology](docs/UML/save_topology_sequence.png)
+
+#### Data Flow - Load Topology
+
+How network topology is loaded from database:
+
+![Load Topology](docs/UML/load_topology_sequence.png)
+
+#### Legacy Class Diagram
+![Class Diagram](docs/UML/CLASSES.png)
+
+#### Legacy Component Architecture
+![Components](docs/UML/COMPONENTS.png)
 
 #### REST API Architecture
-![REST API](project/docs/UML/REST_API_ARCHITECTURE.png)
+![REST API](docs/UML/REST_API_ARCHITECTURE.png)
 
 #### Core Components
 
@@ -138,37 +203,124 @@ class Engine {
 ```
 
 #### Use Case Diagram
-![Use Cases](project/docs/UML/USECASE.png)
+![Use Cases](docs/UML/USECASE.png)
 
 #### Activity Diagram - Simulation Flow
-![Activity Diagram](project/docs/UML/ACTIVITY_SIM.png)
+![Activity Diagram](docs/UML/ACTIVITY_SIM.png)
 
 #### TCP Handshake Sequence
-![TCP Handshake](project/docs/UML/TCP_HANDSHAKE.png)
+![TCP Handshake](docs/UML/TCP_HANDSHAKE.png)
 
 #### Packet State Diagram
-![Packet States](project/docs/UML/PACKAGE_STATE.png)
+![Packet States](docs/UML/PACKAGE_STATE.png)
 
 ---
 
 ### Quick Start
 
+#### Docker Deployment Architecture
+
+NetSimCPP runs in Docker with MySQL database and Adminer web GUI:
+
+![Docker Deployment](docs/UML/docker_deployment.png)
+
+**Services:**
+- **netsim** (Port 8080) - C++ REST API server
+- **mysql** (Port 3306) - MySQL 8.0 database
+- **adminer** (Port 8081) - Database web interface
+
 #### Prerequisites
 - **C++17** compiler (GCC 9+ or Clang 10+)
 - **CMake** 3.10+
-- **Dependencies**: cpprestsdk, nlohmann-json, GoogleTest, OpenSSL
+- **Docker** & Docker Compose (for containerized deployment)
+- **Dependencies**: cpprestsdk, nlohmann-json, GoogleTest, OpenSSL, MySQL Connector/C++
 
-#### Option 1: Docker (Recommended)
+#### Option 1: Docker Compose (Recommended) 
+
+The easiest way to run NetSimCPP with full database support:
 
 ```bash
-# Build and run
-docker-compose up
+# Clone repository
+git clone https://github.com/UmarlyPoeta/inzynieria_oprogramowania.git
+cd inzynieria_oprogramowania
+
+# Start all services (NetSimCPP + MySQL + Adminer)
+docker-compose up -d
+
+# Verify services are running
+docker-compose ps
 
 # Test the API
 curl http://localhost:8080/status
+
+# Access Adminer (MySQL Web GUI)
+# Open http://localhost:8081 in browser
+# Server: mysql, User: root, Password: NetSimCPP1234, Database: netsim
+
+# Enable database persistence
+curl -X POST http://localhost:8080/db/enable \
+  -H "Content-Type: application/json" \
+  -d '{
+    "host": "mysql",
+    "port": 3306,
+    "user": "root",
+    "password": "NetSimCPP1234",
+    "database": "netsim"
+  }'
+
+# Create a node and save to database
+curl -X POST http://localhost:8080/node/add \
+  -d '{"name":"H1", "type":"host", "ip":"10.0.0.1"}'
+
+curl http://localhost:8080/db/save
+
+# View logs
+docker-compose logs -f netsim
+
+# Stop all services
+docker-compose down
 ```
 
-#### Option 2: Local Build
+**Services:**
+- **NetSimCPP Server**: http://localhost:8080
+- **Adminer (MySQL GUI)**: http://localhost:8081
+- **MySQL Database**: localhost:3306
+
+#### Option 2: Local Build with Database
+
+```bash
+# Install dependencies (Ubuntu/Debian)
+sudo apt-get update && sudo apt-get install -y \
+    build-essential cmake g++ \
+    libcpprest-dev nlohmann-json3-dev \
+    libssl-dev libgtest-dev \
+    libmysqlcppconn-dev libmysqlcppconn8-2 \
+    mysql-client
+
+# Start MySQL (Docker)
+cd project/database
+docker-compose up -d
+cd ../..
+
+# Build project
+cd project/backend
+cmake .
+make -j$(nproc)
+
+# Run server
+./netsim
+# Server running at http://0.0.0.0:8080
+
+# In another terminal: Enable database
+curl -X POST http://localhost:8080/db/enable \
+  -d '{"host":"127.0.0.1","user":"root","password":"NetSimCPP1234","database":"netsim"}'
+
+# Run tests
+./netsim_tests
+./netsim_perf_tests
+```
+
+#### Option 3: Local Build without Database
 
 ```bash
 # Install dependencies (Ubuntu/Debian)
@@ -182,20 +334,22 @@ cd project/backend
 cmake .
 make -j$(nproc)
 
-# Run server
+# Run server (in-memory only)
 ./netsim
-# Server running at http://0.0.0.0:8080
 
 # Run tests
 ./netsim_tests
 ./netsim_perf_tests
 ```
 
-#### Option 3: Using Test Scripts
+#### Quick Test Scripts
 
 ```bash
-# Test Docker setup
+# Test full Docker stack
 ./scripts/test_docker.sh
+
+# Test database integration
+./scripts/test_database.sh
 
 # Test CI/CD locally
 ./scripts/test_ci_cd.sh
@@ -235,43 +389,89 @@ curl http://localhost:8080/topology
 
 # Get statistics
 curl http://localhost:8080/statistics
+
+# Enable database persistence
+curl -X POST http://localhost:8080/db/enable \
+  -H "Content-Type: application/json" \
+  -d '{
+    "host": "127.0.0.1",
+    "port": 3306,
+    "user": "root",
+    "password": "NetSimCPP1234",
+    "database": "netsim"
+  }'
+
+# Save topology to database
+curl http://localhost:8080/db/save
+
+# Load topology from database
+curl http://localhost:8080/db/load
+
+# Check database status
+curl http://localhost:8080/db/status
 ```
 
-#### Full API Reference (29 Endpoints)
+#### Full API Reference (34 Endpoints)
 
+**Node Management**
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/status` | Server health check |
 | GET | `/nodes` | List all nodes |
-| GET | `/topology` | Export network topology |
-| GET | `/statistics` | Network statistics |
-| GET | `/cloudnodes` | List cloud nodes |
 | POST | `/node/add` | Add new node |
 | POST | `/node/remove` | Remove node |
 | POST | `/node/fail` | Simulate node failure |
+
+**Link Management**
+| Method | Endpoint | Description |
+|--------|----------|-------------|
 | POST | `/link/connect` | Connect two nodes |
 | POST | `/link/disconnect` | Disconnect nodes |
 | POST | `/link/delay` | Set link delay |
 | POST | `/link/bandwidth` | Set bandwidth limit |
 | POST | `/link/packetloss` | Configure packet loss |
-| POST | `/vlan/assign` | Assign VLAN to node |
-| POST | `/firewall/rule` | Add firewall rule |
+
+**Network Operations**
+| Method | Endpoint | Description |
+|--------|----------|-------------|
 | POST | `/ping` | ICMP ping |
 | POST | `/traceroute` | Trace route |
 | POST | `/multicast` | Multicast packet |
 | POST | `/tcp/connect` | TCP connection |
+
+**Topology & Statistics**
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/topology` | Export network topology |
 | POST | `/topology/import` | Import topology |
+| GET | `/statistics` | Network statistics |
+| POST | `/statistics/reset` | Reset statistics |
+| POST | `/metrics/performance` | Performance metrics |
+
+**Advanced Features**
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/vlan/assign` | Assign VLAN to node |
+| POST | `/firewall/rule` | Add firewall rule |
 | POST | `/wireless/range` | Set wireless range |
 | POST | `/wireless/interference` | Simulate interference |
+| GET | `/cloudnodes` | List cloud nodes |
 | POST | `/cloud/add` | Add cloud node |
 | POST | `/cloud/scaleup` | Scale up cloud |
 | POST | `/cloud/scaledown` | Scale down cloud |
 | POST | `/iot/add` | Add IoT device |
 | POST | `/iot/battery` | Battery drain |
-| POST | `/statistics/reset` | Reset statistics |
-| POST | `/metrics/performance` | Performance metrics |
 
-See [API Full Workflow](project/docs/UML/API_FULL_WORKFLOW.png) for detailed sequence diagrams.
+**Database Persistence** 
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/db/enable` | Enable database persistence |
+| POST | `/db/disable` | Disable database persistence |
+| GET | `/db/status` | Check database connection status |
+| GET | `/db/save` | Save current topology to database |
+| GET | `/db/load` | Load topology from database |
+
+See [API Full Workflow](docs/UML/API_FULL_WORKFLOW.png) for detailed sequence diagrams.
 
 ---
 
@@ -296,6 +496,12 @@ See [API Full Workflow](project/docs/UML/API_FULL_WORKFLOW.png) for detailed seq
   - Concurrent statistics access
   - Stress testing
 
+- **Database Integration Tests** (automated) 
+  - Connection testing
+  - Save/Load cycle verification
+  - Statistics persistence
+  - Transaction rollback testing
+
 #### Running Tests
 
 ```bash
@@ -305,6 +511,9 @@ cd project/backend
 
 # Performance tests
 ./netsim_perf_tests
+
+# Database tests
+../scripts/test_database.sh
 
 # With XML output
 ./netsim_tests --gtest_output=xml:test-results.xml
@@ -331,27 +540,40 @@ See [docs/testing.md](docs/testing.md) for comprehensive testing guide.
 
 #### GitHub Actions Workflow
 
-Our CI/CD pipeline runs on every push and PR:
+Our CI/CD pipeline runs on every push and PR with full MySQL database integration:
 
 ![CI/CD Status](https://github.com/UmarlyPoeta/inzynieria_oprogramowania/actions/workflows/ci-cd.yml/badge.svg)
+
+#### CI/CD Pipeline Diagram
+
+Complete workflow showing all jobs and database integration:
+
+![CI/CD Pipeline](docs/UML/cicd_pipeline.png)
 
 #### Pipeline Jobs
 
 1. **Build & Test** (60 unit tests)
-   - Compile project
+   - **MySQL Service**: Start MySQL 8.0 container
+   - **Database Setup**: Load schema (NetSimDB.sql)
+   - Compile project with MySQL Connector/C++
    - Run all unit tests
+   - **Database Tests**: Verify DB connectivity
    - Publish test results
    - Upload artifacts
 
 2. **Performance Tests**
+   - **MySQL Service**: Database available for tests
    - Run 10 performance benchmarks
    - Memory leak detection (Valgrind)
    - Performance validation
 
 3. **Docker Build**
-   - Build Docker image
+   - Build Docker image (NetSimCPP + MySQL deps)
+   - **Docker Compose**: Start full stack (netsim + mysql + adminer)
    - Test containerized app
-   - Validate API endpoints
+   - **Integration Tests**: Enable DB, save/load topology
+   - Validate API endpoints (34 total)
+   - Show logs on failure
 
 4. **Code Quality**
    - Static analysis (cppcheck)
@@ -390,10 +612,28 @@ jobs:
 
 ### Documentation
 
+#### Core Documentation
+- **[Quick Start Guide](QUICKSTART.md)** - 5-minute setup guide 🚀
 - **[Architecture Documentation](project/docs/architecture.md)** - System design and patterns
+- **[Architecture with Database](docs/ARCHITECTURE_WITH_DB.md)** - Complete architecture diagrams 🆕
 - **[Testing Guide](docs/testing.md)** - Comprehensive testing documentation
 - **[API Documentation](project/docs/overview.md)** - REST API details
-- **[Diagrams](project/docs/diagrams.md)** - UML diagrams and flowcharts
+
+#### Diagrams
+- **[UML Diagrams](project/docs/UML/)** - PlantUML source files 🆕
+  - System Overview (Component Diagram)
+  - Save Topology (Sequence Diagram)
+  - Load Topology (Sequence Diagram)
+  - Docker Deployment (Deployment Diagram)
+  - CI/CD Pipeline (Activity Diagram)
+  - Hybrid Architecture (Component Diagram)
+- **[Legacy Diagrams](project/docs/diagrams.md)** - Original flowcharts
+
+#### Database Documentation
+- **[Database Integration Plan](docs/database_integration_plan.md)** - Architecture and design 🆕
+- **[Database Installation Guide](docs/INSTALL_DATABASE.md)** - Step-by-step setup 🆕
+- **[Database Implementation](docs/DATABASE_IMPLEMENTATION.md)** - Implementation summary 🆕
+- **[Database API Reference](project/database/README.md)** - MySQL schema and queries 🆕
 
 ---
 
@@ -457,8 +697,9 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - Symulacji realistycznych protokołów sieciowych (TCP, UDP, ICMP)
 - Analizy zachowania i wydajności sieci
 - API RESTful do programistycznej kontroli
-- Pełna konteneryzacja Docker
-- Rozbudowane pokrycie testami (60 testów jednostkowych + 10 testów wydajnościowych)
+- Pełnej konteneryzacji Docker z bazą danych MySQL
+- Trwałego przechowywania topologii i śledzenia statystyk
+- Rozbudowanego pokrycia testami (60 testów jednostkowych + 10 testów wydajnościowych)
 
 **Idealne dla**: Inżynierów sieciowych, studentów, naukowców i programistów uczących się podstaw sieci lub testujących algorytmy sieciowe.
 
@@ -481,32 +722,94 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - **Urządzenia IoT**: Symulacja czujników bezprzewodowych z uwzględnieniem baterii
 - **Import/Export Topologii**: Konfiguracja oparta na JSON
 
-#### REST API (29 Endpointów)
+#### Persystencja Bazy Danych 
+- **Integracja MySQL**: Pełna persystencja topologii
+- **Śledzenie Statystyk**: Historia transmisji pakietów
+- **Zapisz/Wczytaj**: Zachowanie stanu sieci między restartami
+- **Web GUI**: Adminer do zarządzania bazą danych
+- **5 Tabel**: nodes, links, packet_stats, vlans, congestion
+- **Endpointy REST**: `/db/enable`, `/db/save`, `/db/load`, `/db/status`
+
+#### REST API (34 Endpointy)
 - Zarządzanie węzłami (dodawanie, usuwanie, awarie)
 - Konfiguracja linków (połączenia, opóźnienia, przepustowość)
 - Operacje sieciowe (ping, traceroute, multicast)
 - Statystyki i monitorowanie
 - Zarządzanie topologią
+- **Operacje bazodanowe** (enable, save, load, status) 
 
 #### Gotowe do Produkcji
-- Konteneryzacja Docker
-- CI/CD z GitHub Actions
+- Konteneryzacja Docker z MySQL
+- CI/CD z GitHub Actions (testy bazy danych włączone)
 - Detekcja wycieków pamięci (Valgrind)
 - Statyczna analiza kodu (cppcheck)
 - Benchmarking wydajności
+- Wersjonowanie schematu bazy danych
 
 ---
 
 ### Architektura {#architektura-pl}
 
-#### Diagram Klas
-![Diagram Klas](project/docs/UML/CLASSES.png)
+NetSimCPP wykorzystuje **architekturę hybrydową** łączącą wydajność pamięci operacyjnej z trwałością bazy danych.
 
-#### Architektura Komponentów
-![Komponenty](project/docs/UML/COMPONENTS.png)
+#### Przegląd Systemu
+
+Kompletna architektura systemu pokazująca wszystkie warstwy (Klient, Aplikacja, Persystencja):
+
+![Przegląd Systemu](docs/UML/system_overview.png)
+
+#### Schemat Bazy Danych
+
+Baza danych MySQL 8.0 z 5 tabelami do trwałego przechowywania:
+
+![Schemat Bazy Danych](docs/UML/database_schema.png)
+
+**Tabele:**
+- `nodes` - Węzły sieci (Host, Router, DummyNode)
+- `links` - Połączenia sieciowe z właściwościami
+- `packet_stats` - Statystyki transmisji pakietów
+- `vlans` - Konfiguracje VLAN
+- `congestion` - Śledzenie przeciążeń
+
+#### Architektura Hybrydowa
+
+Podejście: Pamięć operacyjna (szybka) + Baza danych (trwała):
+
+![Architektura Hybrydowa](docs/UML/hybrid_architecture.png)
+
+**W Pamięci:**
+- Topologia sieci (węzły, mapa sąsiedztwa)
+- Kolejki pakietów
+- Algorytmy routingu (BFS, Dijkstra)
+- Stan symulacji w czasie rzeczywistym
+
+**W Bazie Danych:**
+- Historyczne konfiguracje sieci
+- Statystyki pakietów w czasie
+- Metadane węzłów/połączeń
+- Konfiguracje VLAN
+- Rekordy przeciążeń
+
+#### Przepływ Danych - Zapis Topologii
+
+Jak topologia sieci jest zapisywana do bazy danych:
+
+![Zapis Topologii](docs/UML/save_topology_sequence.png)
+
+#### Przepływ Danych - Wczytywanie Topologii
+
+Jak topologia sieci jest wczytywana z bazy danych:
+
+![Wczytywanie Topologii](docs/UML/load_topology_sequence.png)
+
+#### Diagram Klas (Legacy)
+![Diagram Klas](docs/UML/CLASSES.png)
+
+#### Architektura Komponentów (Legacy)
+![Komponenty](docs/UML/COMPONENTS.png)
 
 #### Architektura REST API
-![REST API](project/docs/UML/REST_API_ARCHITECTURE.png)
+![REST API](docs/UML/REST_API_ARCHITECTURE.png)
 
 #### Główne Komponenty
 
@@ -554,27 +857,41 @@ class Engine {
 ```
 
 #### Diagram Przypadków Użycia
-![Przypadki Użycia](project/docs/UML/USECASE.png)
+![Przypadki Użycia](docs/UML/USECASE.png)
 
 #### Diagram Aktywności - Przepływ Symulacji
-![Diagram Aktywności](project/docs/UML/ACTIVITY_SIM.png)
+![Diagram Aktywności](docs/UML/ACTIVITY_SIM.png)
 
 #### Sekwencja TCP Handshake
-![TCP Handshake](project/docs/UML/TCP_HANDSHAKE.png)
+![TCP Handshake](docs/UML/TCP_HANDSHAKE.png)
 
 #### Diagram Stanów Pakietu
-![Stany Pakietu](project/docs/UML/PACKAGE_STATE.png)
+![Stany Pakietu](docs/UML/PACKAGE_STATE.png)
 
 ---
 
 ### Szybki Start {#szybki-start-pl}
 
+#### Architektura Wdrożenia Docker
+
+NetSimCPP działa w Docker z bazą danych MySQL i interfejsem webowym Adminer:
+
+![Wdrożenie Docker](docs/UML/docker_deployment.png)
+
+**Serwisy:**
+- **netsim** (Port 8080) - Serwer REST API w C++
+- **mysql** (Port 3306) - Baza danych MySQL 8.0
+- **adminer** (Port 8081) - Interfejs webowy bazy danych
+
 #### Wymagania
 - **C++17** kompilator (GCC 9+ lub Clang 10+)
 - **CMake** 3.10+
-- **Zależności**: cpprestsdk, nlohmann-json, GoogleTest, OpenSSL
+- **Docker** & Docker Compose (dla wdrożenia kontenerowego)
+- **Zależności**: cpprestsdk, nlohmann-json, GoogleTest, OpenSSL, MySQL Connector/C++
 
-#### Opcja 1: Docker (Zalecane)
+#### Opcja 1: Docker Compose (Zalecane) 🐳
+
+Najłatwiejszy sposób uruchomienia NetSimCPP z pełnym wsparciem bazy danych:
 
 ```bash
 # Zbuduj i uruchom
@@ -687,7 +1004,7 @@ curl http://localhost:8080/statistics
 | POST | `/statistics/reset` | Zresetuj statystyki |
 | POST | `/metrics/performance` | Metryki wydajności |
 
-Zobacz [API Full Workflow](project/docs/UML/API_FULL_WORKFLOW.png) dla szczegółowych diagramów sekwencji.
+Zobacz [API Full Workflow](docs/UML/API_FULL_WORKFLOW.png) dla szczegółowych diagramów sekwencji.
 
 ---
 
@@ -747,27 +1064,40 @@ Zobacz [docs/testing.md](docs/testing.md) dla kompleksowego przewodnika po testo
 
 #### Workflow GitHub Actions
 
-Nasz pipeline CI/CD uruchamia się przy każdym push i PR:
+Nasz pipeline CI/CD uruchamia się przy każdym push i PR z pełną integracją bazy danych MySQL:
 
 ![Status CI/CD](https://github.com/UmarlyPoeta/inzynieria_oprogramowania/actions/workflows/ci-cd.yml/badge.svg)
+
+#### Diagram Pipeline CI/CD
+
+Kompletny workflow pokazujący wszystkie zadania i integrację z bazą danych:
+
+![Pipeline CI/CD](docs/UML/cicd_pipeline.png)
 
 #### Zadania Pipeline
 
 1. **Build & Test** (60 testów jednostkowych)
-   - Kompilacja projektu
+   - **Serwis MySQL**: Start kontenera MySQL 8.0
+   - **Konfiguracja Bazy**: Wczytanie schematu (NetSimDB.sql)
+   - Kompilacja projektu z MySQL Connector/C++
    - Uruchomienie wszystkich testów jednostkowych
+   - **Testy Bazy**: Weryfikacja połączenia z DB
    - Publikacja wyników testów
    - Upload artefaktów
 
 2. **Testy Wydajnościowe**
+   - **Serwis MySQL**: Baza dostępna dla testów
    - Uruchomienie 10 benchmarków wydajności
    - Detekcja wycieków pamięci (Valgrind)
    - Walidacja wydajności
 
 3. **Build Docker**
-   - Budowanie obrazu Docker
+   - Budowanie obrazu Docker (NetSimCPP + zależności MySQL)
+   - **Docker Compose**: Start pełnego stacku (netsim + mysql + adminer)
    - Testowanie aplikacji w kontenerze
-   - Walidacja endpointów API
+   - **Testy Integracyjne**: Włączenie DB, zapis/odczyt topologii
+   - Walidacja endpointów API (34 total)
+   - Wyświetlanie logów przy błędzie
 
 4. **Jakość Kodu**
    - Analiza statyczna (cppcheck)
@@ -806,10 +1136,28 @@ jobs:
 
 ### Dokumentacja {#dokumentacja-pl}
 
+#### Podstawowa Dokumentacja
+- **[Szybki Start](QUICKSTART.md)** - 5-minutowy przewodnik 🚀
 - **[Dokumentacja Architektury](project/docs/architecture.md)** - Projekt systemu i wzorce
+- **[Architektura z Bazą Danych](docs/ARCHITECTURE_WITH_DB.md)** - Kompletne diagramy architektury 
 - **[Przewodnik Testowania](docs/testing.md)** - Kompleksowa dokumentacja testów
 - **[Dokumentacja API](project/docs/overview.md)** - Szczegóły REST API
-- **[Diagramy](project/docs/diagrams.md)** - Diagramy UML i schematy blokowe
+
+#### Diagramy
+- **[Diagramy UML](project/docs/UML/)** - Pliki źródłowe PlantUML 
+  - Przegląd Systemu (Diagram Komponentów)
+  - Zapis Topologii (Diagram Sekwencji)
+  - Wczytywanie Topologii (Diagram Sekwencji)
+  - Wdrożenie Docker (Diagram Wdrożenia)
+  - Pipeline CI/CD (Diagram Aktywności)
+  - Architektura Hybrydowa (Diagram Komponentów)
+- **[Diagramy Legacy](project/docs/diagrams.md)** - Oryginalne schematy blokowe
+
+#### Dokumentacja Bazy Danych
+- **[Plan Integracji Bazy Danych](docs/database_integration_plan.md)** - Architektura i projekt 
+- **[Przewodnik Instalacji Bazy](docs/INSTALL_DATABASE.md)** - Instalacja krok po kroku 
+- **[Implementacja Bazy Danych](docs/DATABASE_IMPLEMENTATION.md)** - Podsumowanie implementacji 
+- **[Dokumentacja API Bazy](project/database/README.md)** - Schema MySQL i zapytania 
 
 ---
 
@@ -849,7 +1197,7 @@ Ten projekt jest licencjonowany na licencji MIT - zobacz plik LICENSE dla szczeg
 
 <div align="center">
 
-**Made with ❤️ by Software Engineering Team**
+**Made with ❤️ by group of students from AGH**
 
 Star this repo if you find it helpful!
 

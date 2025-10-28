@@ -1,0 +1,130 @@
+@startuml database_schema
+!theme plain
+
+' Entity Relationship Diagram for NetSimCPP Database
+
+entity "nodes" as nodes {
+  * id : INT <<PK>>
+  --
+  name : VARCHAR(100) <<UNIQUE>>
+  ip : VARCHAR(50)
+  type : ENUM('Host','Router','DummyNode')
+  vlan_id : INT
+  failed : BOOLEAN
+  --
+  Indexes:
+  • PRIMARY KEY (id)
+  • UNIQUE INDEX (name)
+  • INDEX (vlan_id)
+}
+
+entity "links" as links {
+  * id : INT <<PK>>
+  --
+  * node_a_id : INT <<FK>>
+  * node_b_id : INT <<FK>>
+  delay_ms : INT DEFAULT 10
+  bandwidth : INT DEFAULT 1000
+  packet_loss : FLOAT DEFAULT 0.0
+  --
+  Indexes:
+  • PRIMARY KEY (id)
+  • INDEX (node_a_id)
+  • INDEX (node_b_id)
+  • UNIQUE INDEX (node_a_id, node_b_id)
+}
+
+entity "packet_stats" as stats {
+  * id : INT <<PK>>
+  --
+  * src_id : INT <<FK>>
+  * dst_id : INT <<FK>>
+  count : INT DEFAULT 0
+  timestamp : DATETIME DEFAULT CURRENT_TIMESTAMP
+  --
+  Indexes:
+  • PRIMARY KEY (id)
+  • INDEX (src_id)
+  • INDEX (dst_id)
+  • UNIQUE INDEX (src_id, dst_id)
+}
+
+entity "vlans" as vlans {
+  * id : INT <<PK>>
+  --
+  * vlan_id : INT <<UNIQUE>>
+  name : VARCHAR(100)
+  description : TEXT
+  --
+  Indexes:
+  • PRIMARY KEY (id)
+  • UNIQUE INDEX (vlan_id)
+}
+
+entity "congestion" as congestion {
+  * id : INT <<PK>>
+  --
+  * node_id : INT <<FK>>
+  queue_size : INT
+  is_congested : BOOLEAN
+  timestamp : DATETIME DEFAULT CURRENT_TIMESTAMP
+  --
+  Indexes:
+  • PRIMARY KEY (id)
+  • INDEX (node_id)
+  • INDEX (timestamp)
+}
+
+' Relationships
+links }o--|| nodes : "node_a_id\nFOREGN KEY"
+links }o--|| nodes : "node_b_id\nFOREGN KEY"
+stats }o--|| nodes : "src_id\nFOREGN KEY"
+stats }o--|| nodes : "dst_id\nFOREGN KEY"
+congestion }o--|| nodes : "node_id\nFOREGN KEY"
+nodes }o--o| vlans : "vlan_id\n(optional)"
+
+note right of nodes
+  **CASCADE Rules:**
+  • DELETE: CASCADE
+  • UPDATE: CASCADE
+  
+  **Constraints:**
+  • name must be unique
+  • type in (Host, Router, DummyNode)
+end note
+
+note right of links
+  **CASCADE Rules:**
+  • DELETE: CASCADE
+  • UPDATE: CASCADE
+  
+  **Constraints:**
+  • (node_a_id, node_b_id) unique
+  • bandwidth > 0
+  • delay_ms >= 0
+  • packet_loss BETWEEN 0 AND 1
+end note
+
+note right of stats
+  **CASCADE Rules:**
+  • DELETE: CASCADE
+  • UPDATE: CASCADE
+  
+  **Usage:**
+  • INSERT...ON DUPLICATE KEY UPDATE
+  • Tracks packet flow statistics
+end note
+
+note bottom of vlans
+  **Optional Table:**
+  • Supports VLAN segmentation
+  • Referenced by nodes.vlan_id
+end note
+
+note bottom of congestion
+  **Optional Table:**
+  • Tracks node congestion events
+  • Used for performance analysis
+end note
+
+@enduml

@@ -95,6 +95,73 @@ int main() {
                 request.reply(status_codes::InternalError, resp);
             }
             
+        } else if (path == U("/db/save")) {
+            // GET /db/save - Save topology to database
+            try {
+                if (!net.isPersistenceEnabled()) {
+                    web::json::value resp;
+                    resp[U("error")] = web::json::value::string(U("Database persistence not enabled"));
+                    resp[U("hint")] = web::json::value::string(U("Use POST /db/enable first"));
+                    request.reply(status_codes::BadRequest, resp);
+                } else if (net.saveTopologyToDB()) {
+                    web::json::value resp;
+                    resp[U("status")] = web::json::value::string(U("success"));
+                    resp[U("message")] = web::json::value::string(U("Topology saved to database"));
+                    resp[U("nodes")] = web::json::value::number((int)net.getAllNodes().size());
+                    request.reply(status_codes::OK, resp);
+                } else {
+                    web::json::value resp;
+                    resp[U("error")] = web::json::value::string(U("Failed to save topology"));
+                    request.reply(status_codes::InternalError, resp);
+                }
+            } catch (const std::exception& e) {
+                web::json::value resp;
+                resp[U("error")] = web::json::value::string(utility::conversions::to_string_t(e.what()));
+                request.reply(status_codes::InternalError, resp);
+            }
+            
+        } else if (path == U("/db/load")) {
+            // GET /db/load - Load topology from database
+            try {
+                if (!net.isPersistenceEnabled()) {
+                    web::json::value resp;
+                    resp[U("error")] = web::json::value::string(U("Database persistence not enabled"));
+                    resp[U("hint")] = web::json::value::string(U("Use POST /db/enable first"));
+                    request.reply(status_codes::BadRequest, resp);
+                } else if (net.loadTopologyFromDB()) {
+                    web::json::value resp;
+                    resp[U("status")] = web::json::value::string(U("success"));
+                    resp[U("message")] = web::json::value::string(U("Topology loaded from database"));
+                    resp[U("nodes")] = web::json::value::number((int)net.getAllNodes().size());
+                    request.reply(status_codes::OK, resp);
+                } else {
+                    web::json::value resp;
+                    resp[U("error")] = web::json::value::string(U("Failed to load topology"));
+                    request.reply(status_codes::InternalError, resp);
+                }
+            } catch (const std::exception& e) {
+                web::json::value resp;
+                resp[U("error")] = web::json::value::string(utility::conversions::to_string_t(e.what()));
+                request.reply(status_codes::InternalError, resp);
+            }
+            
+        } else if (path == U("/db/status")) {
+            // GET /db/status - Check database status
+            try {
+                web::json::value resp;
+                resp[U("enabled")] = web::json::value::boolean(net.isPersistenceEnabled());
+                if (net.isPersistenceEnabled()) {
+                    resp[U("status")] = web::json::value::string(U("connected"));
+                } else {
+                    resp[U("status")] = web::json::value::string(U("disabled"));
+                }
+                request.reply(status_codes::OK, resp);
+            } catch (const std::exception& e) {
+                web::json::value resp;
+                resp[U("error")] = web::json::value::string(utility::conversions::to_string_t(e.what()));
+                request.reply(status_codes::InternalError, resp);
+            }
+            
         } else {
             web::json::value resp;
             resp[U("error")] = web::json::value::string(U("unknown GET endpoint"));
@@ -622,6 +689,56 @@ int main() {
                     request.reply(status_codes::BadRequest, resp);
                 }
             }).wait();
+
+        // POST /db/enable - Enable database persistence
+        } else if (path == U("/db/enable")) {
+            request.extract_json().then([&](web::json::value jv) {
+                try {
+                    auto host = jv.has_field(U("host")) 
+                        ? utility::conversions::to_utf8string(jv[U("host")].as_string()) 
+                        : std::string("127.0.0.1");
+                    int port = jv.has_field(U("port")) 
+                        ? jv[U("port")].as_integer() 
+                        : 3306;
+                    auto user = jv.has_field(U("user")) 
+                        ? utility::conversions::to_utf8string(jv[U("user")].as_string()) 
+                        : std::string("root");
+                    auto password = jv.has_field(U("password")) 
+                        ? utility::conversions::to_utf8string(jv[U("password")].as_string()) 
+                        : std::string("NetSimCPP1234");
+                    auto database = jv.has_field(U("database")) 
+                        ? utility::conversions::to_utf8string(jv[U("database")].as_string()) 
+                        : std::string("netsim");
+
+                    net.enablePersistence(host, port, user, password, database);
+
+                    web::json::value resp;
+                    resp[U("status")] = web::json::value::string(U("success"));
+                    resp[U("message")] = web::json::value::string(U("Database persistence enabled"));
+                    resp[U("host")] = web::json::value::string(utility::conversions::to_string_t(host));
+                    resp[U("database")] = web::json::value::string(utility::conversions::to_string_t(database));
+                    request.reply(status_codes::OK, resp);
+
+                } catch (const std::exception& e) {
+                    web::json::value resp;
+                    resp[U("error")] = web::json::value::string(utility::conversions::to_string_t(e.what()));
+                    request.reply(status_codes::BadRequest, resp);
+                }
+            }).wait();
+
+        // POST /db/disable - Disable database persistence
+        } else if (path == U("/db/disable")) {
+            try {
+                net.disablePersistence();
+                web::json::value resp;
+                resp[U("status")] = web::json::value::string(U("success"));
+                resp[U("message")] = web::json::value::string(U("Database persistence disabled"));
+                request.reply(status_codes::OK, resp);
+            } catch (const std::exception& e) {
+                web::json::value resp;
+                resp[U("error")] = web::json::value::string(utility::conversions::to_string_t(e.what()));
+                request.reply(status_codes::InternalError, resp);
+            }
 
         } else if (path == U("/assignVLAN")) {
             request.extract_json().then([&](web::json::value jv) {

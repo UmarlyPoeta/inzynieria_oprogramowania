@@ -145,6 +145,17 @@ public:
     int getThroughput(const std::string& nameA, const std::string& nameB) const;
     double getPacketLossRate(const std::string& nameA, const std::string& nameB) const;
 
+    // Database Persistence
+    void enablePersistence(const std::string& dbHost = "127.0.0.1", 
+                          int dbPort = 3306,
+                          const std::string& dbUser = "root",
+                          const std::string& dbPassword = "NetSimCPP1234",
+                          const std::string& dbName = "netsim");
+    bool saveTopologyToDB();
+    bool loadTopologyFromDB();
+    void disablePersistence();
+    bool isPersistenceEnabled() const;
+
 private:
     std::vector<std::shared_ptr<Node>> nodes;                // wszystkie węzły
     std::map<std::string, std::shared_ptr<Node>> nodesByName; // szybki lookup
@@ -177,6 +188,9 @@ private:
     // IoT Devices
     std::set<std::string> iotDevices; // IoT device names
     std::map<std::string, int> iotBatteries; // device -> battery level (0-100)
+    
+    // Database Persistence
+    bool persistenceEnabled = false;
 };
 
 // Implementacja szablonu w headerze
