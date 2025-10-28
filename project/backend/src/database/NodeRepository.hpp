@@ -31,7 +31,7 @@ public:
         
         auto stmt = db.prepareStatement(query);
         stmt->setString(1, node.getName());
-        stmt->setString(2, node.getAddress());
+        stmt->setString(2, node.getIp());
         stmt->setString(3, getNodeTypeString(node));
         stmt->setNull(4, sql::DataType::INTEGER); // VLAN not implemented yet
         stmt->setBoolean(5, false); // Failed status

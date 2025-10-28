@@ -904,9 +904,9 @@ bool Network::loadTopologyFromDB() {
                 idToNameMap[dbId] = name;
                 std::cout << "[Network] Loaded host: " << name << " (" << ip << ")" << std::endl;
             } else if (type == "router") {
-                auto node = addNode<Router>(name);
+                auto node = addNode<Router>(name, ip);
                 idToNameMap[dbId] = name;
-                std::cout << "[Network] Loaded router: " << name << std::endl;
+                std::cout << "[Network] Loaded router: " << name << " (" << ip << ")" << std::endl;
             } else {
                 // Unknown type - skip or create as DummyNode
                 auto node = addNode<DummyNode>(name, ip);
