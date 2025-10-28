@@ -1,31 +1,9 @@
 import React from "react";
-import styled from "styled-components";
 import { useEditor } from "@/context/EditorContext";
 import { useContextMenu } from "@/context/ContextualMenuContext";
 import { Edit2, ChevronDown, Trash2 } from "lucide-react";
 import type { Group } from "@/types";
-
-const MenuList = styled.ul`
-  list-style: none;
-  margin: 0;
-  padding: 4px;
-`;
-
-const MenuItem = styled.li`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  color: #333;
-  transition: background 0.15s;
-
-  &:hover {
-    background-color: rgba(255, 174, 0, 0.15);
-  }
-`;
+import { MenuList, MenuItem } from './ContextGroupMenu.styled'
 
 interface ContextGroupMenuProps {
   group: Group;

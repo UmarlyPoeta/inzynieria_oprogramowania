@@ -1,7 +1,7 @@
-import styled from "styled-components";
-import { useState } from "react";
+import { Grid, Inner, Container } from './CanvasArea.styled'
 import { useEditor } from "@/context/EditorContext";
 import { DeviceNode } from "@/components";
+import { useState } from "react";
 
 const CanvasArea = () => {
   const { devices, links } = useEditor();
@@ -73,38 +73,5 @@ const CanvasArea = () => {
   );
 
 };
-
-
-const Container = styled.div`
-    flex: 1;
-    background-color: ${(props: any) => props.theme.colors.background};
-    overflow: hidden;
-    position: absolute;
-    z-index: 1;
-    cursor: grab;
-    width: 100%;
-    height: 100%;
-`;
-
-const Grid = styled.div`
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-size: 20px 20px;
-  // background-image: 
-  //   linear-gradient(to right, #222 1px, transparent 1px),
-  //   linear-gradient(to bottom, #222 1px, transparent 1px);
-  pointer-events: none;
-`;
-
-const Inner = styled.div`
-  position: absolute;
-  top: 0;
-  left: 0;
-   //width: 100%;
-   //height: 100%;
-`;
 
 export default CanvasArea;

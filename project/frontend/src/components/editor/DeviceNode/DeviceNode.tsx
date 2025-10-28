@@ -1,7 +1,7 @@
-import styled from "styled-components";
 import { useEditor } from "@/context/EditorContext";
-import { useState, useEffect } from "react";
 import type { Device } from "@/types";
+import { useState, useEffect } from "react";
+import { Node } from './DeviceNode.styled'
 
 const DeviceNode: React.FC<{ device: Device, scale: number }> = ({ device, scale }) => {
   const { moveDevice, selectDevice, selectedDeviceId, connectingModeActive, selectDeviceForLink } = useEditor();
@@ -43,20 +43,5 @@ const DeviceNode: React.FC<{ device: Device, scale: number }> = ({ device, scale
       }
     }}>{device.type}</Node>;
   };
-
-const Node = styled.div`
-  position: absolute;
-  width: 60px;
-  height: 60px;
-  background-color: ${(props: any) => props.theme.colors.primary};
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: ${(props: any) => props.theme.colors.text};
-  cursor: grab;
-  user-select: none;
-`;
-
 
 export default DeviceNode;
