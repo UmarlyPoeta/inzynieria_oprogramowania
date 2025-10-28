@@ -46,8 +46,15 @@ add_executable(netsim_tests
     src/core/Host.cpp
     src/core/Router.cpp
 )
-target_include_directories(netsim_tests PRIVATE src)
-target_link_libraries(netsim_tests PRIVATE GTest::gtest_main cpprestsdk::cpprest nlohmann_json::nlohmann_json)
+target_include_directories(netsim_tests PRIVATE src ${MYSQLCPPCONN_INCLUDE})
+target_link_libraries(netsim_tests PRIVATE 
+    GTest::gtest_main 
+    cpprestsdk::cpprest 
+    nlohmann_json::nlohmann_json
+    OpenSSL::SSL 
+    OpenSSL::Crypto
+    ${MYSQLCPPCONN_LIB}
+)
 add_test(NAME netsim_tests COMMAND netsim_tests)
 
 # Performance tests
@@ -60,6 +67,13 @@ add_executable(netsim_perf_tests
     src/core/Host.cpp
     src/core/Router.cpp
 )
-target_include_directories(netsim_perf_tests PRIVATE src)
-target_link_libraries(netsim_perf_tests PRIVATE GTest::gtest_main cpprestsdk::cpprest nlohmann_json::nlohmann_json)
+target_include_directories(netsim_perf_tests PRIVATE src ${MYSQLCPPCONN_INCLUDE})
+target_link_libraries(netsim_perf_tests PRIVATE 
+    GTest::gtest_main 
+    cpprestsdk::cpprest 
+    nlohmann_json::nlohmann_json
+    OpenSSL::SSL 
+    OpenSSL::Crypto
+    ${MYSQLCPPCONN_LIB}
+)
 add_test(NAME netsim_perf_tests COMMAND netsim_perf_tests)
