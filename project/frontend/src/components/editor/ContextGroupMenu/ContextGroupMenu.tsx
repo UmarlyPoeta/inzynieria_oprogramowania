@@ -3,7 +3,7 @@ import styled from "styled-components";
 import { useEditor } from "@/context/EditorContext";
 import { useContextMenu } from "@/context/ContextualMenuContext";
 import { Edit2, ChevronDown, Trash2 } from "lucide-react";
-import type { Group } from "@/context/EditorContext";
+import type { Group } from "@/types";
 
 const MenuList = styled.ul`
   list-style: none;
