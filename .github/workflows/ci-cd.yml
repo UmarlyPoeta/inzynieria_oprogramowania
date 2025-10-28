@@ -155,13 +155,13 @@ jobs:
     
     - name: Start full stack with Docker Compose
       run: |
-        docker-compose up -d
+        docker compose up -d
         echo "Waiting for services to be healthy..."
         sleep 30
     
     - name: Check MySQL health
       run: |
-        docker-compose exec -T mysql mysqladmin ping -h localhost -pNetSimCPP1234
+        docker compose exec -T mysql mysqladmin ping -h localhost -pNetSimCPP1234
     
     - name: Test Docker API
       run: |
@@ -190,13 +190,13 @@ jobs:
       if: failure()
       run: |
         echo "=== NetSim Server Logs ==="
-        docker-compose logs netsim
+        docker compose logs netsim
         echo "=== MySQL Logs ==="
-        docker-compose logs mysql
+        docker compose logs mysql
     
     - name: Cleanup
       if: always()
-      run: docker-compose down -v
+      run: docker compose down -v
 
   code-quality:
     runs-on: ubuntu-22.04
