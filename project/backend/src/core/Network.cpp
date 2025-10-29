@@ -415,7 +415,7 @@ void Network::connectWireless(const std::string &nameA, const std::string &nameB
 // Congestion Control
 void Network::setQueueSize(const std::string& name, int size) {
     auto node = findByName(name);
-    if (node) node->setQueueSize(size);
+    if (node) node->setMaxQueueSize(size);
 }
 
 void Network::enqueuePacket(const std::string& name, const Packet& pkt) {

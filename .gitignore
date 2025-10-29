@@ -18,6 +18,7 @@ project/AGENTS.md
 AGENTS.md
 project/backend/netsim
 project/backend/netsim_tests
+project/backend/netsim_perf_tests
 
 
 # Dependencies

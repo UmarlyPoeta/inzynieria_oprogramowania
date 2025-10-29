@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NetSimCPP WebSocket Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #007bff;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #555;
+            margin-top: 0;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+        .status.connected {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        button {
+            padding: 12px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        .config-form {
+            display: grid;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #555;
+        }
+        input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        #events {
+            height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+        .event {
+            padding: 8px;
+            margin-bottom: 8px;
+            border-radius: 4px;
+            border-left: 4px solid #007bff;
+            background-color: white;
+        }
+        .event.node_added {
+            border-left-color: #28a745;
+        }
+        .event.node_removed {
+            border-left-color: #dc3545;
+        }
+        .event.node_updated {
+            border-left-color: #ffc107;
+        }
+        .event.node_failed {
+            border-left-color: #fd7e14;
+        }
+        .event.link_added {
+            border-left-color: #17a2b8;
+        }
+        .event-type {
+            font-weight: bold;
+            color: #007bff;
+        }
+        .event-time {
+            color: #6c757d;
+            font-size: 11px;
+        }
+        .event-data {
+            margin-top: 5px;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <h1>🌐 NetSimCPP WebSocket Test Client</h1>
+    
+    <div class="container">
+        <h2>📡 Połączenie WebSocket</h2>
+        <div id="status" class="status disconnected">Rozłączono</div>
+        <button id="connectBtn" onclick="connect()">Połącz z WebSocket</button>
+        <button id="disconnectBtn" onclick="disconnect()" disabled>Rozłącz</button>
+    </div>
+
+    <div class="container">
+        <h2>➕ Dodaj węzeł</h2>
+        <div class="config-form">
+            <div class="form-group">
+                <label for="nodeName">Nazwa węzła:</label>
+                <input type="text" id="nodeName" value="TestNode1" placeholder="np. Router1">
+            </div>
+            <div class="form-group">
+                <label for="nodeIp">Adres IP:</label>
+                <input type="text" id="nodeIp" value="192.168.1.100" placeholder="np. 192.168.1.1">
+            </div>
+            <div class="form-group">
+                <label for="nodeType">Typ węzła:</label>
+                <input type="text" id="nodeType" value="host" placeholder="host lub router">
+            </div>
+        </div>
+        <button onclick="addNode()">Dodaj węzeł</button>
+    </div>
+
+    <div class="container">
+        <h2>⚙️ Konfiguruj węzeł (NOWA FUNKCJONALNOŚĆ)</h2>
+        <div class="config-form">
+            <div class="form-group">
+                <label for="configNodeName">Nazwa węzła:</label>
+                <input type="text" id="configNodeName" value="TestNode1" placeholder="np. TestNode1">
+            </div>
+            <div class="form-group">
+                <label for="configIp">Nowy IP (opcjonalnie):</label>
+                <input type="text" id="configIp" value="192.168.1.200" placeholder="np. 192.168.1.200">
+            </div>
+            <div class="form-group">
+                <label for="configMtu">MTU (opcjonalnie):</label>
+                <input type="number" id="configMtu" value="1400" placeholder="np. 1400">
+            </div>
+            <div class="form-group">
+                <label for="configQueueSize">Rozmiar kolejki (opcjonalnie):</label>
+                <input type="number" id="configQueueSize" value="50" placeholder="np. 50">
+            </div>
+        </div>
+        <button onclick="configureNode()">Zaktualizuj konfigurację</button>
+    </div>
+
+    <div class="container">
+        <h2>🔗 Dodaj połączenie</h2>
+        <div class="config-form">
+            <div class="form-group">
+                <label for="nodeA">Węzeł A:</label>
+                <input type="text" id="nodeA" value="TestNode1" placeholder="np. Router1">
+            </div>
+            <div class="form-group">
+                <label for="nodeB">Węzeł B:</label>
+                <input type="text" id="nodeB" value="TestNode2" placeholder="np. Host1">
+            </div>
+        </div>
+        <button onclick="connectNodes()">Połącz węzły</button>
+    </div>
+
+    <div class="container">
+        <h2>📊 Zdarzenia WebSocket</h2>
+        <button onclick="clearEvents()">Wyczyść zdarzenia</button>
+        <div id="events"></div>
+    </div>
+
+    <script>
+        let ws = null;
+        const REST_API = 'http://localhost:8080';
+        const WS_URL = 'ws://localhost:9001';
+
+        function updateStatus(connected) {
+            const statusDiv = document.getElementById('status');
+            const connectBtn = document.getElementById('connectBtn');
+            const disconnectBtn = document.getElementById('disconnectBtn');
+            
+            if (connected) {
+                statusDiv.textContent = '✅ Połączono z WebSocket';
+                statusDiv.className = 'status connected';
+                connectBtn.disabled = true;
+                disconnectBtn.disabled = false;
+            } else {
+                statusDiv.textContent = '❌ Rozłączono';
+                statusDiv.className = 'status disconnected';
+                connectBtn.disabled = false;
+                disconnectBtn.disabled = true;
+            }
+        }
+
+        function connect() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                addEvent('info', 'Już połączono!');
+                return;
+            }
+
+            ws = new WebSocket(WS_URL);
+            
+            ws.onopen = () => {
+                updateStatus(true);
+                addEvent('connected', 'Połączono z serwerem WebSocket');
+            };
+            
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    addEvent(data.type, JSON.stringify(data.data, null, 2), data);
+                } catch (e) {
+                    addEvent('error', 'Błąd parsowania: ' + event.data);
+                }
+            };
+            
+            ws.onerror = (error) => {
+                addEvent('error', 'Błąd WebSocket: ' + error);
+            };
+            
+            ws.onclose = () => {
+                updateStatus(false);
+                addEvent('disconnected', 'Rozłączono z serwerem WebSocket');
+            };
+        }
+
+        function disconnect() {
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+        }
+
+        function addEvent(type, message, data = null) {
+            const eventsDiv = document.getElementById('events');
+            const eventDiv = document.createElement('div');
+            eventDiv.className = 'event ' + type;
+            
+            const now = new Date().toLocaleTimeString();
+            let html = `
+                <div class="event-time">${now}</div>
+                <div class="event-type">${type.toUpperCase()}</div>
+                <div class="event-data">${message}</div>
+            `;
+            
+            eventDiv.innerHTML = html;
+            eventsDiv.insertBefore(eventDiv, eventsDiv.firstChild);
+            
+            // Limit to 50 events
+            while (eventsDiv.children.length > 50) {
+                eventsDiv.removeChild(eventsDiv.lastChild);
+            }
+        }
+
+        function clearEvents() {
+            document.getElementById('events').innerHTML = '';
+        }
+
+        async function addNode() {
+            const name = document.getElementById('nodeName').value;
+            const ip = document.getElementById('nodeIp').value;
+            const type = document.getElementById('nodeType').value;
+
+            try {
+                const response = await fetch(`${REST_API}/node/add`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, ip, type })
+                });
+                const result = await response.json();
+                addEvent('api', `Odpowiedź API: ${JSON.stringify(result)}`);
+            } catch (error) {
+                addEvent('error', `Błąd API: ${error.message}`);
+            }
+        }
+
+        async function configureNode() {
+            const name = document.getElementById('configNodeName').value;
+            const ip = document.getElementById('configIp').value;
+            const mtu = parseInt(document.getElementById('configMtu').value);
+            const queueSize = parseInt(document.getElementById('configQueueSize').value);
+
+            const payload = { name };
+            if (ip) payload.ip = ip;
+            if (mtu) payload.mtu = mtu;
+            if (queueSize) payload.queueSize = queueSize;
+
+            try {
+                const response = await fetch(`${REST_API}/node/config`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                addEvent('api', `✅ Konfiguracja zaktualizowana: ${JSON.stringify(result)}`);
+            } catch (error) {
+                addEvent('error', `❌ Błąd API: ${error.message}`);
+            }
+        }
+
+        async function connectNodes() {
+            const nodeA = document.getElementById('nodeA').value;
+            const nodeB = document.getElementById('nodeB').value;
+
+            try {
+                const response = await fetch(`${REST_API}/link/connect`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nodeA, nodeB })
+                });
+                const result = await response.json();
+                addEvent('api', `Odpowiedź API: ${JSON.stringify(result)}`);
+            } catch (error) {
+                addEvent('error', `Błąd API: ${error.message}`);
+            }
+        }
+
+        // Auto-connect on load
+        window.addEventListener('load', () => {
+            addEvent('info', 'Strona załadowana. Kliknij "Połącz z WebSocket" aby rozpocząć.');
+        });
+    </script>
+</body>
+</html>

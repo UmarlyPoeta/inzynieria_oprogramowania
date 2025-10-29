@@ -389,8 +389,6 @@ TEST(NetworkTest, PacketLoss) {
     EXPECT_TRUE(net.canCommunicate("A", "B"));
 }
 
-// Nowe pomysły na funkcjonalności - dodaj implementację, aby testy przeszły
-
 // 21. Congestion Control: Dodaj mechanizm kontroli przeciążenia
 //    - Dodaj kolejki pakietów w węzłach, drop przy przeciążeniu
 //    - Metody: enqueuePacket, dequeuePacket, isCongested
@@ -629,11 +627,6 @@ TEST(NetworkTest, PerformanceMetrics) {
     // With loss
     net.setPacketLoss("A", "B", 0.2); // 20% loss
     EXPECT_EQ(net.getPacketLossRate("A", "B"), 0.2);
-}
-
-int main(int argc, char **argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
 }
 
 // 1. RemoveNode: Dodaj metodę void Network::removeNode(const std::string& name)
@@ -967,4 +960,25 @@ TEST(NetworkTest, GetMostActiveNode) {
     
     // Węzeł B wysłał najwięcej pakietów (3)
     EXPECT_EQ(net.getMostActiveNode(), "B");
+}
+
+TEST(NodeTest, ConfigUpdate) {
+    Network net;
+    auto h1_ptr = net.addNode<Host>("H1", "192.168.1.10", 8080);
+    auto h1 = dynamic_cast<Host*>(h1_ptr.get());
+    
+    // Simulate config update
+    h1->setIp("192.168.1.100");
+    EXPECT_EQ(h1->getIp(), "192.168.1.100");
+    
+    h1->setMTU(1400);
+    EXPECT_EQ(h1->getMTU(), 1400);
+    
+    h1->setMaxQueueSize(50);
+    EXPECT_EQ(h1->getMaxQueueSize(), 50);
+}
+
+int main(int argc, char **argv) {
+    ::testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
 }

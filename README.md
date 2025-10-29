@@ -76,6 +76,14 @@
 - **5 Tables**: nodes, links, packet_stats, vlans, congestion
 - **REST Endpoints**: `/db/enable`, `/db/save`, `/db/load`, `/db/status`
 
+#### WebSocket Real-Time Updates
+- **Live Monitoring**: Real-time network events without polling
+- **Event Types**: Node add/remove/fail, link changes, packet transmission
+- **Broadcast**: All connected clients receive instant notifications
+- **Bi-directional**: Client ping/pong and subscriptions
+- **Port**: `ws://localhost:9001`
+- **Documentation**: [WebSocket API Guide](docs/WEBSOCKET_API.md)
+
 #### REST API (34 Endpoints)
 - Node management (add, remove, fail)
 - Link configuration (connect, delay, bandwidth)
@@ -91,6 +99,7 @@
 - Static code analysis (cppcheck)
 - Performance benchmarking
 - Database schema versioning
+- **WebSocket server** for real-time updates
 
 ---
 
@@ -289,12 +298,18 @@ docker-compose down
 #### Option 2: Local Build with Database
 
 ```bash
-# Install dependencies (Ubuntu/Debian)
+# Quick install (Ubuntu 22.04 LTS)
+./scripts/install_deps.sh
+
+# Or manual install:
 sudo apt-get update && sudo apt-get install -y \
     build-essential cmake g++ \
     libcpprest-dev nlohmann-json3-dev \
     libssl-dev libgtest-dev \
     libmysqlcppconn-dev \
+    libwebsocketpp-dev \
+    libboost-system-dev \
+    libboost-thread-dev \
     mysql-client
 
 # Start MySQL (Docker)

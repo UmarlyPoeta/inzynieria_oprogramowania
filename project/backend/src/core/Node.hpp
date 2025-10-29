@@ -14,6 +14,13 @@ public:
 
     std::string getName() const {return name;}
     std::string getIp() const {return ip;}
+    void setIp(const std::string& newIp) { ip = newIp; }
+    virtual std::string getType() const { return "node"; }
+
+    void setMTU(int newMtu) { mtu = newMtu; }
+    int getMTU() const { return mtu; }
+    void setMaxQueueSize(int size) { maxQueueSize = size; }
+    int getMaxQueueSize() const { return maxQueueSize; }
 
     virtual void receivePacket(Packet& p) = 0;
     void sendPacket(Packet& p, Node& dest);
@@ -23,22 +30,21 @@ public:
     void incrementPacketCountToNeighbor(const std::string& neighborName);
 
     void addNeighbor(Node* neighbor);
-    void setQueueSize(int size) { queuesize = size; }
-    void enqueuePacket(const Packet& pkt) { if (packetQueue.size() < queuesize) packetQueue.push(pkt); }
+    void enqueuePacket(const Packet& pkt) { if (packetQueue.size() < maxQueueSize) packetQueue.push(pkt); }
     void dequeuePacket() { if (!packetQueue.empty()) packetQueue.pop(); }
-    bool isCongested() const { return packetQueue.size() >= queuesize; }
+    bool isCongested() const { return packetQueue.size() >= maxQueueSize; }
 
 
     int getPacketCount() const { return packetCount; }
-    int getQueueSize() const { return queuesize; }
     protected:
     std::string name;
     std::string ip;
+    int mtu = 1500;
     Packet packet;
     std::vector<Node*> connections;
     std::map<std::string, int> packetCountByNeighbor;
     mutable int packetCount = 0;
     std::queue<Packet> packetQueue; // For queueing packets
-    int queuesize = 10;
+    int maxQueueSize = 10;
     
 };

@@ -9,6 +9,8 @@
 #include "core/Host.hpp"
 #include "core/Router.hpp"
 #include "utils/JsonAdapter.hpp"
+#include "websocket/WebSocketServer.hpp"
+#include "websocket/EventBroadcaster.hpp"
 
 using namespace web;
 using namespace web::http;
@@ -26,6 +28,12 @@ web::json::value string_vector_to_json(const std::vector<std::string>& vec) {
 int main() {
     Network net;
     Engine engine(net);
+    
+    // Initialize WebSocket server
+    auto ws_server = std::make_shared<netsim::ws::WebSocketServer>();
+    netsim::ws::EventBroadcaster::getInstance().setWebSocketServer(ws_server);
+    ws_server->start(9001);  // WebSocket on port 9001
+    std::cout << "[Main] WebSocket server started on port 9001" << std::endl;
 
     http_listener listener(U("http://0.0.0.0:8080"));
 
@@ -192,6 +200,9 @@ int main() {
                         int port = jv.has_field(U("port")) ? jv[U("port")].as_integer() : 8080;
                         net.addNode<Host>(name, ip, port);
                     }
+                    
+                    // Broadcast WebSocket event
+                    netsim::ws::EventBroadcaster::getInstance().nodeAdded(name, type, ip);
 
                     web::json::value resp;
                     resp[U("result")] = web::json::value::string(U("node added"));
@@ -212,6 +223,9 @@ int main() {
                 try {
                     auto name = utility::conversions::to_utf8string(jv[U("name")].as_string());
                     net.removeNode(name);
+                    
+                    // Broadcast WebSocket event
+                    netsim::ws::EventBroadcaster::getInstance().nodeRemoved(name);
 
                     web::json::value resp;
                     resp[U("result")] = web::json::value::string(U("node removed"));
@@ -231,6 +245,9 @@ int main() {
                 try {
                     auto name = utility::conversions::to_utf8string(jv[U("name")].as_string());
                     net.failNode(name);
+                    
+                    // Broadcast WebSocket event
+                    netsim::ws::EventBroadcaster::getInstance().nodeFailed(name);
 
                     web::json::value resp;
                     resp[U("result")] = web::json::value::string(U("node failed"));
@@ -243,14 +260,69 @@ int main() {
                     request.reply(status_codes::BadRequest, resp);
                 }
             }).wait();
+        } else if (path == U("/node/config")) {
+            request.extract_json().then([&](web::json::value jv) {
+                try {
+                    auto name = utility::conversions::to_utf8string(jv.at(U("name")).as_string());
+                    auto node = net.findByName(name);
 
+                    if (!node) {
+                        web::json::value resp;
+                        resp[U("error")] = web::json::value::string(U("Node not found"));
+                        request.reply(status_codes::NotFound, resp);
+                        return;
+                    }
+
+                    // Update IP if provided
+                    if (jv.has_field(U("ip"))) {
+                        auto ip = utility::conversions::to_utf8string(jv.at(U("ip")).as_string());
+                        node->setIp(ip);
+                    }
+
+                    // Update MTU if provided
+                    if (jv.has_field(U("mtu"))) {
+                        int mtu = jv.at(U("mtu")).as_integer();
+                        node->setMTU(mtu);
+                    }
+
+                    // Update queue size if provided
+                    if (jv.has_field(U("queueSize"))) {
+                        int queueSize = jv.at(U("queueSize")).as_integer();
+                        node->setMaxQueueSize(queueSize);
+                    }
+
+                    // Broadcast update via WebSocket
+                    netsim::ws::EventBroadcaster::getInstance().nodeUpdated(
+                        name,
+                        node->getType(),
+                        node->getIp(),
+                        node->getMTU(),
+                        node->getMaxQueueSize()
+                    );
+
+                    web::json::value resp;
+                    resp[U("result")] = web::json::value::string(U("node configuration updated"));
+                    resp[U("name")] = web::json::value::string(utility::conversions::to_string_t(name));
+                    request.reply(status_codes::OK, resp);
+
+                } catch (const std::exception& e) {
+                    web::json::value resp;
+                    resp[U("error")] = web::json::value::string(utility::conversions::to_string_t(e.what()));
+                    request.reply(status_codes::BadRequest, resp);
+                }
+            }).wait();
         // POST /link/connect - Connect two nodes
         } else if (path == U("/link/connect")) {
             request.extract_json().then([&](web::json::value jv) {
                 try {
                     auto nodeA = utility::conversions::to_utf8string(jv[U("nodeA")].as_string());
                     auto nodeB = utility::conversions::to_utf8string(jv[U("nodeB")].as_string());
+                    int delay = jv.has_field(U("delay")) ? jv[U("delay")].as_integer() : 10;
+                    int bandwidth = jv.has_field(U("bandwidth")) ? jv[U("bandwidth")].as_integer() : 1000;
                     net.connect(nodeA, nodeB);
+                    
+                    // Broadcast WebSocket event
+                    netsim::ws::EventBroadcaster::getInstance().linkAdded(nodeA, nodeB, delay, bandwidth);
 
                     web::json::value resp;
                     resp[U("result")] = web::json::value::string(U("nodes connected"));

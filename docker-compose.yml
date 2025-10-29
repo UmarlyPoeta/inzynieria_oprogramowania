@@ -44,9 +44,11 @@ services:
     build: .
     container_name: netsim-server
     ports:
-      - "8080:8080"
+      - "8080:8080"  # REST API
+      - "9001:9001"  # WebSocket
     environment:
       - SERVER_PORT=8080
+      - WEBSOCKET_PORT=9001
       - DB_HOST=mysql
       - DB_PORT=3306
       - DB_USER=root

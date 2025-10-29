@@ -15,6 +15,7 @@ class Host : public Node {
         int getPort() const;
         void setAddress(const std::string& address);
         void setPort(int port);
+        std::string getType() const override { return "host"; }
 
         void receivePacket(Packet& p) override;
         void sendPacket(Packet& p, Node& dest);

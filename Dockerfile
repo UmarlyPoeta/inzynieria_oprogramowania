@@ -14,6 +14,9 @@ RUN apt-get update && apt-get install -y \
     libssl-dev \
     libgtest-dev \
     libmysqlcppconn-dev \
+    libwebsocketpp-dev \
+    libboost-system-dev \
+    libboost-thread-dev \
     mysql-client \
     git \
     curl \
@@ -34,8 +37,9 @@ RUN cmake . && make -j$(nproc)
 # Run tests to verify build
 RUN ./netsim_tests
 
-# Expose REST API port
-EXPOSE 8080
+# Expose ports
+EXPOSE 8080  
+EXPOSE 9001  
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \

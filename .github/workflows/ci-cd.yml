@@ -40,6 +40,9 @@ jobs:
           libssl-dev \
           libgtest-dev \
           libmysqlcppconn-dev \
+          libwebsocketpp-dev \
+          libboost-system-dev \
+          libboost-thread-dev \
           mysql-client
     
     - name: Setup database schema
@@ -117,6 +120,9 @@ jobs:
           libssl-dev \
           libgtest-dev \
           libmysqlcppconn-dev \
+          libwebsocketpp-dev \
+          libboost-system-dev \
+          libboost-thread-dev \
           valgrind
     
     - name: Build project

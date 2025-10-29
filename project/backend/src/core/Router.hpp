@@ -8,6 +8,8 @@ class Router : public Node {
 
 public:
     using Node::Node;
+    
+    std::string getType() const override { return "router"; }
 
     Node* getNextHop(const std::string& dst);
 
