@@ -3,6 +3,7 @@
 #include <future>
 #include <cpprest/http_listener.h>
 #include <cpprest/json.h>
+#include <cstdlib>
 
 #include "core/Network.hpp"
 #include "core/Engine.hpp"
@@ -11,10 +12,15 @@
 #include "utils/JsonAdapter.hpp"
 #include "websocket/WebSocketServer.hpp"
 #include "websocket/EventBroadcaster.hpp"
+#include "auth/PasswordHasher.hpp"
+#include "auth/JWTManager.hpp"
+#include "auth/RedisClient.hpp"
+#include "auth/AuthService.hpp"
 
 using namespace web;
 using namespace web::http;
 using namespace web::http::experimental::listener;
+using namespace netsim::auth;
 
 // Helper function to convert string vector to JSON array
 web::json::value string_vector_to_json(const std::vector<std::string>& vec) {
@@ -25,9 +31,130 @@ web::json::value string_vector_to_json(const std::vector<std::string>& vec) {
     return arr;
 }
 
+// Helper function to extract JWT token from Authorization header
+std::string extractToken(const http_request& request) {
+    auto headers = request.headers();
+    if (headers.has(U("Authorization"))) {
+        std::string auth = utility::conversions::to_utf8string(headers[U("Authorization")]);
+        if (auth.substr(0, 7) == "Bearer ") {
+            return auth.substr(7);
+        }
+    }
+    return "";
+}
+
+// Helper function to get client IP address
+std::string getClientIP(const http_request& request) {
+    auto headers = request.headers();
+    if (headers.has(U("X-Forwarded-For"))) {
+        return utility::conversions::to_utf8string(headers[U("X-Forwarded-For")]);
+    }
+    if (headers.has(U("X-Real-IP"))) {
+        return utility::conversions::to_utf8string(headers[U("X-Real-IP")]);
+    }
+    return "unknown";
+}
+
+// Helper function to get user agent
+std::string getUserAgent(const http_request& request) {
+    auto headers = request.headers();
+    if (headers.has(U("User-Agent"))) {
+        return utility::conversions::to_utf8string(headers[U("User-Agent")]);
+    }
+    return "";
+}
+
+// Middleware: Authenticate and authorize request
+// Returns user info if authorized, throws exception otherwise
+struct AuthResult {
+    int user_id;
+    std::string username;
+    std::string role;
+};
+
+AuthResult authenticateRequest(
+    const http_request& request,
+    std::shared_ptr<AuthService> auth_service,
+    const std::string& required_resource,
+    const std::string& required_action
+) {
+    if (!auth_service) {
+        throw std::runtime_error("Authentication service not available");
+    }
+    
+    // Extract token
+    std::string token = extractToken(request);
+    if (token.empty()) {
+        throw std::runtime_error("Missing authorization token");
+    }
+    
+    // Verify token
+    auto token_payload = auth_service->verifyToken(token);
+    int user_id = token_payload["user_id"];
+    std::string username = token_payload["username"];
+    std::string role = token_payload["role"];
+    
+    // Check permission
+    if (!auth_service->hasPermission(user_id, required_resource, required_action)) {
+        throw std::runtime_error("Insufficient permissions");
+    }
+    
+    return AuthResult{user_id, username, role};
+}
+
+// Middleware: Check rate limit for user
+void checkRateLimit(
+    std::shared_ptr<AuthService> auth_service,
+    int user_id,
+    const std::string& endpoint,
+    int max_requests = 100,
+    int window_seconds = 60
+) {
+    if (!auth_service) {
+        return; // Skip rate limiting if auth not available
+    }
+    
+    if (!auth_service->checkRateLimit(user_id, endpoint, max_requests, window_seconds)) {
+        throw std::runtime_error("Rate limit exceeded. Please try again later.");
+    }
+}
+
 int main() {
     Network net;
     Engine engine(net);
+    
+    // Get environment variables for auth configuration
+    const char* jwt_secret_env = std::getenv("JWT_SECRET");
+    const char* db_host_env = std::getenv("DB_HOST");
+    const char* db_user_env = std::getenv("DB_USER");
+    const char* db_pass_env = std::getenv("DB_PASS");
+    const char* db_name_env = std::getenv("DB_NAME");
+    const char* redis_host_env = std::getenv("REDIS_HOST");
+    const char* redis_port_env = std::getenv("REDIS_PORT");
+    const char* redis_pass_env = std::getenv("REDIS_PASS");
+    
+    std::string jwt_secret = jwt_secret_env ? jwt_secret_env : "your-secret-key-change-in-production";
+    std::string db_host = db_host_env ? db_host_env : "localhost";
+    std::string db_user = db_user_env ? db_user_env : "root";
+    std::string db_pass = db_pass_env ? db_pass_env : "NetSimCPP1234";
+    std::string db_name = db_name_env ? db_name_env : "netsim";
+    std::string redis_host = redis_host_env ? redis_host_env : "localhost";
+    int redis_port = redis_port_env ? std::stoi(redis_port_env) : 6379;
+    std::string redis_pass = redis_pass_env ? redis_pass_env : "NetSimCPP1234";
+    
+    // Initialize authentication service
+    std::shared_ptr<AuthService> auth_service;
+    try {
+        auth_service = std::make_shared<AuthService>(
+            db_host, db_user, db_pass, db_name,
+            redis_host, redis_port, redis_pass,
+            jwt_secret
+        );
+        std::cout << "[Main] Authentication service initialized" << std::endl;
+    } catch (const std::exception& e) {
+        std::cerr << "[Main] Warning: Failed to initialize auth service: " << e.what() << std::endl;
+        std::cerr << "[Main] Server will run without authentication" << std::endl;
+    }
     
     // Initialize WebSocket server
     auto ws_server = std::make_shared<netsim::ws::WebSocketServer>();
@@ -170,6 +297,50 @@ int main() {
                 request.reply(status_codes::InternalError, resp);
             }
             
+        } else if (path == U("/auth/me")) {
+            // GET /auth/me - Get current user info
+            if (!auth_service) {
+                web::json::value resp;
+                resp[U("error")] = web::json::value::string(U("Authentication not available"));
+                request.reply(status_codes::ServiceUnavailable, resp);
+                return;
+            }
+            
+            try {
+                std::string token = extractToken(request);
+                if (token.empty()) {
+                    web::json::value resp;
+                    resp[U("error")] = web::json::value::string(U("Missing authorization token"));
+                    request.reply(status_codes::Unauthorized, resp);
+                    return;
+                }
+                
+                auto payload = auth_service->verifyToken(token);
+                int user_id = payload["user_id"];
+                auto user_info = auth_service->getUserInfo(user_id);
+                
+                web::json::value resp;
+                resp[U("id")] = web::json::value::number(static_cast<int32_t>(user_info["id"].get<int>()));
+                resp[U("username")] = web::json::value::string(utility::conversions::to_string_t(user_info["username"].get<std::string>()));
+                resp[U("email")] = web::json::value::string(utility::conversions::to_string_t(user_info["email"].get<std::string>()));
+                resp[U("role")] = web::json::value::string(utility::conversions::to_string_t(user_info["role"].get<std::string>()));
+                
+                // Add permissions
+                auto perms = web::json::value::array();
+                int idx = 0;
+                for (const auto& perm : user_info["permissions"]) {
+                    perms[idx++] = web::json::value::string(utility::conversions::to_string_t(perm.get<std::string>()));
+                }
+                resp[U("permissions")] = perms;
+                
+                request.reply(status_codes::OK, resp);
+                
+            } catch (const std::exception& e) {
+                web::json::value resp;
+                resp[U("error")] = web::json::value::string(utility::conversions::to_string_t(e.what()));
+                request.reply(status_codes::Unauthorized, resp);
+            }
+            
         } else {
             web::json::value resp;
             resp[U("error")] = web::json::value::string(U("unknown GET endpoint"));
@@ -182,10 +353,124 @@ int main() {
         auto path = request.relative_uri().path();
         auto query = uri::split_query(request.request_uri().query());
 
-        // POST /node/add - Add a new node
-        if (path == U("/node/add")) {
+        // POST /auth/register - Register new user
+        if (path == U("/auth/register")) {
+            if (!auth_service) {
+                web::json::value resp;
+                resp[U("error")] = web::json::value::string(U("Authentication not available"));
+                request.reply(status_codes::ServiceUnavailable, resp);
+                return;
+            }
+            
             request.extract_json().then([&](web::json::value jv) {
                 try {
+                    auto username = utility::conversions::to_utf8string(jv.at(U("username")).as_string());
+                    auto email = utility::conversions::to_utf8string(jv.at(U("email")).as_string());
+                    auto password = utility::conversions::to_utf8string(jv.at(U("password")).as_string());
+                    auto role = jv.has_field(U("role")) 
+                        ? utility::conversions::to_utf8string(jv.at(U("role")).as_string())
+                        : std::string("user");
+                    
+                    auto result = auth_service->registerUser(username, email, password, role);
+                    
+                    web::json::value resp;
+                    resp[U("success")] = web::json::value::boolean(true);
+                    resp[U("user_id")] = web::json::value::number(static_cast<int32_t>(result["user_id"].get<int>()));
+                    resp[U("username")] = web::json::value::string(utility::conversions::to_string_t(result["username"].get<std::string>()));
+                    resp[U("role")] = web::json::value::string(utility::conversions::to_string_t(result["role"].get<std::string>()));
+                    
+                    request.reply(status_codes::Created, resp);
+                    
+                } catch (const std::exception& e) {
+                    web::json::value resp;
+                    resp[U("error")] = web::json::value::string(utility::conversions::to_string_t(e.what()));
+                    request.reply(status_codes::BadRequest, resp);
+                }
+            }).wait();
+            
+        } else if (path == U("/auth/login")) {
+            // POST /auth/login - User login
+            if (!auth_service) {
+                web::json::value resp;
+                resp[U("error")] = web::json::value::string(U("Authentication not available"));
+                request.reply(status_codes::ServiceUnavailable, resp);
+                return;
+            }
+            
+            request.extract_json().then([&](web::json::value jv) {
+                try {
+                    auto username = utility::conversions::to_utf8string(jv.at(U("username")).as_string());
+                    auto password = utility::conversions::to_utf8string(jv.at(U("password")).as_string());
+                    
+                    std::string ip_address = getClientIP(request);
+                    std::string user_agent = getUserAgent(request);
+                    
+                    auto result = auth_service->loginUser(username, password, ip_address, user_agent);
+                    
+                    web::json::value resp;
+                    resp[U("success")] = web::json::value::boolean(true);
+                    resp[U("token")] = web::json::value::string(utility::conversions::to_string_t(result["token"].get<std::string>()));
+                    
+                    web::json::value user_obj;
+                    user_obj[U("id")] = web::json::value::number(static_cast<int32_t>(result["user"]["id"].get<int>()));
+                    user_obj[U("username")] = web::json::value::string(utility::conversions::to_string_t(result["user"]["username"].get<std::string>()));
+                    user_obj[U("email")] = web::json::value::string(utility::conversions::to_string_t(result["user"]["email"].get<std::string>()));
+                    user_obj[U("role")] = web::json::value::string(utility::conversions::to_string_t(result["user"]["role"].get<std::string>()));
+                    resp[U("user")] = user_obj;
+                    
+                    resp[U("expires_in")] = web::json::value::number(static_cast<int32_t>(result["expires_in"].get<int>()));
+                    
+                    request.reply(status_codes::OK, resp);
+                    
+                } catch (const std::exception& e) {
+                    web::json::value resp;
+                    resp[U("error")] = web::json::value::string(utility::conversions::to_string_t(e.what()));
+                    request.reply(status_codes::Unauthorized, resp);
+                }
+            }).wait();
+            
+        } else if (path == U("/auth/logout")) {
+            // POST /auth/logout - User logout
+            if (!auth_service) {
+                web::json::value resp;
+                resp[U("error")] = web::json::value::string(U("Authentication not available"));
+                request.reply(status_codes::ServiceUnavailable, resp);
+                return;
+            }
+            
+            try {
+                std::string token = extractToken(request);
+                if (token.empty()) {
+                    web::json::value resp;
+                    resp[U("error")] = web::json::value::string(U("Missing authorization token"));
+                    request.reply(status_codes::Unauthorized, resp);
+                    return;
+                }
+                
+                auto result = auth_service->logoutUser(token);
+                
+                web::json::value resp;
+                resp[U("success")] = web::json::value::boolean(true);
+                resp[U("message")] = web::json::value::string(U("Logged out successfully"));
+                
+                request.reply(status_codes::OK, resp);
+                
+            } catch (const std::exception& e) {
+                web::json::value resp;
+                resp[U("error")] = web::json::value::string(utility::conversions::to_string_t(e.what()));
+                request.reply(status_codes::Unauthorized, resp);
+            }
+            
+        // POST /node/add - Add a new node
+        } else if (path == U("/node/add")) {
+            request.extract_json().then([&](web::json::value jv) {
+                try {
+                    // Authenticate and authorize
+                    auto auth_result = authenticateRequest(request, auth_service, "nodes", "create");
+                    
+                    // Check rate limit (100 requests per minute)
+                    checkRateLimit(auth_service, auth_result.user_id, "/node/add", 100, 60);
+                    
                     auto name = utility::conversions::to_utf8string(jv[U("name")].as_string());
                     auto ip = jv.has_field(U("ip")) 
                         ? utility::conversions::to_utf8string(jv[U("ip")].as_string()) 
@@ -210,6 +495,24 @@ int main() {
                     resp[U("type")] = web::json::value::string(utility::conversions::to_string_t(type));
                     request.reply(status_codes::OK, resp);
 
+                } catch (const std::runtime_error& e) {
+                    std::string error_msg = e.what();
+                    web::json::value resp;
+                    resp[U("error")] = web::json::value::string(utility::conversions::to_string_t(error_msg));
+                    
+                    // Determine appropriate status code
+                    if (error_msg.find("Missing authorization") != std::string::npos ||
+                        error_msg.find("Invalid token") != std::string::npos) {
+                        request.reply(status_codes::Unauthorized, resp);
+                    } else if (error_msg.find("Insufficient permissions") != std::string::npos) {
+                        request.reply(status_codes::Forbidden, resp);
+                    } else if (error_msg.find("Rate limit") != std::string::npos) {
+                        request.reply(status_codes::TooManyRequests, resp);
+                    } else if (error_msg.find("Authentication service") != std::string::npos) {
+                        request.reply(status_codes::ServiceUnavailable, resp);
+                    } else {
+                        request.reply(status_codes::BadRequest, resp);
+                    }
                 } catch (const std::exception& e) {
                     web::json::value resp;
                     resp[U("error")] = web::json::value::string(utility::conversions::to_string_t(e.what()));
@@ -221,6 +524,12 @@ int main() {
         } else if (path == U("/node/remove")) {
             request.extract_json().then([&](web::json::value jv) {
                 try {
+                    // Authenticate and authorize
+                    auto auth_result = authenticateRequest(request, auth_service, "nodes", "delete");
+                    
+                    // Check rate limit
+                    checkRateLimit(auth_service, auth_result.user_id, "/node/remove", 50, 60);
+                    
                     auto name = utility::conversions::to_utf8string(jv[U("name")].as_string());
                     net.removeNode(name);
                     
@@ -232,6 +541,23 @@ int main() {
                     resp[U("name")] = web::json::value::string(utility::conversions::to_string_t(name));
                     request.reply(status_codes::OK, resp);
 
+                } catch (const std::runtime_error& e) {
+                    std::string error_msg = e.what();
+                    web::json::value resp;
+                    resp[U("error")] = web::json::value::string(utility::conversions::to_string_t(error_msg));
+                    
+                    if (error_msg.find("Missing authorization") != std::string::npos ||
+                        error_msg.find("Invalid token") != std::string::npos) {
+                        request.reply(status_codes::Unauthorized, resp);
+                    } else if (error_msg.find("Insufficient permissions") != std::string::npos) {
+                        request.reply(status_codes::Forbidden, resp);
+                    } else if (error_msg.find("Rate limit") != std::string::npos) {
+                        request.reply(status_codes::TooManyRequests, resp);
+                    } else if (error_msg.find("Authentication service") != std::string::npos) {
+                        request.reply(status_codes::ServiceUnavailable, resp);
+                    } else {
+                        request.reply(status_codes::BadRequest, resp);
+                    }
                 } catch (const std::exception& e) {
                     web::json::value resp;
                     resp[U("error")] = web::json::value::string(utility::conversions::to_string_t(e.what()));
@@ -263,6 +589,12 @@ int main() {
         } else if (path == U("/node/config")) {
             request.extract_json().then([&](web::json::value jv) {
                 try {
+                    // Authenticate and authorize
+                    auto auth_result = authenticateRequest(request, auth_service, "nodes", "update");
+                    
+                    // Check rate limit
+                    checkRateLimit(auth_service, auth_result.user_id, "/node/config", 200, 60);
+                    
                     auto name = utility::conversions::to_utf8string(jv.at(U("name")).as_string());
                     auto node = net.findByName(name);
 
@@ -305,6 +637,23 @@ int main() {
                     resp[U("name")] = web::json::value::string(utility::conversions::to_string_t(name));
                     request.reply(status_codes::OK, resp);
 
+                } catch (const std::runtime_error& e) {
+                    std::string error_msg = e.what();
+                    web::json::value resp;
+                    resp[U("error")] = web::json::value::string(utility::conversions::to_string_t(error_msg));
+                    
+                    if (error_msg.find("Missing authorization") != std::string::npos ||
+                        error_msg.find("Invalid token") != std::string::npos) {
+                        request.reply(status_codes::Unauthorized, resp);
+                    } else if (error_msg.find("Insufficient permissions") != std::string::npos) {
+                        request.reply(status_codes::Forbidden, resp);
+                    } else if (error_msg.find("Rate limit") != std::string::npos) {
+                        request.reply(status_codes::TooManyRequests, resp);
+                    } else if (error_msg.find("Authentication service") != std::string::npos) {
+                        request.reply(status_codes::ServiceUnavailable, resp);
+                    } else {
+                        request.reply(status_codes::BadRequest, resp);
+                    }
                 } catch (const std::exception& e) {
                     web::json::value resp;
                     resp[U("error")] = web::json::value::string(utility::conversions::to_string_t(e.what()));
@@ -315,6 +664,12 @@ int main() {
         } else if (path == U("/link/connect")) {
             request.extract_json().then([&](web::json::value jv) {
                 try {
+                    // Authenticate and authorize
+                    auto auth_result = authenticateRequest(request, auth_service, "links", "create");
+                    
+                    // Check rate limit
+                    checkRateLimit(auth_service, auth_result.user_id, "/link/connect", 100, 60);
+                    
                     auto nodeA = utility::conversions::to_utf8string(jv[U("nodeA")].as_string());
                     auto nodeB = utility::conversions::to_utf8string(jv[U("nodeB")].as_string());
                     int delay = jv.has_field(U("delay")) ? jv[U("delay")].as_integer() : 10;
@@ -330,6 +685,23 @@ int main() {
                     resp[U("nodeB")] = web::json::value::string(utility::conversions::to_string_t(nodeB));
                     request.reply(status_codes::OK, resp);
 
+                } catch (const std::runtime_error& e) {
+                    std::string error_msg = e.what();
+                    web::json::value resp;
+                    resp[U("error")] = web::json::value::string(utility::conversions::to_string_t(error_msg));
+                    
+                    if (error_msg.find("Missing authorization") != std::string::npos ||
+                        error_msg.find("Invalid token") != std::string::npos) {
+                        request.reply(status_codes::Unauthorized, resp);
+                    } else if (error_msg.find("Insufficient permissions") != std::string::npos) {
+                        request.reply(status_codes::Forbidden, resp);
+                    } else if (error_msg.find("Rate limit") != std::string::npos) {
+                        request.reply(status_codes::TooManyRequests, resp);
+                    } else if (error_msg.find("Authentication service") != std::string::npos) {
+                        request.reply(status_codes::ServiceUnavailable, resp);
+                    } else {
+                        request.reply(status_codes::BadRequest, resp);
+                    }
                 } catch (const std::exception& e) {
                     web::json::value resp;
                     resp[U("error")] = web::json::value::string(utility::conversions::to_string_t(e.what()));
@@ -341,6 +713,12 @@ int main() {
         } else if (path == U("/link/disconnect")) {
             request.extract_json().then([&](web::json::value jv) {
                 try {
+                    // Authenticate and authorize
+                    auto auth_result = authenticateRequest(request, auth_service, "links", "delete");
+                    
+                    // Check rate limit
+                    checkRateLimit(auth_service, auth_result.user_id, "/link/disconnect", 100, 60);
+                    
                     auto nodeA = utility::conversions::to_utf8string(jv[U("nodeA")].as_string());
                     auto nodeB = utility::conversions::to_utf8string(jv[U("nodeB")].as_string());
                     net.disconnect(nodeA, nodeB);
@@ -351,6 +729,23 @@ int main() {
                     resp[U("nodeB")] = web::json::value::string(utility::conversions::to_string_t(nodeB));
                     request.reply(status_codes::OK, resp);
 
+                } catch (const std::runtime_error& e) {
+                    std::string error_msg = e.what();
+                    web::json::value resp;
+                    resp[U("error")] = web::json::value::string(utility::conversions::to_string_t(error_msg));
+                    
+                    if (error_msg.find("Missing authorization") != std::string::npos ||
+                        error_msg.find("Invalid token") != std::string::npos) {
+                        request.reply(status_codes::Unauthorized, resp);
+                    } else if (error_msg.find("Insufficient permissions") != std::string::npos) {
+                        request.reply(status_codes::Forbidden, resp);
+                    } else if (error_msg.find("Rate limit") != std::string::npos) {
+                        request.reply(status_codes::TooManyRequests, resp);
+                    } else if (error_msg.find("Authentication service") != std::string::npos) {
+                        request.reply(status_codes::ServiceUnavailable, resp);
+                    } else {
+                        request.reply(status_codes::BadRequest, resp);
+                    }
                 } catch (const std::exception& e) {
                     web::json::value resp;
                     resp[U("error")] = web::json::value::string(utility::conversions::to_string_t(e.what()));
@@ -362,6 +757,12 @@ int main() {
         } else if (path == U("/link/delay")) {
             request.extract_json().then([&](web::json::value jv) {
                 try {
+                    // Authenticate and authorize
+                    auto auth_result = authenticateRequest(request, auth_service, "links", "update");
+                    
+                    // Check rate limit (higher limit for config changes)
+                    checkRateLimit(auth_service, auth_result.user_id, "/link/delay", 200, 60);
+                    
                     auto nodeA = utility::conversions::to_utf8string(jv[U("nodeA")].as_string());
                     auto nodeB = utility::conversions::to_utf8string(jv[U("nodeB")].as_string());
                     int delay = jv[U("delay")].as_integer();
@@ -372,6 +773,23 @@ int main() {
                     resp[U("delay")] = web::json::value::number(delay);
                     request.reply(status_codes::OK, resp);
 
+                } catch (const std::runtime_error& e) {
+                    std::string error_msg = e.what();
+                    web::json::value resp;
+                    resp[U("error")] = web::json::value::string(utility::conversions::to_string_t(error_msg));
+                    
+                    if (error_msg.find("Missing authorization") != std::string::npos ||
+                        error_msg.find("Invalid token") != std::string::npos) {
+                        request.reply(status_codes::Unauthorized, resp);
+                    } else if (error_msg.find("Insufficient permissions") != std::string::npos) {
+                        request.reply(status_codes::Forbidden, resp);
+                    } else if (error_msg.find("Rate limit") != std::string::npos) {
+                        request.reply(status_codes::TooManyRequests, resp);
+                    } else if (error_msg.find("Authentication service") != std::string::npos) {
+                        request.reply(status_codes::ServiceUnavailable, resp);
+                    } else {
+                        request.reply(status_codes::BadRequest, resp);
+                    }
                 } catch (const std::exception& e) {
                     web::json::value resp;
                     resp[U("error")] = web::json::value::string(utility::conversions::to_string_t(e.what()));
@@ -383,6 +801,12 @@ int main() {
         } else if (path == U("/link/bandwidth")) {
             request.extract_json().then([&](web::json::value jv) {
                 try {
+                    // Authenticate and authorize
+                    auto auth_result = authenticateRequest(request, auth_service, "links", "update");
+                    
+                    // Check rate limit
+                    checkRateLimit(auth_service, auth_result.user_id, "/link/bandwidth", 200, 60);
+                    
                     auto nodeA = utility::conversions::to_utf8string(jv[U("nodeA")].as_string());
                     auto nodeB = utility::conversions::to_utf8string(jv[U("nodeB")].as_string());
                     int bandwidth = jv[U("bandwidth")].as_integer();
@@ -393,6 +817,23 @@ int main() {
                     resp[U("bandwidth")] = web::json::value::number(bandwidth);
                     request.reply(status_codes::OK, resp);
 
+                } catch (const std::runtime_error& e) {
+                    std::string error_msg = e.what();
+                    web::json::value resp;
+                    resp[U("error")] = web::json::value::string(utility::conversions::to_string_t(error_msg));
+                    
+                    if (error_msg.find("Missing authorization") != std::string::npos ||
+                        error_msg.find("Invalid token") != std::string::npos) {
+                        request.reply(status_codes::Unauthorized, resp);
+                    } else if (error_msg.find("Insufficient permissions") != std::string::npos) {
+                        request.reply(status_codes::Forbidden, resp);
+                    } else if (error_msg.find("Rate limit") != std::string::npos) {
+                        request.reply(status_codes::TooManyRequests, resp);
+                    } else if (error_msg.find("Authentication service") != std::string::npos) {
+                        request.reply(status_codes::ServiceUnavailable, resp);
+                    } else {
+                        request.reply(status_codes::BadRequest, resp);
+                    }
                 } catch (const std::exception& e) {
                     web::json::value resp;
                     resp[U("error")] = web::json::value::string(utility::conversions::to_string_t(e.what()));
@@ -404,6 +845,12 @@ int main() {
         } else if (path == U("/link/packetloss")) {
             request.extract_json().then([&](web::json::value jv) {
                 try {
+                    // Authenticate and authorize
+                    auto auth_result = authenticateRequest(request, auth_service, "links", "update");
+                    
+                    // Check rate limit
+                    checkRateLimit(auth_service, auth_result.user_id, "/link/packetloss", 200, 60);
+                    
                     auto nodeA = utility::conversions::to_utf8string(jv[U("nodeA")].as_string());
                     auto nodeB = utility::conversions::to_utf8string(jv[U("nodeB")].as_string());
                     double prob = jv[U("probability")].as_double();
@@ -414,6 +861,23 @@ int main() {
                     resp[U("probability")] = web::json::value::number(prob);
                     request.reply(status_codes::OK, resp);
 
+                } catch (const std::runtime_error& e) {
+                    std::string error_msg = e.what();
+                    web::json::value resp;
+                    resp[U("error")] = web::json::value::string(utility::conversions::to_string_t(error_msg));
+                    
+                    if (error_msg.find("Missing authorization") != std::string::npos ||
+                        error_msg.find("Invalid token") != std::string::npos) {
+                        request.reply(status_codes::Unauthorized, resp);
+                    } else if (error_msg.find("Insufficient permissions") != std::string::npos) {
+                        request.reply(status_codes::Forbidden, resp);
+                    } else if (error_msg.find("Rate limit") != std::string::npos) {
+                        request.reply(status_codes::TooManyRequests, resp);
+                    } else if (error_msg.find("Authentication service") != std::string::npos) {
+                        request.reply(status_codes::ServiceUnavailable, resp);
+                    } else {
+                        request.reply(status_codes::BadRequest, resp);
+                    }
                 } catch (const std::exception& e) {
                     web::json::value resp;
                     resp[U("error")] = web::json::value::string(utility::conversions::to_string_t(e.what()));
@@ -425,6 +889,12 @@ int main() {
         } else if (path == U("/vlan/assign")) {
             request.extract_json().then([&](web::json::value jv) {
                 try {
+                    // Authenticate and authorize (admin/user only)
+                    auto auth_result = authenticateRequest(request, auth_service, "network", "update");
+                    
+                    // Check rate limit
+                    checkRateLimit(auth_service, auth_result.user_id, "/vlan/assign", 100, 60);
+                    
                     auto name = utility::conversions::to_utf8string(jv[U("name")].as_string());
                     int vlanId = jv[U("vlanId")].as_integer();
                     net.assignVLAN(name, vlanId);
@@ -435,6 +905,23 @@ int main() {
                     resp[U("vlanId")] = web::json::value::number(vlanId);
                     request.reply(status_codes::OK, resp);
 
+                } catch (const std::runtime_error& e) {
+                    std::string error_msg = e.what();
+                    web::json::value resp;
+                    resp[U("error")] = web::json::value::string(utility::conversions::to_string_t(error_msg));
+                    
+                    if (error_msg.find("Missing authorization") != std::string::npos ||
+                        error_msg.find("Invalid token") != std::string::npos) {
+                        request.reply(status_codes::Unauthorized, resp);
+                    } else if (error_msg.find("Insufficient permissions") != std::string::npos) {
+                        request.reply(status_codes::Forbidden, resp);
+                    } else if (error_msg.find("Rate limit") != std::string::npos) {
+                        request.reply(status_codes::TooManyRequests, resp);
+                    } else if (error_msg.find("Authentication service") != std::string::npos) {
+                        request.reply(status_codes::ServiceUnavailable, resp);
+                    } else {
+                        request.reply(status_codes::BadRequest, resp);
+                    }
                 } catch (const std::exception& e) {
                     web::json::value resp;
                     resp[U("error")] = web::json::value::string(utility::conversions::to_string_t(e.what()));
@@ -446,6 +933,12 @@ int main() {
         } else if (path == U("/firewall/rule")) {
             request.extract_json().then([&](web::json::value jv) {
                 try {
+                    // Authenticate and authorize (security-critical, admin only)
+                    auto auth_result = authenticateRequest(request, auth_service, "firewall", "create");
+                    
+                    // Check rate limit (stricter for security operations)
+                    checkRateLimit(auth_service, auth_result.user_id, "/firewall/rule", 50, 60);
+                    
                     auto src = utility::conversions::to_utf8string(jv[U("src")].as_string());
                     auto dst = utility::conversions::to_utf8string(jv[U("dst")].as_string());
                     auto protocol = utility::conversions::to_utf8string(jv[U("protocol")].as_string());
@@ -457,6 +950,23 @@ int main() {
                     resp[U("action")] = web::json::value::string(allow ? U("allow") : U("deny"));
                     request.reply(status_codes::OK, resp);
 
+                } catch (const std::runtime_error& e) {
+                    std::string error_msg = e.what();
+                    web::json::value resp;
+                    resp[U("error")] = web::json::value::string(utility::conversions::to_string_t(error_msg));
+                    
+                    if (error_msg.find("Missing authorization") != std::string::npos ||
+                        error_msg.find("Invalid token") != std::string::npos) {
+                        request.reply(status_codes::Unauthorized, resp);
+                    } else if (error_msg.find("Insufficient permissions") != std::string::npos) {
+                        request.reply(status_codes::Forbidden, resp);
+                    } else if (error_msg.find("Rate limit") != std::string::npos) {
+                        request.reply(status_codes::TooManyRequests, resp);
+                    } else if (error_msg.find("Authentication service") != std::string::npos) {
+                        request.reply(status_codes::ServiceUnavailable, resp);
+                    } else {
+                        request.reply(status_codes::BadRequest, resp);
+                    }
                 } catch (const std::exception& e) {
                     web::json::value resp;
                     resp[U("error")] = web::json::value::string(utility::conversions::to_string_t(e.what()));
@@ -557,6 +1067,12 @@ int main() {
         } else if (path == U("/topology/import")) {
             request.extract_json().then([&](web::json::value jv) {
                 try {
+                    // Authenticate and authorize (critical operation, admin only)
+                    auto auth_result = authenticateRequest(request, auth_service, "topology", "create");
+                    
+                    // Check rate limit (very strict for topology import)
+                    checkRateLimit(auth_service, auth_result.user_id, "/topology/import", 10, 60);
+                    
                     std::string jsonStr = utility::conversions::to_utf8string(jv.serialize());
                     net.importFromJson(jsonStr);
 
@@ -564,6 +1080,23 @@ int main() {
                     resp[U("result")] = web::json::value::string(U("topology imported"));
                     request.reply(status_codes::OK, resp);
 
+                } catch (const std::runtime_error& e) {
+                    std::string error_msg = e.what();
+                    web::json::value resp;
+                    resp[U("error")] = web::json::value::string(utility::conversions::to_string_t(error_msg));
+                    
+                    if (error_msg.find("Missing authorization") != std::string::npos ||
+                        error_msg.find("Invalid token") != std::string::npos) {
+                        request.reply(status_codes::Unauthorized, resp);
+                    } else if (error_msg.find("Insufficient permissions") != std::string::npos) {
+                        request.reply(status_codes::Forbidden, resp);
+                    } else if (error_msg.find("Rate limit") != std::string::npos) {
+                        request.reply(status_codes::TooManyRequests, resp);
+                    } else if (error_msg.find("Authentication service") != std::string::npos) {
+                        request.reply(status_codes::ServiceUnavailable, resp);
+                    } else {
+                        request.reply(status_codes::BadRequest, resp);
+                    }
                 } catch (const std::exception& e) {
                     web::json::value resp;
                     resp[U("error")] = web::json::value::string(utility::conversions::to_string_t(e.what()));

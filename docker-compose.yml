@@ -24,6 +24,24 @@ services:
     networks:
       - netsim-network
 
+  # Redis - Session Storage
+  redis:
+    image: redis:7-alpine
+    container_name: netsim-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --requirepass NetSimCPP1234
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "NetSimCPP1234", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - netsim-network
+
   # Adminer - MySQL Web GUI
   adminer:
     image: adminer
@@ -54,8 +72,14 @@ services:
       - DB_USER=root
       - DB_PASS=NetSimCPP1234
       - DB_NAME=netsim
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASS=NetSimCPP1234
+      - JWT_SECRET=your-secret-key-change-in-production
     depends_on:
       mysql:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/status"]
@@ -89,4 +113,6 @@ networks:
 
 volumes:
   mysql_data:
+    driver: local
+  redis_data:
     driver: local

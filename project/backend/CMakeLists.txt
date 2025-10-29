@@ -15,6 +15,20 @@ find_path(MYSQLCPPCONN_INCLUDE mysql_driver.h PATH_SUFFIXES mysql-cppconn-8 mysq
 # WebSocket++ (header-only library)
 find_path(WEBSOCKETPP_INCLUDE websocketpp/server.hpp PATHS /usr/include /usr/local/include)
 
+# Redis client (hiredis)
+find_library(HIREDIS_LIB hiredis REQUIRED)
+find_path(HIREDIS_INCLUDE hiredis/hiredis.h PATHS /usr/include /usr/local/include)
+
+# Argon2 for password hashing
+find_library(ARGON2_LIB argon2 REQUIRED)
+find_path(ARGON2_INCLUDE argon2.h PATHS /usr/include /usr/local/include)
+
+# JWT-CPP (header-only library)
+find_path(JWT_CPP_INCLUDE jwt-cpp/jwt.h PATHS /usr/include /usr/local/include)
+
+# PicoJSON (required by jwt-cpp)
+find_path(PICOJSON_INCLUDE picojson.h PATHS /usr/include /usr/local/include)
+
 add_executable(netsim
     src/main.cpp
     src/core/Node.cpp
@@ -29,6 +43,10 @@ target_include_directories(netsim PRIVATE
     src 
     ${MYSQLCPPCONN_INCLUDE}
     ${WEBSOCKETPP_INCLUDE}
+    ${HIREDIS_INCLUDE}
+    ${ARGON2_INCLUDE}
+    ${JWT_CPP_INCLUDE}
+    ${PICOJSON_INCLUDE}
     ${Boost_INCLUDE_DIRS}
 )
 
@@ -38,6 +56,8 @@ target_link_libraries(netsim PRIVATE
     OpenSSL::SSL 
     OpenSSL::Crypto
     ${MYSQLCPPCONN_LIB}
+    ${HIREDIS_LIB}
+    ${ARGON2_LIB}
     Boost::system
     Boost::thread
     pthread

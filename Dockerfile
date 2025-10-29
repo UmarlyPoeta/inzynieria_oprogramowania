@@ -17,10 +17,17 @@ RUN apt-get update && apt-get install -y \
     libwebsocketpp-dev \
     libboost-system-dev \
     libboost-thread-dev \
+    libhiredis-dev \
+    libargon2-dev \
     mysql-client \
     git \
     curl \
     && rm -rf /var/lib/apt/lists/*
+
+# Install jwt-cpp (header-only library)
+RUN git clone https://github.com/Thalhammer/jwt-cpp.git /tmp/jwt-cpp && \
+    cp -r /tmp/jwt-cpp/include/jwt-cpp /usr/local/include/ && \
+    rm -rf /tmp/jwt-cpp
 
 # Set working directory
 WORKDIR /app
