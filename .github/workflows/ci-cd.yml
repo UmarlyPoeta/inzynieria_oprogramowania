@@ -23,6 +23,16 @@ jobs:
           --health-interval=10s
           --health-timeout=5s
           --health-retries=5
+      
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
     
     steps:
     - name: Checkout code
@@ -43,11 +53,26 @@ jobs:
           libwebsocketpp-dev \
           libboost-system-dev \
           libboost-thread-dev \
+          libhiredis-dev \
+          libargon2-dev \
           mysql-client
+    
+    - name: Install header-only libraries (jwt-cpp, picojson)
+      run: |
+        # Install picojson
+        sudo curl -L -o /usr/local/include/picojson.h https://raw.githubusercontent.com/kazuho/picojson/master/picojson.h
+        sudo mkdir -p /usr/local/include/picojson
+        sudo cp /usr/local/include/picojson.h /usr/local/include/picojson/
+        
+        # Install jwt-cpp
+        git clone https://github.com/Thalhammer/jwt-cpp.git /tmp/jwt-cpp
+        sudo cp -r /tmp/jwt-cpp/include/jwt-cpp /usr/local/include/
+        echo "Header-only libraries installed successfully"
     
     - name: Setup database schema
       run: |
         mysql -h 127.0.0.1 -u root -pNetSimCPP1234 netsim < project/database/NetSimDB.sql
+        mysql -h 127.0.0.1 -u root -pNetSimCPP1234 netsim < project/database/AuthSchema.sql
         echo "Database schema loaded successfully"
     
     - name: Verify database

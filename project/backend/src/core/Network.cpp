@@ -1,5 +1,6 @@
 #include "Network.hpp"
 #include <nlohmann/json.hpp>
+#include <iostream>
 using json = nlohmann::json;
 
 
@@ -782,11 +783,15 @@ double Network::getPacketLossRate(const std::string& nameA, const std::string& n
 }
 
 // Database Persistence Implementation
+#ifdef HAVE_MYSQL_SUPPORT
 #include "../database/DatabaseManager.hpp"
 #include "../database/Config.hpp"
 #include "../database/NodeRepository.hpp"
 #include "../database/LinkRepository.hpp"
 #include "../database/StatsRepository.hpp"
+#endif
+
+#ifdef HAVE_MYSQL_SUPPORT
 
 void Network::enablePersistence(const std::string& dbHost, int dbPort,
                                 const std::string& dbUser, const std::string& dbPassword,
@@ -964,3 +969,33 @@ void Network::disablePersistence() {
 bool Network::isPersistenceEnabled() const {
     return persistenceEnabled;
 }
+
+#else
+
+// Stub implementations when MySQL is not available
+void Network::enablePersistence(const std::string&, int, const std::string&, 
+                                const std::string&, const std::string&) {
+    std::cerr << "[Network] Database support not compiled in. Build with MySQL Connector/C++." << std::endl;
+    persistenceEnabled = false;
+}
+
+bool Network::saveTopologyToDB() {
+    std::cerr << "[Network] Database support not available" << std::endl;
+    return false;
+}
+
+bool Network::loadTopologyFromDB() {
+    std::cerr << "[Network] Database support not available" << std::endl;
+    return false;
+}
+
+void Network::disablePersistence() {
+    persistenceEnabled = false;
+}
+
+bool Network::isPersistenceEnabled() const {
+    return false;
+}
+
+#endif // HAVE_MYSQL_SUPPORT
+

@@ -8,26 +8,56 @@ find_package(nlohmann_json REQUIRED)
 find_package(OpenSSL REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system thread) # For WebSocket
 
-# MySQL Connector/C++ - for database persistence
+# MySQL Connector/C++ - REQUIRED for database persistence
 find_library(MYSQLCPPCONN_LIB mysqlcppconn REQUIRED)
-find_path(MYSQLCPPCONN_INCLUDE mysql_driver.h PATH_SUFFIXES mysql-cppconn-8 mysql-cppconn)
+find_path(MYSQLCPPCONN_INCLUDE mysql_driver.h PATH_SUFFIXES mysql-cppconn-8 mysql-cppconn REQUIRED)
+
+if(NOT MYSQLCPPCONN_LIB)
+    message(FATAL_ERROR "MySQL Connector/C++ is required but not found")
+endif()
+message(STATUS "MySQL Connector/C++ found: ${MYSQLCPPCONN_LIB}")
 
 # WebSocket++ (header-only library)
 find_path(WEBSOCKETPP_INCLUDE websocketpp/server.hpp PATHS /usr/include /usr/local/include)
 
-# Redis client (hiredis)
+# Redis client (hiredis) - REQUIRED
 find_library(HIREDIS_LIB hiredis REQUIRED)
-find_path(HIREDIS_INCLUDE hiredis/hiredis.h PATHS /usr/include /usr/local/include)
+find_path(HIREDIS_INCLUDE hiredis/hiredis.h PATHS /usr/include /usr/local/include REQUIRED)
 
-# Argon2 for password hashing
+if(NOT HIREDIS_LIB)
+    message(FATAL_ERROR "Redis (hiredis) is required but not found")
+endif()
+message(STATUS "Redis (hiredis) found: ${HIREDIS_LIB}")
+
+# Argon2 for password hashing - REQUIRED
 find_library(ARGON2_LIB argon2 REQUIRED)
-find_path(ARGON2_INCLUDE argon2.h PATHS /usr/include /usr/local/include)
+find_path(ARGON2_INCLUDE argon2.h PATHS /usr/include /usr/local/include REQUIRED)
 
-# JWT-CPP (header-only library)
-find_path(JWT_CPP_INCLUDE jwt-cpp/jwt.h PATHS /usr/include /usr/local/include)
+if(NOT ARGON2_LIB)
+    message(FATAL_ERROR "Argon2 is required but not found")
+endif()
+message(STATUS "Argon2 found: ${ARGON2_LIB}")
+
+# JWT-CPP (header-only library) - REQUIRED
+find_path(JWT_CPP_INCLUDE jwt-cpp/jwt.h PATHS /usr/include /usr/local/include REQUIRED)
+
+if(NOT JWT_CPP_INCLUDE)
+    message(FATAL_ERROR "JWT-CPP is required but not found")
+endif()
+message(STATUS "JWT-CPP found: ${JWT_CPP_INCLUDE}")
 
 # PicoJSON (required by jwt-cpp)
 find_path(PICOJSON_INCLUDE picojson.h PATHS /usr/include /usr/local/include)
+
+# All dependencies found - enable full features
+add_compile_definitions(HAVE_MYSQL_SUPPORT)
+add_compile_definitions(HAVE_REDIS_SUPPORT)
+add_compile_definitions(HAVE_ARGON2_SUPPORT)
+add_compile_definitions(HAVE_JWT_SUPPORT)
+
+if(WEBSOCKETPP_INCLUDE)
+    add_compile_definitions(HAVE_WEBSOCKET_SUPPORT)
+endif()
 
 add_executable(netsim
     src/main.cpp
@@ -41,26 +71,39 @@ add_executable(netsim
 
 target_include_directories(netsim PRIVATE 
     src 
-    ${MYSQLCPPCONN_INCLUDE}
-    ${WEBSOCKETPP_INCLUDE}
-    ${HIREDIS_INCLUDE}
-    ${ARGON2_INCLUDE}
-    ${JWT_CPP_INCLUDE}
-    ${PICOJSON_INCLUDE}
     ${Boost_INCLUDE_DIRS}
 )
+
+if(MYSQLCPPCONN_INCLUDE)
+    target_include_directories(netsim PRIVATE ${MYSQLCPPCONN_INCLUDE})
+endif()
+if(WEBSOCKETPP_INCLUDE)
+    target_include_directories(netsim PRIVATE ${WEBSOCKETPP_INCLUDE})
+endif()
+if(HIREDIS_INCLUDE)
+    target_include_directories(netsim PRIVATE ${HIREDIS_INCLUDE})
+endif()
+if(ARGON2_INCLUDE)
+    target_include_directories(netsim PRIVATE ${ARGON2_INCLUDE})
+endif()
+if(JWT_CPP_INCLUDE)
+    target_include_directories(netsim PRIVATE ${JWT_CPP_INCLUDE})
+endif()
+if(PICOJSON_INCLUDE)
+    target_include_directories(netsim PRIVATE ${PICOJSON_INCLUDE})
+endif()
 
 target_link_libraries(netsim PRIVATE 
     cpprestsdk::cpprest 
     nlohmann_json::nlohmann_json 
     OpenSSL::SSL 
     OpenSSL::Crypto
-    ${MYSQLCPPCONN_LIB}
-    ${HIREDIS_LIB}
-    ${ARGON2_LIB}
     Boost::system
     Boost::thread
     pthread
+    ${MYSQLCPPCONN_LIB}
+    ${HIREDIS_LIB}
+    ${ARGON2_LIB}
 )
 
 # Optional: install rules
@@ -80,21 +123,28 @@ add_executable(netsim_tests
 )
 target_include_directories(netsim_tests PRIVATE 
     src 
-    ${MYSQLCPPCONN_INCLUDE}
-    ${WEBSOCKETPP_INCLUDE}
     ${Boost_INCLUDE_DIRS}
 )
+if(MYSQLCPPCONN_INCLUDE)
+    target_include_directories(netsim_tests PRIVATE ${MYSQLCPPCONN_INCLUDE})
+endif()
+if(WEBSOCKETPP_INCLUDE)
+    target_include_directories(netsim_tests PRIVATE ${WEBSOCKETPP_INCLUDE})
+endif()
+
 target_link_libraries(netsim_tests PRIVATE 
     GTest::gtest_main 
     cpprestsdk::cpprest 
     nlohmann_json::nlohmann_json
     OpenSSL::SSL 
     OpenSSL::Crypto
-    ${MYSQLCPPCONN_LIB}
     Boost::system
     Boost::thread
     pthread
 )
+if(MYSQLCPPCONN_LIB)
+    target_link_libraries(netsim_tests PRIVATE ${MYSQLCPPCONN_LIB})
+endif()
 add_test(NAME netsim_tests COMMAND netsim_tests)
 
 # Performance tests
@@ -109,19 +159,26 @@ add_executable(netsim_perf_tests
 )
 target_include_directories(netsim_perf_tests PRIVATE 
     src 
-    ${MYSQLCPPCONN_INCLUDE}
-    ${WEBSOCKETPP_INCLUDE}
     ${Boost_INCLUDE_DIRS}
 )
+if(MYSQLCPPCONN_INCLUDE)
+    target_include_directories(netsim_perf_tests PRIVATE ${MYSQLCPPCONN_INCLUDE})
+endif()
+if(WEBSOCKETPP_INCLUDE)
+    target_include_directories(netsim_perf_tests PRIVATE ${WEBSOCKETPP_INCLUDE})
+endif()
+
 target_link_libraries(netsim_perf_tests PRIVATE 
     GTest::gtest_main 
     cpprestsdk::cpprest 
     nlohmann_json::nlohmann_json
     OpenSSL::SSL 
     OpenSSL::Crypto
-    ${MYSQLCPPCONN_LIB}
     Boost::system
     Boost::thread
     pthread
 )
+if(MYSQLCPPCONN_LIB)
+    target_link_libraries(netsim_perf_tests PRIVATE ${MYSQLCPPCONN_LIB})
+endif()
 add_test(NAME netsim_perf_tests COMMAND netsim_perf_tests)

@@ -24,10 +24,18 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
+# Install picojson (header-only library, required by jwt-cpp)
+RUN curl -L -o /usr/local/include/picojson.h https://raw.githubusercontent.com/kazuho/picojson/master/picojson.h && \
+    mkdir -p /usr/local/include/picojson && \
+    cp /usr/local/include/picojson.h /usr/local/include/picojson/picojson.h && \
+    ls -la /usr/local/include/picojson/ && \
+    echo "PicoJSON installed successfully"
+
 # Install jwt-cpp (header-only library)
 RUN git clone https://github.com/Thalhammer/jwt-cpp.git /tmp/jwt-cpp && \
     cp -r /tmp/jwt-cpp/include/jwt-cpp /usr/local/include/ && \
-    rm -rf /tmp/jwt-cpp
+    rm -rf /tmp/jwt-cpp && \
+    echo "JWT-CPP installed successfully"
 
 # Set working directory
 WORKDIR /app

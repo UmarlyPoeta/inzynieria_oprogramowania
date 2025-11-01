@@ -10,8 +10,12 @@
 #include "core/Host.hpp"
 #include "core/Router.hpp"
 #include "utils/JsonAdapter.hpp"
+
+#ifdef HAVE_WEBSOCKET_SUPPORT
 #include "websocket/WebSocketServer.hpp"
 #include "websocket/EventBroadcaster.hpp"
+#endif
+
 #include "auth/PasswordHasher.hpp"
 #include "auth/JWTManager.hpp"
 #include "auth/RedisClient.hpp"
@@ -20,7 +24,10 @@
 using namespace web;
 using namespace web::http;
 using namespace web::http::experimental::listener;
+
+#ifdef HAVE_MYSQL_SUPPORT
 using namespace netsim::auth;
+#endif
 
 // Helper function to convert string vector to JSON array
 web::json::value string_vector_to_json(const std::vector<std::string>& vec) {
@@ -64,8 +71,7 @@ std::string getUserAgent(const http_request& request) {
     return "";
 }
 
-// Middleware: Authenticate and authorize request
-// Returns user info if authorized, throws exception otherwise
+// Auth middleware structures and functions
 struct AuthResult {
     int user_id;
     std::string username;
