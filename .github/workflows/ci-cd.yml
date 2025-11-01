@@ -148,7 +148,21 @@ jobs:
           libwebsocketpp-dev \
           libboost-system-dev \
           libboost-thread-dev \
+          libhiredis-dev \
+          libargon2-dev \
           valgrind
+    
+    - name: Install header-only libraries (jwt-cpp, picojson)
+      run: |
+        # Install picojson
+        sudo curl -L -o /usr/local/include/picojson.h https://raw.githubusercontent.com/kazuho/picojson/master/picojson.h
+        sudo mkdir -p /usr/local/include/picojson
+        sudo cp /usr/local/include/picojson.h /usr/local/include/picojson/
+        
+        # Install jwt-cpp
+        git clone https://github.com/Thalhammer/jwt-cpp.git /tmp/jwt-cpp
+        sudo cp -r /tmp/jwt-cpp/include/jwt-cpp /usr/local/include/
+        echo "Header-only libraries installed successfully"
     
     - name: Build project
       working-directory: project/backend
