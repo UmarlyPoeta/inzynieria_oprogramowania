@@ -49,11 +49,16 @@ message(STATUS "JWT-CPP found: ${JWT_CPP_INCLUDE}")
 # PicoJSON (required by jwt-cpp)
 find_path(PICOJSON_INCLUDE picojson.h PATHS /usr/include /usr/local/include)
 
+# YAML-CPP for scenario files - REQUIRED
+find_package(yaml-cpp REQUIRED)
+message(STATUS "YAML-CPP found: ${YAML_CPP_LIBRARIES}")
+
 # All dependencies found - enable full features
 add_compile_definitions(HAVE_MYSQL_SUPPORT)
 add_compile_definitions(HAVE_REDIS_SUPPORT)
 add_compile_definitions(HAVE_ARGON2_SUPPORT)
 add_compile_definitions(HAVE_JWT_SUPPORT)
+add_compile_definitions(HAVE_YAML_SUPPORT)
 
 if(WEBSOCKETPP_INCLUDE)
     add_compile_definitions(HAVE_WEBSOCKET_SUPPORT)
@@ -67,6 +72,8 @@ add_executable(netsim
     src/core/Engine.cpp
     src/core/Host.cpp
     src/core/Router.cpp
+    src/scenario/ScenarioTypes.cpp
+    src/scenario/ScenarioRunner.cpp
 )
 
 target_include_directories(netsim PRIVATE 
@@ -104,6 +111,7 @@ target_link_libraries(netsim PRIVATE
     ${MYSQLCPPCONN_LIB}
     ${HIREDIS_LIB}
     ${ARGON2_LIB}
+    yaml-cpp
 )
 
 # Optional: install rules

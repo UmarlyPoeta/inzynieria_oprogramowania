@@ -59,12 +59,13 @@ if [[ ! $REPLY =~ ^[Nn]$ ]]; then
     sudo systemctl start redis-server
     echo "  ✓ Redis server installed and started"
     
-    # Configure Redis password
+    # Configure Redis password (development only)
     echo ""
-    echo "🔒 Configuring Redis password..."
-    sudo sed -i 's/# requirepass foobared/requirepass NetSimCPP1234/' /etc/redis/redis.conf
+    echo "🔒 Configuring Redis password (development)..."
+    sudo sed -i 's/# requirepass foobared/requirepass DevPassword123!/' /etc/redis/redis.conf
     sudo systemctl restart redis-server
-    echo "  ✓ Redis password set to: NetSimCPP1234"
+    echo "  ✓ Redis password set to: DevPassword123! (for development only)"
+    echo "  ⚠️  For production, use a strong password from .env.production"
 fi
 
 echo ""
@@ -116,9 +117,11 @@ echo "2. Initialize auth database schema:"
 echo "   mysql -u root -p netsim < project/database/AuthSchema.sql"
 echo ""
 echo "3. Test Redis connection:"
-echo "   redis-cli -a NetSimCPP1234 ping"
+echo "   redis-cli -a DevPassword123! ping"
 echo ""
 echo "4. Or use Docker Compose:"
 echo "   docker compose up -d"
+echo ""
+echo "⚠️  PRODUCTION: Generate secure passwords with ./scripts/generate_secrets.sh"
 echo ""
 

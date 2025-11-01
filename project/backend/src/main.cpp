@@ -10,6 +10,8 @@
 #include "core/Host.hpp"
 #include "core/Router.hpp"
 #include "utils/JsonAdapter.hpp"
+#include "scenario/ScenarioTypes.hpp"
+#include "scenario/ScenarioRunner.hpp"
 
 #ifdef HAVE_WEBSOCKET_SUPPORT
 #include "websocket/WebSocketServer.hpp"
@@ -24,6 +26,7 @@
 using namespace web;
 using namespace web::http;
 using namespace web::http::experimental::listener;
+using namespace netsim::scenario;
 
 #ifdef HAVE_MYSQL_SUPPORT
 using namespace netsim::auth;
@@ -139,14 +142,14 @@ int main() {
     const char* redis_port_env = std::getenv("REDIS_PORT");
     const char* redis_pass_env = std::getenv("REDIS_PASS");
     
-    std::string jwt_secret = jwt_secret_env ? jwt_secret_env : "your-secret-key-change-in-production";
+    std::string jwt_secret = jwt_secret_env ? jwt_secret_env : "dev-jwt-secret-not-for-production-use-only-32chars";
     std::string db_host = db_host_env ? db_host_env : "localhost";
     std::string db_user = db_user_env ? db_user_env : "root";
-    std::string db_pass = db_pass_env ? db_pass_env : "NetSimCPP1234";
+    std::string db_pass = db_pass_env ? db_pass_env : "DevPassword123!";
     std::string db_name = db_name_env ? db_name_env : "netsim";
     std::string redis_host = redis_host_env ? redis_host_env : "localhost";
     int redis_port = redis_port_env ? std::stoi(redis_port_env) : 6379;
-    std::string redis_pass = redis_pass_env ? redis_pass_env : "NetSimCPP1234";
+    std::string redis_pass = redis_pass_env ? redis_pass_env : "DevPassword123!";
     
     // Initialize authentication service
     std::shared_ptr<AuthService> auth_service;
@@ -1316,7 +1319,7 @@ int main() {
                         : std::string("root");
                     auto password = jv.has_field(U("password")) 
                         ? utility::conversions::to_utf8string(jv[U("password")].as_string()) 
-                        : std::string("NetSimCPP1234");
+                        : std::string("DevPassword123!");
                     auto database = jv.has_field(U("database")) 
                         ? utility::conversions::to_utf8string(jv[U("database")].as_string()) 
                         : std::string("netsim");
@@ -1369,6 +1372,41 @@ int main() {
                 }
             }).wait();
 
+        // POST /scenario/run - Execute a network scenario
+        } else if (path == U("/scenario/run")) {
+            request.extract_json().then([&](web::json::value jv) {
+                try {
+                    // Optionally authenticate (scenarios can be public or protected)
+                    // auto auth_result = authenticateRequest(request, auth_service, "scenarios", "execute");
+                    
+                    // Parse scenario from JSON
+                    std::string jsonStr = utility::conversions::to_utf8string(jv.serialize());
+                    nlohmann::json scenarioJson = nlohmann::json::parse(jsonStr);
+                    auto scenario = Scenario::fromJSON(scenarioJson);
+                    
+                    // Run scenario
+                    ScenarioRunner runner(net, engine);
+                    auto result = runner.runScenario(scenario);
+                    
+                    // Convert result to cpprest JSON
+                    auto resultJson = result.toJSON();
+                    std::string resultStr = resultJson.dump();
+                    web::json::value response = web::json::value::parse(
+                        utility::conversions::to_string_t(resultStr)
+                    );
+                    
+                    request.reply(status_codes::OK, response);
+                    
+                } catch (const std::exception& e) {
+                    web::json::value resp;
+                    resp[U("error")] = web::json::value::string(
+                        utility::conversions::to_string_t(e.what())
+                    );
+                    resp[U("success")] = web::json::value::boolean(false);
+                    request.reply(status_codes::BadRequest, resp);
+                }
+            }).wait();
+
         } else {
             web::json::value resp;
             resp[U("error")] = web::json::value::string(U("unknown POST endpoint"));
@@ -1398,6 +1436,7 @@ int main() {
         std::cout << "POST /link/packetloss     - Set packet loss" << std::endl;
         std::cout << "POST /vlan/assign         - Assign VLAN" << std::endl;
         std::cout << "POST /firewall/rule       - Add firewall rule" << std::endl;
+        std::cout << "POST /scenario/run        - Execute network scenario" << std::endl;
         std::cout << "POST /ping                - Ping nodes" << std::endl;
         std::cout << "POST /traceroute          - Traceroute" << std::endl;
         std::cout << "POST /multicast           - Multicast" << std::endl;

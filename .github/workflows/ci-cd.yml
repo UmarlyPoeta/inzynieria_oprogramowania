@@ -1,5 +1,9 @@
 name: NetSimCPP CI/CD
 
+# SECURITY NOTE: This CI/CD uses hardcoded test passwords (NetSimCPP1234)
+# This is SAFE because these are ephemeral test environments.
+# NEVER use these passwords in production! See PRODUCTION_DEPLOY.md
+
 on:
   push:
     branches: [ main, develop ]
@@ -14,7 +18,7 @@ jobs:
       mysql:
         image: mysql:8.0
         env:
-          MYSQL_ROOT_PASSWORD: NetSimCPP1234
+          MYSQL_ROOT_PASSWORD: NetSimCPP1234  # Test password only
           MYSQL_DATABASE: netsim
         ports:
           - 3306:3306

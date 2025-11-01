@@ -17,6 +17,28 @@
 
 ---
 
+## ⚠️ Security Notice
+
+**CRITICAL: Never commit sensitive credentials to version control!**
+
+### Before Deployment:
+
+1. **Generate secure passwords**: Run `./scripts/generate_secrets.sh`
+2. **Use `.env.production`** for production (not tracked in git)
+3. **Use `.env.dev`** for local development (safe defaults)
+4. **Change ALL passwords** in production (default dev passwords are NOT secure!)
+5. **Enable HTTPS** in production (see [PRODUCTION_DEPLOY.md](PRODUCTION_DEPLOY.md))
+
+### Files NEVER to commit:
+- ✅ `.env.production` - Contains real production passwords
+- ✅ `certbot_data/` - SSL certificates and private keys
+- ✅ `*.pem`, `*.key`, `*.crt` - Cryptographic keys
+- ✅ `backups/*.sql` - May contain sensitive data
+
+**📋 Full security checklist**: See [PRODUCTION_DEPLOY.md](PRODUCTION_DEPLOY.md)
+
+---
+
 <a name="english"></a>
 
 ## English Version

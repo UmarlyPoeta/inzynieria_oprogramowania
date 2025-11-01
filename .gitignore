@@ -33,6 +33,37 @@ __pycache__/
 .DS_Store
 Thumbs.db
 
+# Production secrets - NEVER COMMIT!
+.env
+.env.production
+.env.local
+.env.*.local
+*.production.env
+secrets/
+*.secret
+
+# SSL/TLS certificates
+certbot_data/
+certbot_www/
+*.pem
+*.key
+*.crt
+*.csr
+
+# Logs
+nginx_logs/
+*.log
+
+# Monitoring data (may contain sensitive info)
+monitoring/grafana/data/
+grafana_data/
+prometheus_data/
+
+# Backups
+backups/
+*.sql.gz
+*.sql
+
 # CMake files
 CMakeCache.txt
 CMakeFiles/

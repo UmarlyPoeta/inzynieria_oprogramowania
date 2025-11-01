@@ -6,8 +6,8 @@ services:
     container_name: netsim-mysql
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: NetSimCPP1234
-      MYSQL_DATABASE: netsim
+      MYSQL_ROOT_PASSWORD: ${DB_PASS:-DevPassword123!}
+      MYSQL_DATABASE: ${DB_NAME:-netsim}
       MYSQL_ROOT_HOST: '%'
     ports:
       - "3306:3306"
@@ -15,7 +15,7 @@ services:
       - mysql_data:/var/lib/mysql
       - ./NetSimDB.sql:/docker-entrypoint-initdb.d/schema.sql:ro
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-pNetSimCPP1234"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${DB_PASS:-DevPassword123!}"]
       interval: 10s
       timeout: 5s
       retries: 5

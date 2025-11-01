@@ -5,8 +5,8 @@ services:
     container_name: netsim-mysql
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: NetSimCPP1234
-      MYSQL_DATABASE: netsim
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-DevPassword123!}
+      MYSQL_DATABASE: ${DB_NAME:-netsim}
       MYSQL_ROOT_HOST: '%'
     ports:
       - "3306:3306"
@@ -14,7 +14,7 @@ services:
       - mysql_data:/var/lib/mysql
       - ./project/database/NetSimDB.sql:/docker-entrypoint-initdb.d/schema.sql:ro
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-pNetSimCPP1234"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${DB_ROOT_PASSWORD:-DevPassword123!}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -29,11 +29,11 @@ services:
     restart: unless-stopped
     ports:
       - "6379:6379"
-    command: redis-server --appendonly yes --requirepass NetSimCPP1234
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-DevPassword123!}
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "NetSimCPP1234", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-DevPassword123!}", "ping"]
       interval: 10s
       timeout: 3s
       retries: 5
@@ -67,13 +67,13 @@ services:
       - WEBSOCKET_PORT=9001
       - DB_HOST=mysql
       - DB_PORT=3306
-      - DB_USER=root
-      - DB_PASS=NetSimCPP1234
-      - DB_NAME=netsim
+      - DB_USER=${DB_USER:-root}
+      - DB_PASS=${DB_ROOT_PASSWORD:-DevPassword123!}
+      - DB_NAME=${DB_NAME:-netsim}
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - REDIS_PASS=NetSimCPP1234
-      - JWT_SECRET=your-secret-key-change-in-production
+      - REDIS_PASS=${REDIS_PASSWORD:-DevPassword123!}
+      - JWT_SECRET=${JWT_SECRET:-dev-jwt-secret-not-for-production-use-only-32chars}
     depends_on:
       mysql:
         condition: service_healthy

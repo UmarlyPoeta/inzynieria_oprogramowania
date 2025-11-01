@@ -149,7 +149,7 @@ public:
     void enablePersistence(const std::string& dbHost = "127.0.0.1", 
                           int dbPort = 3306,
                           const std::string& dbUser = "root",
-                          const std::string& dbPassword = "NetSimCPP1234",
+                          const std::string& dbPassword = "DevPassword123!",
                           const std::string& dbName = "netsim");
     bool saveTopologyToDB();
     bool loadTopologyFromDB();

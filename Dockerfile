@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y \
     libboost-thread-dev \
     libhiredis-dev \
     libargon2-dev \
+    libyaml-cpp-dev \
     mysql-client \
     git \
     curl \

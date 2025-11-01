@@ -1,0 +1,63 @@
+name: "Basic Ping Test"
+description: "Simple two-host connectivity test demonstrating basic ping functionality"
+version: "1.0"
+author: "NetSimCPP Team"
+tags: ["beginner", "connectivity", "ping"]
+
+setup:
+  nodes:
+    - name: "Host1"
+      type: "host"
+      ip: "10.0.0.1"
+      
+    - name: "Host2"
+      type: "host"
+      ip: "10.0.0.2"
+  
+  links:
+    - from: "Host1"
+      to: "Host2"
+      delay_ms: 5
+      bandwidth_mbps: 100
+      packet_loss: 0.0
+
+steps:
+  - name: "Verify network setup"
+    action: validate
+    params:
+      type: "topology"
+    expect:
+      nodes_count: 2
+      links_count: 1
+  
+  - name: "Test basic connectivity"
+    action: ping
+    params:
+      from: "Host1"
+      to: "Host2"
+    expect:
+      success: true
+      max_latency_ms: 10
+  
+  - name: "Test reverse connectivity"
+    action: ping
+    params:
+      from: "Host2"
+      to: "Host1"
+    expect:
+      success: true
+      max_latency_ms: 10
+
+validation:
+  - type: "connectivity"
+    params:
+      from: "Host1"
+      to: "Host2"
+    threshold:
+      success_rate: 1.0
+      max_latency_ms: 10
+
+expected_outcome: |
+  Both hosts should be able to ping each other successfully.
+  Round-trip latency should be approximately 10ms (2 * link delay).
+  No packet loss should occur.

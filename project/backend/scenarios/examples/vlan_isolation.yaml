@@ -1,0 +1,112 @@
+name: "VLAN Isolation Test"
+description: "Demonstrates network segmentation using VLANs"
+version: "1.0"
+author: "NetSimCPP Team"
+tags: ["intermediate", "vlan", "security", "isolation"]
+
+setup:
+  nodes:
+    - name: "Switch1"
+      type: "router"  # Acting as L2 switch with VLAN support
+      ip: "10.0.0.254"
+      config:
+        vlans: [10, 20]
+    
+    - name: "Host_VLAN10_A"
+      type: "host"
+      ip: "10.10.0.1"
+      vlan: 10
+      
+    - name: "Host_VLAN10_B"
+      type: "host"
+      ip: "10.10.0.2"
+      vlan: 10
+      
+    - name: "Host_VLAN20_A"
+      type: "host"
+      ip: "10.20.0.1"
+      vlan: 20
+      
+    - name: "Host_VLAN20_B"
+      type: "host"
+      ip: "10.20.0.2"
+      vlan: 20
+  
+  links:
+    - from: "Host_VLAN10_A"
+      to: "Switch1"
+      delay_ms: 1
+    
+    - from: "Host_VLAN10_B"
+      to: "Switch1"
+      delay_ms: 1
+    
+    - from: "Host_VLAN20_A"
+      to: "Switch1"
+      delay_ms: 1
+    
+    - from: "Host_VLAN20_B"
+      to: "Switch1"
+      delay_ms: 1
+
+steps:
+  - name: "Verify VLAN configuration"
+    action: validate
+    params:
+      type: "vlan"
+      node: "Switch1"
+    expect:
+      vlans: [10, 20]
+  
+  - name: "Test connectivity within VLAN 10"
+    action: ping
+    params:
+      from: "Host_VLAN10_A"
+      to: "Host_VLAN10_B"
+    expect:
+      success: true
+      max_latency_ms: 5
+  
+  - name: "Test connectivity within VLAN 20"
+    action: ping
+    params:
+      from: "Host_VLAN20_A"
+      to: "Host_VLAN20_B"
+    expect:
+      success: true
+      max_latency_ms: 5
+  
+  - name: "Verify isolation: VLAN 10 to VLAN 20 should fail"
+    action: ping
+    params:
+      from: "Host_VLAN10_A"
+      to: "Host_VLAN20_A"
+    expect:
+      success: false
+  
+  - name: "Verify isolation: VLAN 20 to VLAN 10 should fail"
+    action: ping
+    params:
+      from: "Host_VLAN20_A"
+      to: "Host_VLAN10_A"
+    expect:
+      success: false
+
+validation:
+  - type: "isolation"
+    params:
+      vlan1: 10
+      vlan2: 20
+    threshold:
+      cross_vlan_packets: 0
+  
+  - type: "connectivity"
+    params:
+      within_vlan: 10
+    threshold:
+      success_rate: 1.0
+
+expected_outcome: |
+  Hosts within the same VLAN should communicate successfully.
+  Hosts in different VLANs should be completely isolated.
+  No packets should cross VLAN boundaries without routing.
