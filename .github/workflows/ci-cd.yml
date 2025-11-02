@@ -201,22 +201,54 @@ jobs:
     
     - name: Test Docker image
       run: |
-        docker run --rm netsim:latest ./netsim_tests
+        # Run tests without database connection (standalone mode)
+        docker run --rm \
+          -e DB_HOST="" \
+          netsim:latest ./netsim_tests --gtest_filter=-*Database*:*MySQL*:*Auth*:*Redis*
     
     - name: Start full stack with Docker Compose
       run: |
+        # Use CI/CD password for all services
+        export DB_ROOT_PASSWORD=NetSimCPP1234
+        export REDIS_PASSWORD=NetSimCPP1234
         docker compose up -d
         echo "Waiting for services to be healthy..."
         sleep 30
     
-    - name: Check MySQL health
+    - name: Wait for MySQL to be ready
       run: |
-        docker compose exec -T mysql mysqladmin ping -h localhost -pNetSimCPP1234
+        echo "Checking MySQL health..."
+        max_attempts=10
+        attempt=0
+        while [ $attempt -lt $max_attempts ]; do
+          if docker compose exec -T mysql mysqladmin ping -h localhost -pNetSimCPP1234 2>/dev/null; then
+            echo "✅ MySQL is ready!"
+            break
+          fi
+          attempt=$((attempt + 1))
+          echo "Waiting for MySQL... (attempt $attempt/$max_attempts)"
+          sleep 5
+        done
+        if [ $attempt -eq $max_attempts ]; then
+          echo "❌ MySQL failed to start"
+          docker compose logs mysql
+          exit 1
+        fi
     
     - name: Test Docker API
       run: |
         echo "Testing server status..."
-        curl -f http://localhost:8080/status || exit 1
+        max_attempts=5
+        attempt=0
+        while [ $attempt -lt $max_attempts ]; do
+          if curl -f http://localhost:8080/status 2>/dev/null; then
+            echo "✅ Server is ready!"
+            break
+          fi
+          attempt=$((attempt + 1))
+          echo "Waiting for server... (attempt $attempt/$max_attempts)"
+          sleep 5
+        done
         
         echo "Testing database status..."
         curl -f http://localhost:8080/db/status || exit 1

@@ -14,18 +14,20 @@ ScenarioRunner::ScenarioRunner(Network& network, Engine& engine)
 ScenarioResult ScenarioRunner::runScenario(const Scenario& scenario) {
     ScenarioResult result;
     result.scenario_name = scenario.name;
-    result.success = true;
+    result.passed = false;
+    result.total_time_ms = 0.0;
+    
+    std::cout << "\n[Scenario] Running: " << scenario.name << std::endl;
+    std::cout << "[Scenario] Description: " << scenario.description << std::endl;
     
     auto start_time = std::chrono::high_resolution_clock::now();
     
-    std::cout << "[Scenario] Running: " << scenario.name << std::endl;
-    std::cout << "[Scenario] " << scenario.description << std::endl;
-    
-    // Step 1: Setup network
-    std::cout << "[Scenario] Setting up network topology..." << std::endl;
-    if (!setupNetwork(scenario)) {
-        result.success = false;
-        result.summary = "Failed to setup network topology";
+    // Setup phase
+    if (!setupNetwork(scenario.topology)) {
+        result.message = "Failed to setup network topology";
+        result.total_time_ms = std::chrono::duration<double, std::milli>(
+            std::chrono::high_resolution_clock::now() - start_time
+        ).count();
         return result;
     }
     
@@ -149,6 +151,7 @@ StepResult ScenarioRunner::executeStep(const ScenarioStep& step) {
 StepResult ScenarioRunner::handlePing(const json& params, const json& expect) {
     StepResult result;
     result.success = false;
+    result.execution_time_ms = 0.0;
     
     std::string from = params.value("from", "");
     std::string to = params.value("to", "");
@@ -186,6 +189,7 @@ StepResult ScenarioRunner::handlePing(const json& params, const json& expect) {
 StepResult ScenarioRunner::handleWait(const json& params, const json& expect) {
     StepResult result;
     result.success = true;
+    result.execution_time_ms = 0.0;
     
     int duration_ms = params.value("duration_ms", 100);
     
@@ -200,6 +204,7 @@ StepResult ScenarioRunner::handleWait(const json& params, const json& expect) {
 StepResult ScenarioRunner::handleValidate(const json& params, const json& expect) {
     StepResult result;
     result.success = false;
+    result.execution_time_ms = 0.0;
     
     std::string type = params.value("type", "");
     
@@ -240,6 +245,7 @@ StepResult ScenarioRunner::handleValidate(const json& params, const json& expect
 StepResult ScenarioRunner::handleSend(const json& params, const json& expect) {
     StepResult result;
     result.success = false;
+    result.execution_time_ms = 0.0;
     
     try {
         std::string from = params.value("from", "");
@@ -312,6 +318,7 @@ StepResult ScenarioRunner::handleSend(const json& params, const json& expect) {
 StepResult ScenarioRunner::handleConfigure(const json& params, const json& expect) {
     StepResult result;
     result.success = false;
+    result.execution_time_ms = 0.0;
     
     try {
         std::string node_name = params.value("node", "");
@@ -415,6 +422,7 @@ ValidationResult ScenarioRunner::validateConnectivity(
 ) {
     ValidationResult result;
     result.passed = false;
+    result.validation_type = "connectivity";
     
     std::string from = params.value("from", "");
     std::string to = params.value("to", "");
@@ -438,6 +446,7 @@ ValidationResult ScenarioRunner::validateIsolation(
 ) {
     ValidationResult result;
     result.passed = false;
+    result.validation_type = "isolation";
     
     try {
         std::string nodeA = params.value("nodeA", "");
@@ -472,6 +481,7 @@ ValidationResult ScenarioRunner::validateIsolation(
 ValidationResult ScenarioRunner::validateLatency(const json& params, const json& threshold) {
     ValidationResult result;
     result.passed = false;
+    result.validation_type = "latency";
     
     try {
         std::string nodeA = params.value("nodeA", "");
@@ -512,6 +522,7 @@ ValidationResult ScenarioRunner::validateLatency(const json& params, const json&
 ValidationResult ScenarioRunner::validatePacketLoss(const json& params, const json& threshold) {
     ValidationResult result;
     result.passed = false;
+    result.validation_type = "packet_loss";
     
     try {
         std::string nodeA = params.value("nodeA", "");
@@ -552,6 +563,7 @@ ValidationResult ScenarioRunner::validatePacketLoss(const json& params, const js
 ValidationResult ScenarioRunner::validateThroughput(const json& params, const json& threshold) {
     ValidationResult result;
     result.passed = false;
+    result.validation_type = "throughput";
     
     try {
         std::string nodeA = params.value("nodeA", "");
@@ -592,6 +604,7 @@ ValidationResult ScenarioRunner::validateThroughput(const json& params, const js
 ValidationResult ScenarioRunner::validateVLAN(const json& params, const json& threshold) {
     ValidationResult result;
     result.passed = false;
+    result.validation_type = "vlan";
     
     try {
         // VLAN validation checks that nodes in same VLAN can communicate
