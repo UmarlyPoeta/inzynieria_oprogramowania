@@ -59,6 +59,7 @@ jobs:
           libboost-thread-dev \
           libhiredis-dev \
           libargon2-dev \
+          libyaml-cpp-dev \
           mysql-client
     
     - name: Install header-only libraries (jwt-cpp, picojson)

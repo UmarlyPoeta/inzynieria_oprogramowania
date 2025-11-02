@@ -29,6 +29,10 @@ sudo apt-get install -y libhiredis-dev
 echo "→ Installing Argon2..."
 sudo apt-get install -y libargon2-dev
 
+# YAML parser for scenarios
+echo "→ Installing YAML-CPP..."
+sudo apt-get install -y libyaml-cpp-dev
+
 # PicoJSON (required by jwt-cpp)
 echo "→ Installing PicoJSON..."
 sudo apt-get install -y picojson-dev

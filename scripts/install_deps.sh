@@ -70,6 +70,10 @@ sudo apt-get install -y \
     libboost-system-dev \
     libboost-thread-dev
 
+# YAML parser
+echo "→ Installing YAML-CPP..."
+sudo apt-get install -y libyaml-cpp-dev
+
 # Testing frameworks (optional)
 echo ""
 read -p "📊 Install testing tools (GoogleTest, Valgrind, cppcheck)? (Y/n): " -n 1 -r
@@ -153,6 +157,12 @@ if [ -f /usr/include/websocketpp/server.hpp ]; then
     echo "WebSocket++:  installed ✓"
 else
     echo "WebSocket++:  ✗ NOT FOUND"
+fi
+
+if [ -f /usr/include/yaml-cpp/yaml.h ]; then
+    echo "yaml-cpp:     installed ✓"
+else
+    echo "yaml-cpp:     ✗ NOT FOUND"
 fi
 
 if dpkg -l | grep -q libboost-system-dev; then

@@ -555,7 +555,7 @@ NetSimCPP runs in Docker with MySQL database and Adminer web GUI:
 - **C++17** compiler (GCC 9+ or Clang 10+)
 - **CMake** 3.10+
 - **Docker** & Docker Compose (for containerized deployment)
-- **Dependencies**: cpprestsdk, nlohmann-json, GoogleTest, OpenSSL, MySQL Connector/C++
+- **Dependencies**: cpprestsdk, nlohmann-json, GoogleTest, OpenSSL, MySQL Connector/C++, hiredis, argon2, jwt-cpp, yaml-cpp, websocketpp
 
 #### Option 1: Docker Compose (Recommended) 
 
