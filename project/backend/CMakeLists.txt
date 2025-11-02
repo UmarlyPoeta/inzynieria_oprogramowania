@@ -50,7 +50,20 @@ message(STATUS "JWT-CPP found: ${JWT_CPP_INCLUDE}")
 find_path(PICOJSON_INCLUDE picojson.h PATHS /usr/include /usr/local/include)
 
 # YAML-CPP for scenario files - REQUIRED
-find_package(yaml-cpp REQUIRED)
+# Try pkg-config first, then fallback to find_package
+find_package(PkgConfig)
+if(PkgConfig_FOUND)
+    pkg_check_modules(YAML_CPP yaml-cpp)
+endif()
+
+if(NOT YAML_CPP_FOUND)
+    find_package(yaml-cpp REQUIRED)
+    if(yaml-cpp_FOUND)
+        set(YAML_CPP_INCLUDE_DIRS ${YAML_CPP_INCLUDE_DIR})
+        set(YAML_CPP_LIBRARIES yaml-cpp)
+    endif()
+endif()
+
 message(STATUS "YAML-CPP found: ${YAML_CPP_LIBRARIES}")
 
 # All dependencies found - enable full features
@@ -99,6 +112,9 @@ endif()
 if(PICOJSON_INCLUDE)
     target_include_directories(netsim PRIVATE ${PICOJSON_INCLUDE})
 endif()
+if(YAML_CPP_INCLUDE_DIRS)
+    target_include_directories(netsim PRIVATE ${YAML_CPP_INCLUDE_DIRS})
+endif()
 
 target_link_libraries(netsim PRIVATE 
     cpprestsdk::cpprest 
@@ -111,7 +127,7 @@ target_link_libraries(netsim PRIVATE
     ${MYSQLCPPCONN_LIB}
     ${HIREDIS_LIB}
     ${ARGON2_LIB}
-    yaml-cpp
+    ${YAML_CPP_LIBRARIES}
 )
 
 # Optional: install rules
@@ -139,6 +155,9 @@ endif()
 if(WEBSOCKETPP_INCLUDE)
     target_include_directories(netsim_tests PRIVATE ${WEBSOCKETPP_INCLUDE})
 endif()
+if(YAML_CPP_INCLUDE_DIRS)
+    target_include_directories(netsim_tests PRIVATE ${YAML_CPP_INCLUDE_DIRS})
+endif()
 
 target_link_libraries(netsim_tests PRIVATE 
     GTest::gtest_main 
@@ -149,6 +168,7 @@ target_link_libraries(netsim_tests PRIVATE
     Boost::system
     Boost::thread
     pthread
+    ${YAML_CPP_LIBRARIES}
 )
 if(MYSQLCPPCONN_LIB)
     target_link_libraries(netsim_tests PRIVATE ${MYSQLCPPCONN_LIB})
