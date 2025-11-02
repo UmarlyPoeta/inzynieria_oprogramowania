@@ -17,7 +17,7 @@
 
 ---
 
-## ⚠️ Security Notice
+## Security Notice
 
 **CRITICAL: Never commit sensitive credentials to version control!**
 
@@ -30,10 +30,10 @@
 5. **Enable HTTPS** in production (see [PRODUCTION_DEPLOY.md](PRODUCTION_DEPLOY.md))
 
 ### Files NEVER to commit:
-- ✅ `.env.production` - Contains real production passwords
-- ✅ `certbot_data/` - SSL certificates and private keys
-- ✅ `*.pem`, `*.key`, `*.crt` - Cryptographic keys
-- ✅ `backups/*.sql` - May contain sensitive data
+- `.env.production` - Contains real production passwords
+- `certbot_data/` - SSL certificates and private keys
+- `*.pem`, `*.key`, `*.crt` - Cryptographic keys
+- `backups/*.sql` - May contain sensitive data
 
 **📋 Full security checklist**: See [PRODUCTION_DEPLOY.md](PRODUCTION_DEPLOY.md)
 
