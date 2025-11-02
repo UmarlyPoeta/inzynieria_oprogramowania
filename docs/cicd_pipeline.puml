@@ -23,72 +23,89 @@ end note
 partition "Build and Test Job" {
   :Start MySQL Service\n(Docker Container);
   note right
-    • MySQL 8.0 image
-    • Port 3306
-    • Health check
+    MySQL 8.0 image
+    Port 3306
+    Health check
   end note
   
-  :Load Database Schema\n(NetSimDB.sql);
+  :Start Redis Service\n(Docker Container);
   note right
-    • 5 tables created
-    • Foreign keys
-    • Indexes
+    Redis 7.0 image
+    Port 6379
+    Session store
+  end note
+  
+  :Load Database Schema\n(NetSimDB.sql + AuthSchema.sql);
+  note right
+    Network tables (5)
+    Auth tables (4)
+    Foreign keys
+    Indexes
   end note
   
   :Install Dependencies;
   note right
-    • build-essential
-    • cmake, g++
-    • libmysqlcppconn-dev
-    • libcpprest-dev
-    • nlohmann-json
+    build-essential, cmake, g++
+    libmysqlcppconn-dev
+    libcpprest-dev
+    nlohmann-json
+    hiredis, argon2, jwt-cpp
+    yaml-cpp, websocketpp
   end note
   
   :Build C++ Project\n(cmake + make);
   
-  :Run Unit Tests\n(with DB connection);
+  :Run Unit Tests\n(61 tests);
   note right
-    • 60 unit tests
-    • Database connectivity
-    • Environment variables
+    Network simulation tests
+    Database connectivity
+    Authentication flow
+    Scenario validation
+    Environment variables
   end note
 }
 
 partition "Performance Tests Job" {
-  :Start MySQL Service;
+  :Start MySQL + Redis Services;
   
   :Build Performance Tests;
   
   :Run Performance Tests;
   note right
-    • 10 performance tests
-    • Memory leak check (Valgrind)
+    10 performance tests
+    Memory leak check (Valgrind)
+    Concurrent access tests
   end note
 }
 
 partition "Docker Build Job" {
   :Build Docker Image;
   note right
-    • Multi-stage build
-    • MySQL Connector/C++
-    • Dependencies cached
+    Multi-stage build
+    MySQL Connector/C++
+    Redis, Auth, Scenarios
+    Dependencies cached
   end note
   
   :Docker Compose Up\n(Full Stack);
   note right
-    • netsim container
-    • mysql container
-    • adminer container
+    netsim container
+    mysql container
+    redis container
+    adminer container
   end note
   
   :Wait for Services\nHealth Check;
   
   :Integration Tests;
   note right
-    • Enable DB persistence
-    • Create test nodes
-    • Save topology
-    • Verify in MySQL
+    Enable DB persistence
+    Test authentication
+    Create test nodes
+    Save topology
+    Load scenario YAML
+    Test WebSocket events
+    Verify in MySQL
   end note
   
   if (All tests passed?) then (yes)
@@ -103,13 +120,14 @@ partition "Docker Build Job" {
 partition "Code Quality Job" {
   :Run cppcheck\n(Static Analysis);
   note right
-    • Warning detection
-    • Performance issues
-    • Portability checks
+    Warning detection
+    Performance issues
+    Security checks
+    Portability checks
   end note
 }
 
-:✅ All Tests Passed;
+:All Tests Passed (61/61);
 
 stop
 

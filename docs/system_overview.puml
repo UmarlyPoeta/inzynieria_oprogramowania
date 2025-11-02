@@ -5,42 +5,61 @@ skinparam packageStyle rectangle
 
 package "CLIENT LAYER" as client {
   component "Web Browser\n(Adminer GUI)" as browser
+  component "WebSocket Client\n(Real-time Events)" as wsclient
   component "curl / Postman\n(API Testing)" as curl
-  component "Custom Applications\n(REST API)" as apps
+  component "Custom Applications\n(REST + Auth)" as apps
 }
 
 package "APPLICATION LAYER" as app {
-  package "REST API Server\n(main.cpp)" as rest {
-    note right
-      • 34 HTTP Endpoints
-      • Request routing
-      • JSON serialization
-    end note
-  }
+  package "REST API Server\n(main.cpp)" as rest
+  note right of rest
+    34+ HTTP Endpoints
+    JWT Authentication
+    Request routing
+    JSON serialization
+  end note
   
-  package "Network Manager\n(Network.cpp)" as network {
-    note right
-      • Topology management
-      • In-memory graph
-      • Persistence orchestration
-    end note
-  }
+  package "WebSocket Server\n(Port 9001)" as wsserver
+  note right of wsserver
+    Real-time events
+    Broadcast to clients
+    Bi-directional comm
+  end note
   
-  package "Engine.cpp" as engine {
-    note right
-      • Routing
-      • Algorithms
-      • Simulation
-    end note
-  }
+  package "Auth Service" as auth
+  note right of auth
+    JWT Manager
+    Password Hasher (Argon2)
+    Session validation
+  end note
   
-  package "DatabaseManager" as dbmgr {
-    note right
-      • Connection pool
-      • Transactions
-      • SQL execution
-    end note
-  }
+  package "Scenario System" as scenario
+  note right of scenario
+    YAML Parser
+    Validator
+    Runner
+  end note
+  
+  package "Network Manager\n(Network.cpp)" as network
+  note right of network
+    Topology management
+    In-memory graph
+    Persistence orchestration
+  end note
+  
+  package "Engine.cpp" as engine
+  note right of engine
+    Routing algorithms
+    Packet simulation
+    Event processing
+  end note
+  
+  package "DatabaseManager" as dbmgr
+  note right of dbmgr
+    Connection pool
+    Transactions
+    SQL execution
+  end note
   
   package "Repositories" as repos {
     component "NodeRepo" as noderepo
@@ -51,37 +70,58 @@ package "APPLICATION LAYER" as app {
 
 package "PERSISTENCE LAYER" as persist {
   database "MySQL 8.0 Database" as mysql {
-    folder "Tables" {
-      card "nodes\n----\nid (PK)\nname\nip\ntype\nvlan_id\nfailed" as nodes
-      card "links\n----\nid (PK)\nnode_a_id (FK)\nnode_b_id (FK)\ndelay_ms\nbandwidth\npacket_loss" as links
-      card "packet_stats\n----\nid (PK)\nsrc_id (FK)\ndst_id (FK)\ncount\ntimestamp" as stats
-      card "vlans\n----\nid (PK)\nvlan_id\nname\ndescription" as vlans
-      card "congestion\n----\nid (PK)\nnode_id (FK)\nqueue_size\nis_congested" as congestion
+    folder "Network Tables" {
+      card "nodes" as nodes
+      card "links" as links
+      card "packet_stats" as stats
+      card "vlans" as vlans
+      card "congestion" as congestion
+    }
+    folder "Auth Tables" {
+      card "users" as users
+      card "user_permissions" as perms
+      card "api_rate_limits" as limits
+      card "auth_audit_log" as audit
     }
   }
   
-  component "Adminer Web GUI\n(Port 8081)" as adminer {
-    note right
-      • Visual database management
-      • SQL query interface
-    end note
+  database "Redis\n(Session Store)" as redis {
+    storage "JWT Sessions" as sessions
+    storage "Rate Limits" as ratelimits
   }
+  
+  component "Adminer Web GUI\n(Port 8081)" as adminer
+  note right of adminer
+    Visual database management
+    SQL query interface
+  end note
 }
 
-' Connections
-client -down-> rest : HTTP/REST
-rest -down-> network
-network -down-> engine
-network -down-> dbmgr
+' Connections - Client Layer
+client -down-> rest : HTTP/REST + JWT
+wsclient -down-> wsserver : WebSocket
+rest -right-> auth : Validate Token
+
+' Application Layer
+rest -down-> scenario : Load/Run
+rest -down-> network : Manage Topology
+scenario -down-> network : Execute Steps
+network -down-> engine : Simulate
+network -down-> dbmgr : Persist
+auth -down-> dbmgr : User Lookup
+auth -down-> redis : Session Check
 dbmgr -down-> repos
-repos -down-> mysql : MySQL\nConnector/C++
+repos -down-> mysql : MySQL Connector/C++
+wsserver -down-> network : Subscribe Events
+network -up-> wsserver : Publish Events
 adminer -up-> mysql
 
-' Relationships
-links -up-> nodes : FK: node_a_id
-links -up-> nodes : FK: node_b_id
-stats -up-> nodes : FK: src_id
-stats -up-> nodes : FK: dst_id
-congestion -up-> nodes : FK: node_id
+' Database relationships
+links -up-> nodes : FK
+stats -up-> nodes : FK
+congestion -up-> nodes : FK
+perms -up-> users : FK
+limits -up-> users : FK
+audit -up-> users : FK
 
 @enduml

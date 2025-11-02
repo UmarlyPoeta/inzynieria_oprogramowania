@@ -3,55 +3,84 @@
 skinparam componentStyle rectangle
 
 frame "Docker Host" {
-  package "netsim-network\n(Bridge Network)" {
+  package "netsim-network (Bridge Network)" {
     
-    node "netsim\nPort: 8080" as netsim <<container>> {
+    node "netsim\nPorts: 8080, 9001" as netsim <<container>> {
       component "C++ Server" as cpp
-      note right of cpp
-        • REST API (34 endpoints)
-        • Network simulation
-        • Database client
-      end note
     }
+    note right of netsim
+      REST API (34+ endpoints)
+      WebSocket Server (9001)
+      JWT Authentication
+      Scenario Engine
+      Network simulation
+      Database client
+    end note
     
     node "mysql\nPort: 3306" as mysql <<container>> {
       database "MySQL 8.0" as db
-      note right of db
-        • 5 tables
-        • Foreign keys
-        • Transactions
-      end note
     }
+    note right of mysql
+      Network tables (5)
+      Auth tables (4)
+      Foreign keys
+      Transactions
+    end note
+    
+    node "redis\nPort: 6379" as redis <<container>> {
+      storage "Redis 7.0" as cache
+    }
+    note right of redis
+      JWT sessions
+      Rate limiting
+      Temporary data
+    end note
     
     node "adminer\nPort: 8081" as adminer <<container>> {
       component "Web GUI" as gui
-      note right of gui
-        • Visual DB management
-        • SQL query interface
-      end note
     }
+    note right of adminer
+      Visual DB management
+      SQL query interface
+      Schema browser
+    end note
     
-    storage "mysql_data\n(Volume)" as volume
+    storage "mysql_data (Volume)" as volume
+    storage "redis_data (Volume)" as rvolume
     
     cpp -right-> db : MySQL\nConnector/C++
+    cpp -down-> cache : hiredis\n(Sessions)
     gui -up-> db : Connect
     db -down-> volume : Persist
+    cache -down-> rvolume : Persist
   }
 }
 
 cloud "Host Machine / External" as host {
   interface "Port 8080" as p8080
+  interface "Port 9001" as p9001
   interface "Port 3306" as p3306
+  interface "Port 6379" as p6379
   interface "Port 8081" as p8081
   
   note right of p8080
     http://localhost:8080
-    (REST API)
+    (REST API + Auth)
+  end note
+  
+  note right of p9001
+    ws://localhost:9001
+    (WebSocket Events)
   end note
   
   note right of p3306
     mysql://localhost:3306
     (Database)
+  end note
+  
+  note right of p6379
+    redis://localhost:6379
+    (Session Store)
   end note
   
   note right of p8081
@@ -61,7 +90,9 @@ cloud "Host Machine / External" as host {
 }
 
 netsim -down-> p8080
+netsim -down-> p9001
 mysql -down-> p3306
+redis -down-> p6379
 adminer -down-> p8081
 
 @enduml

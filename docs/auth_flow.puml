@@ -1,0 +1,56 @@
+@startuml auth_flow
+!theme plain
+skinparam sequenceArrowThickness 2
+skinparam roundcorner 20
+
+actor User
+participant "REST API\n(main.cpp)" as API
+participant "AuthService\n(JWT Manager)" as Auth
+participant "PasswordHasher\n(Argon2)" as Hash
+participant "RedisClient\n(Session Store)" as Redis
+database "MySQL\nDatabase" as DB
+
+== Registration ==
+User -> API: POST /register\n{username, email, password}
+API -> Hash: hash(password)
+Hash -> Hash: Argon2id hash
+Hash --> API: hashed_password
+API -> DB: INSERT INTO users
+DB --> API: user_id
+API --> User: 201 Created
+
+== Login ==
+User -> API: POST /login\n{username, password}
+API -> DB: SELECT * FROM users\nWHERE username=?
+DB --> API: user data
+API -> Hash: verify(password, hash)
+Hash --> API: valid
+API -> Auth: generateToken(user_id)
+Auth -> Auth: Sign JWT with secret
+Auth --> API: JWT token
+API -> Redis: SET session:token\n{user_id, exp}
+Redis --> API: OK
+API --> User: 200 OK\n{token, user_id}
+
+== Authenticated Request ==
+User -> API: GET /network/status\nAuthorization: Bearer <token>
+API -> Auth: validateToken(token)
+Auth -> Auth: Verify signature
+Auth --> API: user_id
+API -> Redis: GET session:token
+Redis --> API: session data
+alt Session valid
+  API -> DB: Check permissions
+  DB --> API: permissions
+  API --> User: 200 OK\n{data}
+else Invalid/Expired
+  API --> User: 401 Unauthorized
+end
+
+== Logout ==
+User -> API: POST /logout\nAuthorization: Bearer <token>
+API -> Redis: DEL session:token
+Redis --> API: OK
+API --> User: 200 OK
+
+@enduml

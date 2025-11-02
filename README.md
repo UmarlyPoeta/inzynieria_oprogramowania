@@ -7,9 +7,9 @@
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Docker-lightgrey.svg)
 
-**A comprehensive C++ network simulator with REST API, Docker support, MySQL database, and extensive testing**
+**A comprehensive C++ network simulator with REST API, JWT authentication, YAML scenarios, production deployment, and extensive testing**
 
-📖 **[Quick Start Guide](QUICKSTART.md)** - Get started in 5 minutes!
+**[Quick Start Guide](QUICKSTART.md)** | **[Production Deployment](PRODUCTION_DEPLOY.md)** | **[API Documentation](docs/api.md)**
 
 [English](#english) | [Polski](#polski)
 
@@ -35,7 +35,9 @@
 - `*.pem`, `*.key`, `*.crt` - Cryptographic keys
 - `backups/*.sql` - May contain sensitive data
 
-**📋 Full security checklist**: See [PRODUCTION_DEPLOY.md](PRODUCTION_DEPLOY.md)
+**Full security checklist**: See [PRODUCTION_DEPLOY.md](PRODUCTION_DEPLOY.md)
+
+**Quick reference**: See [INSTRUKCJA_PRACA.md](INSTRUKCJA_PRACA.md) for concise working guide
 
 ---
 
@@ -47,6 +49,10 @@
 - [Overview](#overview)
 - [Features](#features)
 - [Architecture](#architecture)
+- [Authentication](#authentication)
+- [Scenario System](#scenario-system)
+- [WebSocket Real-Time](#websocket-real-time)
+- [Production Deployment](#production-deployment)
 - [Quick Start](#quick-start)
 - [API Documentation](#api-documentation)
 - [Testing](#testing)
@@ -64,12 +70,14 @@
 - Creating and managing complex network topologies
 - Simulating realistic network protocols (TCP, UDP, ICMP)
 - Analyzing network behavior and performance
-- RESTful API for programmatic control
-- Full Docker containerization with MySQL database
-- Persistent topology storage and statistics tracking
-- Extensive test coverage (60 unit tests + 10 performance tests)
+- RESTful API with JWT authentication (34 endpoints)
+- YAML-based scenario automation with validation
+- WebSocket real-time event broadcasting
+- Full Docker containerization with MySQL persistence
+- Production deployment with Nginx, HTTPS, and monitoring
+- Extensive test coverage (61 unit tests + performance tests)
 
-**Perfect for**: Network engineers, students, researchers, and developers learning network fundamentals or testing network algorithms.
+**Perfect for**: Network engineers, students, researchers, and developers learning network fundamentals, testing network algorithms, or building production network analysis tools.
 
 ---
 
@@ -106,30 +114,311 @@
 - **Port**: `ws://localhost:9001`
 - **Documentation**: [WebSocket API Guide](docs/WEBSOCKET_API.md)
 
-#### REST API (34 Endpoints)
+#### Authentication & Security
+- **JWT Authentication**: Secure token-based authentication
+- **Password Hashing**: Argon2id for password storage
+- **Redis Sessions**: Distributed session management
+- **Rate Limiting**: Per-user API rate limits
+- **Audit Logging**: Complete authentication audit trail
+- **Documentation**: [Authentication Guide](docs/AUTHENTICATION.md)
+
+#### Scenario Automation
+- **YAML Parser**: Define complex network scenarios
+- **Step Execution**: Sequential scenario execution with validation
+- **Condition Support**: Conditional logic in scenarios
+- **Loop Support**: Repeated operations in scenarios
+- **Validation**: Pre-execution validation of all steps
+- **Documentation**: [Scenarios Implementation](docs/SCENARIOS_IMPLEMENTATION.md)
+
+#### REST API (34+ Endpoints)
 - Node management (add, remove, fail)
 - Link configuration (connect, delay, bandwidth)
 - Network operations (ping, traceroute, multicast)
+- Authentication (register, login, logout)
+- Scenario management (load, step, run, status, reset)
 - Statistics and monitoring
 - Topology management
-- **Database operations** (enable, save, load, status) 
+- Database operations (enable, save, load, status) 
 
 #### Production Ready
-- Docker containerization with MySQL
-- CI/CD with GitHub Actions (database tests included)
+- Docker containerization with MySQL and Redis
+- Nginx reverse proxy with HTTPS/SSL support
+- Let's Encrypt automatic SSL certificates
+- Prometheus + Grafana monitoring stack
+- Password generation and secret management
+- CI/CD with GitHub Actions (61 tests passing)
 - Memory leak detection (Valgrind)
 - Static code analysis (cppcheck)
 - Performance benchmarking
-- Database schema versioning
-- **WebSocket server** for real-time updates
+- WebSocket server for real-time updates
 
 ---
 
-### Architecture
+### Authentication
 
-NetSimCPP uses a **hybrid architecture** combining in-memory performance with database persistence.
+NetSimCPP provides enterprise-grade authentication with JWT tokens, Argon2 password hashing, and Redis-based session management.
 
-#### System Overview
+![Authentication Flow](docs/UML/auth_flow.png)
+
+#### Authentication Flow
+
+1. **Registration**: User provides username, email, and password. Password is hashed with Argon2id before storage in MySQL.
+2. **Login**: Credentials validated, JWT token generated and signed, session stored in Redis with expiration.
+3. **Authenticated Requests**: Client sends JWT in Authorization header. Server validates signature and checks Redis session.
+4. **Logout**: Token removed from Redis, immediate invalidation.
+
+#### Security Features
+
+- **Argon2id Password Hashing**: Industry-standard password hashing with configurable memory, iterations, and parallelism
+- **JWT Tokens**: Signed with HS256, configurable expiration (default 24h)
+- **Redis Session Store**: Distributed session management with automatic expiration
+- **Rate Limiting**: Per-user API rate limits stored in MySQL
+- **Audit Trail**: All authentication events logged to MySQL
+- **HTTPS Support**: Production deployment with Nginx and Let's Encrypt
+
+#### API Endpoints
+
+```bash
+# Register new user
+curl -X POST http://localhost:8080/register \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","email":"admin@example.com","password":"SecurePass123!"}'
+
+# Login
+curl -X POST http://localhost:8080/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"SecurePass123!"}'
+# Returns: {"token":"eyJhbGc...","user_id":1}
+
+# Use token in requests
+curl -X POST http://localhost:8080/network/create \
+  -H "Authorization: Bearer eyJhbGc..." \
+  -H "Content-Type: application/json" \
+  -d '{"name":"production_net"}'
+
+# Logout
+curl -X POST http://localhost:8080/logout \
+  -H "Authorization: Bearer eyJhbGc..."
+```
+
+See [AUTHENTICATION.md](docs/AUTHENTICATION.md) for complete guide.
+
+---
+
+### Scenario System
+
+YAML-based network scenario automation with validation and step-by-step execution.
+
+![Scenario System](docs/UML/scenario_system.png)
+
+#### Architecture
+
+- **ScenarioParser**: Parses YAML files using yaml-cpp library, validates schema structure
+- **ScenarioValidator**: Validates node existence, connectivity, protocols, and parameters before execution
+- **ScenarioRunner**: Executes steps sequentially, manages state, handles conditions and loops
+- **Network Engine**: Executes validated commands, processes packets, updates topology
+
+#### Scenario Structure
+
+```yaml
+name: "Basic Ping Test"
+description: "Test connectivity between two hosts"
+author: "Network Admin"
+version: "1.0"
+
+topology:
+  nodes:
+    - name: "H1"
+      type: "host"
+      ip: "10.0.0.1"
+    - name: "H2"
+      type: "host"
+      ip: "10.0.0.2"
+  links:
+    - nodeA: "H1"
+      nodeB: "H2"
+      delay: 10
+      bandwidth: 1000
+
+steps:
+  - action: "ping"
+    params:
+      source: "H1"
+      destination: "H2"
+    expected_result: "success"
+    
+  - action: "link_delay"
+    params:
+      nodeA: "H1"
+      nodeB: "H2"
+      delay: 50
+      
+  - action: "ping"
+    params:
+      source: "H1"
+      destination: "H2"
+    expected_result: "success"
+```
+
+#### REST API
+
+```bash
+# Load scenario from file
+curl -X POST http://localhost:8080/scenarios/load \
+  -H "Authorization: Bearer TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"filepath":"scenarios/basic_ping.yaml"}'
+
+# Execute single step
+curl -X POST http://localhost:8080/scenarios/step \
+  -H "Authorization: Bearer TOKEN"
+
+# Run entire scenario
+curl -X POST http://localhost:8080/scenarios/run \
+  -H "Authorization: Bearer TOKEN"
+
+# Check status
+curl http://localhost:8080/scenarios/status \
+  -H "Authorization: Bearer TOKEN"
+
+# Reset scenario
+curl -X POST http://localhost:8080/scenarios/reset \
+  -H "Authorization: Bearer TOKEN"
+```
+
+See [SCENARIOS_IMPLEMENTATION.md](docs/SCENARIOS_IMPLEMENTATION.md) for detailed documentation.
+
+---
+
+### WebSocket Real-Time
+
+Real-time event broadcasting for live network monitoring without polling.
+
+![WebSocket Flow](docs/UML/websocket_flow.png)
+
+#### Event Types
+
+- **node_added**: New node added to network
+- **node_removed**: Node removed from network
+- **node_failed**: Node failure simulated
+- **link_added**: New link created
+- **link_removed**: Link removed
+- **link_modified**: Link properties changed (delay, bandwidth)
+- **packet_sent**: Packet transmitted
+- **packet_received**: Packet received
+- **network_cleared**: Network topology cleared
+
+#### Client Connection
+
+```javascript
+// Connect to WebSocket server
+const ws = new WebSocket('ws://localhost:9001');
+
+ws.onopen = () => {
+  console.log('Connected to NetSimCPP');
+};
+
+ws.onmessage = (event) => {
+  const data = JSON.parse(event.data);
+  console.log('Event:', data);
+  
+  if (data.type === 'packet_sent') {
+    updateUI(`Packet: ${data.from} -> ${data.to}`);
+  }
+};
+
+// Send ping
+ws.send(JSON.stringify({type: 'ping'}));
+
+// Receive pong
+// {"type":"pong","timestamp":"2025-11-02T22:00:00Z"}
+```
+
+#### Example Events
+
+```json
+{"type":"connected","clients":1}
+{"type":"node_added","name":"router1","nodeType":"router"}
+{"type":"link_added","nodeA":"H1","nodeB":"R1"}
+{"type":"packet_sent","from":"H1","to":"H2","protocol":"ICMP"}
+{"type":"link_modified","link":"H1-R1","delay":50}
+```
+
+See [WEBSOCKET_API.md](docs/WEBSOCKET_API.md) for complete WebSocket API documentation.
+
+---
+
+### Production Deployment
+
+Enterprise-grade production deployment with Nginx, HTTPS, monitoring, and automated secret management.
+
+![Production Deployment](docs/UML/production_deployment.png)
+
+#### Production Stack
+
+- **Nginx**: Reverse proxy with HTTPS/SSL termination, rate limiting, security headers, WebSocket support
+- **Backend**: NetSimCPP with JWT auth, scenario engine, WebSocket server
+- **MySQL**: Database with persistent volumes, automated backups, connection pooling
+- **Redis**: Session store for JWT sessions, rate limiting, temporary data
+- **Prometheus**: Metrics collection from all services
+- **Grafana**: Monitoring dashboards, application logs, alerting
+- **Let's Encrypt**: Automatic SSL certificate generation and renewal
+
+#### Quick Production Deploy
+
+```bash
+# 1. Generate secure passwords
+./scripts/generate_secrets.sh
+# Creates .env.production with:
+# - DB_ROOT_PASSWORD (MySQL)
+# - JWT_SECRET (64-char hex)
+# - REDIS_PASSWORD
+# - GRAFANA_PASSWORD
+
+# 2. Configure domain in nginx/nginx.conf
+nano nginx/nginx.conf
+# Replace: your-domain.com
+
+# 3. Deploy
+docker compose -f docker-compose.prod.yml up -d
+
+# 4. Generate SSL certificates
+docker compose -f docker-compose.prod.yml exec nginx \
+  certbot --nginx -d your-domain.com
+
+# 5. Enable monitoring
+docker compose -f docker-compose.monitoring.yml up -d
+
+# Access:
+# - API: https://your-domain.com
+# - Grafana: https://your-domain.com:3000
+# - Prometheus: https://your-domain.com:9090
+```
+
+#### Security Features
+
+- **HTTPS Only**: All HTTP traffic redirected to HTTPS
+- **SSL/TLS**: Let's Encrypt certificates with auto-renewal
+- **Rate Limiting**: Nginx rate limiting (10 req/s per IP)
+- **Security Headers**: HSTS, X-Frame-Options, CSP
+- **Password Generation**: Automated secure password generation with OpenSSL
+- **Secret Management**: Environment variables, no hardcoded credentials
+- **Firewall**: Production firewall rules
+
+#### Monitoring
+
+- **Prometheus Metrics**: `/metrics` endpoint on all services
+- **Grafana Dashboards**: Pre-configured dashboards for system metrics, application logs, alerts
+- **Log Aggregation**: Centralized logging with retention policies
+- **Alerts**: Slack/email notifications for critical events
+
+See [PRODUCTION_DEPLOY.md](PRODUCTION_DEPLOY.md) (532 lines) for complete production deployment guide.
+
+---
+
+### Quick Start
+
+#### Docker Deployment Architecture
 
 Complete system architecture showing all layers (Client, Application, Persistence):
 
@@ -247,9 +536,11 @@ class Engine {
 
 ---
 
-### Quick Start
+### API Documentation
 
-#### Docker Deployment Architecture
+Complete REST API with 34+ endpoints for network management, authentication, scenarios, and database operations.
+
+#### Quick Examples
 
 NetSimCPP runs in Docker with MySQL database and Adminer web GUI:
 
@@ -382,6 +673,12 @@ make -j$(nproc)
 #### Quick Test Scripts
 
 ```bash
+# Test authentication system
+./test_auth.sh
+
+# Test WebSocket connection
+./scripts/test_websocket.sh
+
 # Test full Docker stack
 ./scripts/test_docker.sh
 
@@ -394,7 +691,11 @@ make -j$(nproc)
 
 ---
 
-### 📡 API Documentation
+### Architecture
+
+NetSimCPP uses a **hybrid architecture** combining in-memory performance with database persistence, JWT authentication, and real-time WebSocket events.
+
+#### System Overview
 
 #### Quick Examples
 
@@ -515,13 +816,14 @@ See [API Full Workflow](docs/UML/API_FULL_WORKFLOW.png) for detailed sequence di
 ### Testing
 
 #### Test Coverage
-- **60 Unit Tests** (100% pass rate)
+- **61 Unit Tests** (100% pass rate)
   - NetworkTest: 34 tests
   - EngineTest: 7 tests
   - RouterTest: 7 tests
   - HostTest: 3 tests
   - PacketTest: 6 tests
   - NodeTest: 3 tests
+  - AuthenticationTest: 1 test (integration)
 
 - **10 Performance Tests** (all passing)
   - Node creation: <1ms per node
@@ -538,6 +840,13 @@ See [API Full Workflow](docs/UML/API_FULL_WORKFLOW.png) for detailed sequence di
   - Save/Load cycle verification
   - Statistics persistence
   - Transaction rollback testing
+
+- **Authentication Tests** (automated)
+  - Registration flow
+  - Login/logout cycle
+  - JWT token validation
+  - Session management
+  - Password hashing verification
 
 #### Running Tests
 
@@ -650,27 +959,40 @@ jobs:
 ### Documentation
 
 #### Core Documentation
-- **[Quick Start Guide](QUICKSTART.md)** - 5-minute setup guide 🚀
-- **[Architecture Documentation](project/docs/architecture.md)** - System design and patterns
-- **[Architecture with Database](docs/ARCHITECTURE_WITH_DB.md)** - Complete architecture diagrams 🆕
+- **[Quick Start Guide](QUICKSTART.md)** - 5-minute setup guide
+- **[Working Guide](INSTRUKCJA_PRACA.md)** - Concise reference for daily work
+- **[Architecture Documentation](docs/architecture.md)** - System design and patterns
+- **[Architecture with Database](docs/ARCHITECTURE_WITH_DB.md)** - Complete architecture diagrams
 - **[Testing Guide](docs/testing.md)** - Comprehensive testing documentation
-- **[API Documentation](project/docs/overview.md)** - REST API details
+- **[API Documentation](docs/api.md)** - REST API reference
+
+#### Security & Deployment
+- **[Production Deployment](PRODUCTION_DEPLOY.md)** - Complete production deployment guide (532 lines)
+- **[Authentication Guide](docs/AUTHENTICATION.md)** - JWT authentication, passwords, sessions
+- **[API Security](docs/API_SECURITY.md)** - Security best practices
+
+#### Feature Documentation
+- **[Scenarios Implementation](docs/SCENARIOS_IMPLEMENTATION.md)** - YAML scenario system
+- **[WebSocket API](docs/WEBSOCKET_API.md)** - Real-time event broadcasting
 
 #### Diagrams
-- **[UML Diagrams](project/docs/UML/)** - PlantUML source files 🆕
+- **[UML Diagrams](docs/UML/)** - PlantUML generated diagrams
   - System Overview (Component Diagram)
+  - Authentication Flow (Sequence Diagram)
+  - Scenario System (Component Diagram)
+  - WebSocket Flow (Sequence Diagram)
+  - Production Deployment (Deployment Diagram)
   - Save Topology (Sequence Diagram)
   - Load Topology (Sequence Diagram)
   - Docker Deployment (Deployment Diagram)
   - CI/CD Pipeline (Activity Diagram)
   - Hybrid Architecture (Component Diagram)
-- **[Legacy Diagrams](project/docs/diagrams.md)** - Original flowcharts
+  - Database Schema (Database Diagram)
+- **[PlantUML Sources](docs/)** - Source .puml files for all diagrams
 
 #### Database Documentation
-- **[Database Integration Plan](docs/database_integration_plan.md)** - Architecture and design 🆕
-- **[Database Installation Guide](docs/INSTALL_DATABASE.md)** - Step-by-step setup 🆕
-- **[Database Implementation](docs/DATABASE_IMPLEMENTATION.md)** - Implementation summary 🆕
-- **[Database API Reference](project/database/README.md)** - MySQL schema and queries 🆕
+- **[Database README](project/database/README.md)** - MySQL schema and queries
+- **[Auth Schema](project/database/AuthSchema.sql)** - Authentication tables SQL
 
 ---
 
@@ -716,6 +1038,10 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - [Przegląd](#przegląd-pl)
 - [Funkcje](#funkcje-pl)
 - [Architektura](#architektura-pl)
+- [Autentykacja](#autentykacja-pl)
+- [System Scenariuszy](#system-scenariuszy-pl)
+- [WebSocket Czas Rzeczywisty](#websocket-czas-rzeczywisty-pl)
+- [Wdrożenie Produkcyjne](#wdrożenie-produkcyjne-pl)
 - [Szybki Start](#szybki-start-pl)
 - [Dokumentacja API](#dokumentacja-api-pl)
 - [Testowanie](#testowanie-pl)
@@ -733,12 +1059,14 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - Tworzenia i zarządzania złożonymi topologiami sieciowymi
 - Symulacji realistycznych protokołów sieciowych (TCP, UDP, ICMP)
 - Analizy zachowania i wydajności sieci
-- API RESTful do programistycznej kontroli
-- Pełnej konteneryzacji Docker z bazą danych MySQL
-- Trwałego przechowywania topologii i śledzenia statystyk
-- Rozbudowanego pokrycia testami (60 testów jednostkowych + 10 testów wydajnościowych)
+- API RESTful z autentykacją JWT (34+ endpointy)
+- Automatyzacja scenariuszy oparta na YAML z walidacją
+- Transmisja zdarzeń w czasie rzeczywistym przez WebSocket
+- Pełna konteneryzacja Docker z persystencją MySQL
+- Wdrożenie produkcyjne z Nginx, HTTPS i monitoringiem
+- Rozbudowane pokrycie testami (61 testów jednostkowych + testy wydajnościowe)
 
-**Idealne dla**: Inżynierów sieciowych, studentów, naukowców i programistów uczących się podstaw sieci lub testujących algorytmy sieciowe.
+**Idealne dla**: Inżynierów sieciowych, studentów, naukowców i programistów uczących się podstaw sieci, testujących algorytmy sieciowe lub budujących produkcyjne narzędzia analizy sieci.
 
 ---
 
@@ -767,27 +1095,57 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - **5 Tabel**: nodes, links, packet_stats, vlans, congestion
 - **Endpointy REST**: `/db/enable`, `/db/save`, `/db/load`, `/db/status`
 
-#### REST API (34 Endpointy)
+#### WebSocket Aktualizacje Czasu Rzeczywistego
+- **Monitorowanie Na Żywo**: Wydarzenia sieciowe w czasie rzeczywistym bez odpytywania
+- **Typy Zdarzeń**: Dodawanie/usuwanie/awarie węzłów, zmiany linków, transmisja pakietów
+- **Broadcast**: Wszyscy podłączeni klienci otrzymują natychmiastowe powiadomienia
+- **Dwukierunkowy**: Ping/pong klienta i subskrypcje
+- **Port**: `ws://localhost:9001`
+- **Dokumentacja**: [Przewodnik WebSocket API](docs/WEBSOCKET_API.md)
+
+#### Autentykacja i Bezpieczeństwo
+- **Autentykacja JWT**: Bezpieczna autentykacja oparta na tokenach
+- **Hashowanie Haseł**: Argon2id do przechowywania haseł
+- **Sesje Redis**: Rozproszone zarządzanie sesjami
+- **Rate Limiting**: Limity API na użytkownika
+- **Audyt Logowania**: Pełny audyt autentykacji
+- **Dokumentacja**: [Przewodnik Autentykacji](docs/AUTHENTICATION.md)
+
+#### Automatyzacja Scenariuszy
+- **Parser YAML**: Definiowanie złożonych scenariuszy sieciowych
+- **Wykonywanie Kroków**: Sekwencyjne wykonywanie scenariuszy z walidacją
+- **Wsparcie Warunków**: Logika warunkowa w scenariuszach
+- **Wsparcie Pętli**: Powtarzające się operacje w scenariuszach
+- **Walidacja**: Walidacja przed wykonaniem wszystkich kroków
+- **Dokumentacja**: [Implementacja Scenariuszy](docs/SCENARIOS_IMPLEMENTATION.md)
+
+#### REST API (34+ Endpointy)
 - Zarządzanie węzłami (dodawanie, usuwanie, awarie)
 - Konfiguracja linków (połączenia, opóźnienia, przepustowość)
 - Operacje sieciowe (ping, traceroute, multicast)
+- Autentykacja (rejestracja, logowanie, wylogowanie)
+- Zarządzanie scenariuszami (ładowanie, krok, uruchamianie, status, reset)
 - Statystyki i monitorowanie
 - Zarządzanie topologią
-- **Operacje bazodanowe** (enable, save, load, status) 
+- Operacje bazodanowe (enable, save, load, status) 
 
 #### Gotowe do Produkcji
-- Konteneryzacja Docker z MySQL
-- CI/CD z GitHub Actions (testy bazy danych włączone)
+- Konteneryzacja Docker z MySQL i Redis
+- Nginx reverse proxy z wsparciem HTTPS/SSL
+- Automatyczne certyfikaty SSL Let's Encrypt
+- Stack monitoringu Prometheus + Grafana
+- Generowanie haseł i zarządzanie sekretami
+- CI/CD z GitHub Actions (61 testów przechodzi)
 - Detekcja wycieków pamięci (Valgrind)
 - Statyczna analiza kodu (cppcheck)
 - Benchmarking wydajności
-- Wersjonowanie schematu bazy danych
+- Serwer WebSocket dla aktualizacji w czasie rzeczywistym
 
 ---
 
 ### Architektura {#architektura-pl}
 
-NetSimCPP wykorzystuje **architekturę hybrydową** łączącą wydajność pamięci operacyjnej z trwałością bazy danych.
+NetSimCPP wykorzystuje **architekturę hybrydową** łączącą wydajność pamięci operacyjnej z trwałością bazy danych, autentykacją JWT i zdarzeniami WebSocket w czasie rzeczywistym.
 
 #### Przegląd Systemu
 
@@ -1218,9 +1576,9 @@ Ten projekt jest licencjonowany na licencji MIT - zobacz plik LICENSE dla szczeg
 
 ### Autorzy
 
-- **Patryk Kozłowski** - BACKEND, REST API, CI/CD, SCRIPTS, DOCS, UML
-- **Adrian Lorek** - DATABASE
-- **Oliwier Kruczek** - FRONTEND 
+- **Patryk Kozłowski** - Backend, REST API, Autentykacja, Scenariusze, WebSocket, CI/CD, Skrypty, Dokumentacja, Diagramy UML
+- **Adrian Lorek** - Schemat Bazy Danych, Integracja MySQL, Warstwa Persystencji
+- **Oliwier Kruczek** - Rozwój Frontendu
 
 ---
 
@@ -1229,13 +1587,21 @@ Ten projekt jest licencjonowany na licencji MIT - zobacz plik LICENSE dla szczeg
 - Zbudowane z [cpprestsdk](https://github.com/microsoft/cpprestsdk) dla REST API
 - Testowanie z [GoogleTest](https://github.com/google/googletest)
 - Obsługa JSON z [nlohmann/json](https://github.com/nlohmann/json)
+- Integracja MySQL z [MySQL Connector/C++](https://dev.mysql.com/downloads/connector/cpp/)
+- Implementacja JWT z [jwt-cpp](https://github.com/Thalhammer/jwt-cpp)
+- Hashowanie haseł z [Argon2](https://github.com/P-H-C/phc-winner-argon2)
+- Klient Redis z [hiredis](https://github.com/redis/hiredis)
+- Parsowanie YAML z [yaml-cpp](https://github.com/jbeder/yaml-cpp)
+- WebSocket z [websocketpp](https://github.com/zaphoyd/websocketpp)
 
 ---
 
 <div align="center">
 
-**Made with ❤️ by group of students from AGH**
+**NetSimCPP v1.0 - Gotowy do Produkcji Symulator Sieci**
 
-Star this repo if you find it helpful!
+Stworzony przez studentów AGH
+
+[Zgłoś Bug](https://github.com/UmarlyPoeta/inzynieria_oprogramowania/issues) | [Poproś o Funkcję](https://github.com/UmarlyPoeta/inzynieria_oprogramowania/issues) | [Dokumentacja](docs/)
 
 </div>

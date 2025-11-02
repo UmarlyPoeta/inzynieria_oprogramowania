@@ -1,0 +1,49 @@
+@startuml websocket_flow
+!theme plain
+skinparam sequenceArrowThickness 2
+
+actor Client
+participant "WebSocket Server\n:9001" as WS
+participant "Network Engine" as Engine
+database "Event Queue" as Queue
+
+== Connection ==
+Client -> WS: WebSocket Handshake
+WS --> Client: 101 Switching Protocols
+WS -> Client: {"type":"connected","clients":1}
+
+== Real-time Events ==
+
+Engine -> Engine: node_added("router1")
+Engine -> Queue: Publish event
+Queue -> WS: Broadcast to all clients
+WS -> Client: {"type":"node_added","name":"router1"}
+
+Engine -> Engine: packet_sent("H1","H2")
+Engine -> Queue: Publish event
+Queue -> WS: Broadcast
+WS -> Client: {"type":"packet_sent","from":"H1","to":"H2"}
+
+Engine -> Engine: link_modified("H1-R1",delay=50)
+Engine -> Queue: Publish event
+Queue -> WS: Broadcast
+WS -> Client: {"type":"link_modified","link":"H1-R1","delay":50}
+
+== Client Ping ==
+Client -> WS: {"type":"ping"}
+WS --> Client: {"type":"pong","timestamp":"2025-11-02T22:00:00Z"}
+
+== Disconnection ==
+Client -> WS: Close connection
+WS -> Queue: Unsubscribe client
+WS --> Client: Connection closed
+
+note right of Queue
+  Events broadcasted:
+  node_added / node_removed / node_failed
+  link_added / link_removed / link_modified
+  packet_sent / packet_received
+  network_cleared
+end note
+
+@enduml

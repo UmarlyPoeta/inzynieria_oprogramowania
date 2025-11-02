@@ -1,0 +1,57 @@
+@startuml scenario_system
+!theme plain
+skinparam componentStyle rectangle
+
+package "Scenario System" {
+  component "ScenarioParser\n(YAML)" as parser
+  note right of parser
+    Parse YAML files
+    Validate schema
+    Build scenario object
+  end note
+  
+  component "ScenarioRunner\n(Execution Engine)" as runner
+  note right of runner
+    Execute steps sequentially
+    Manage simulation state
+    Handle conditions
+    Loop support
+  end note
+  
+  component "ScenarioValidator" as validator
+  note right of validator
+    Validate node existence
+    Check connectivity
+    Verify protocols
+    Validate parameters
+  end note
+  
+  storage "YAML Files\n(scenarios/)" as yaml {
+    file "basic_ping.yaml"
+    file "tcp_handshake.yaml"
+    file "custom_scenario.yaml"
+  }
+  
+  component "REST API\nEndpoints" as api {
+    card "/scenarios/load"
+    card "/scenarios/step"
+    card "/scenarios/run"
+    card "/scenarios/status"
+    card "/scenarios/reset"
+  }
+  
+  component "Network Engine" as engine
+  note bottom of engine
+    Execute commands
+    Process packets
+    Update topology
+  end note
+}
+
+yaml -down-> parser : Read
+parser -down-> validator : Validate
+validator -right-> runner : Pass scenario
+api -down-> runner : Control
+runner -down-> engine : Execute
+
+@enduml
