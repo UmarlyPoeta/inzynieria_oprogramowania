@@ -50,21 +50,47 @@ message(STATUS "JWT-CPP found: ${JWT_CPP_INCLUDE}")
 find_path(PICOJSON_INCLUDE picojson.h PATHS /usr/include /usr/local/include)
 
 # YAML-CPP for scenario files - REQUIRED
-# Try pkg-config first, then fallback to find_package
+# Try multiple methods to find yaml-cpp
 find_package(PkgConfig)
 if(PkgConfig_FOUND)
     pkg_check_modules(YAML_CPP yaml-cpp)
-endif()
-
-if(NOT YAML_CPP_FOUND)
-    find_package(yaml-cpp REQUIRED)
-    if(yaml-cpp_FOUND)
-        set(YAML_CPP_INCLUDE_DIRS ${YAML_CPP_INCLUDE_DIR})
-        set(YAML_CPP_LIBRARIES yaml-cpp)
+    if(YAML_CPP_FOUND)
+        message(STATUS "Found yaml-cpp via pkg-config: ${YAML_CPP_VERSION}")
     endif()
 endif()
 
-message(STATUS "YAML-CPP found: ${YAML_CPP_LIBRARIES}")
+if(NOT YAML_CPP_FOUND)
+    find_package(yaml-cpp QUIET)
+    if(yaml-cpp_FOUND OR YAML_CPP_FOUND)
+        message(STATUS "Found yaml-cpp via find_package")
+        if(NOT YAML_CPP_LIBRARIES)
+            set(YAML_CPP_LIBRARIES yaml-cpp)
+        endif()
+        if(NOT YAML_CPP_INCLUDE_DIRS)
+            set(YAML_CPP_INCLUDE_DIRS ${YAML_CPP_INCLUDE_DIR})
+        endif()
+    endif()
+endif()
+
+# Manual fallback - search for library and headers
+if(NOT YAML_CPP_FOUND)
+    find_path(YAML_CPP_INCLUDE_DIR yaml-cpp/yaml.h 
+              PATHS /usr/include /usr/local/include)
+    find_library(YAML_CPP_LIBRARY NAMES yaml-cpp 
+                 PATHS /usr/lib /usr/local/lib /usr/lib/x86_64-linux-gnu)
+    
+    if(YAML_CPP_INCLUDE_DIR AND YAML_CPP_LIBRARY)
+        set(YAML_CPP_FOUND TRUE)
+        set(YAML_CPP_INCLUDE_DIRS ${YAML_CPP_INCLUDE_DIR})
+        set(YAML_CPP_LIBRARIES ${YAML_CPP_LIBRARY})
+        message(STATUS "Found yaml-cpp manually: ${YAML_CPP_LIBRARY}")
+    else()
+        message(FATAL_ERROR "yaml-cpp is required but not found. Install libyaml-cpp-dev")
+    endif()
+endif()
+
+message(STATUS "YAML-CPP include dirs: ${YAML_CPP_INCLUDE_DIRS}")
+message(STATUS "YAML-CPP libraries: ${YAML_CPP_LIBRARIES}")
 
 # All dependencies found - enable full features
 add_compile_definitions(HAVE_MYSQL_SUPPORT)
