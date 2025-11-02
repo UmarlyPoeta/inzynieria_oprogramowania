@@ -14,7 +14,7 @@ ScenarioRunner::ScenarioRunner(Network& network, Engine& engine)
 ScenarioResult ScenarioRunner::runScenario(const Scenario& scenario) {
     ScenarioResult result;
     result.scenario_name = scenario.name;
-    result.passed = false;
+    result.success = false;
     result.total_time_ms = 0.0;
     
     std::cout << "\n[Scenario] Running: " << scenario.name << std::endl;
@@ -23,8 +23,8 @@ ScenarioResult ScenarioRunner::runScenario(const Scenario& scenario) {
     auto start_time = std::chrono::high_resolution_clock::now();
     
     // Setup phase
-    if (!setupNetwork(scenario.topology)) {
-        result.message = "Failed to setup network topology";
+    if (!setupNetwork(scenario)) {
+        result.summary = "Failed to setup network topology";
         result.total_time_ms = std::chrono::duration<double, std::milli>(
             std::chrono::high_resolution_clock::now() - start_time
         ).count();
