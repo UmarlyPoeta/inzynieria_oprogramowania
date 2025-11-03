@@ -50,48 +50,30 @@ message(STATUS "JWT-CPP found: ${JWT_CPP_INCLUDE}")
 find_path(PICOJSON_INCLUDE picojson.h PATHS /usr/include /usr/local/include)
 
 # YAML-CPP for scenario files - REQUIRED
-# Try multiple methods to find yaml-cpp
-find_package(PkgConfig)
-if(PkgConfig_FOUND)
-    pkg_check_modules(YAML_CPP yaml-cpp)
-    if(YAML_CPP_FOUND)
-        message(STATUS "Found yaml-cpp via pkg-config: ${YAML_CPP_VERSION}")
-    endif()
-endif()
+# Try CMake config first (works with Ubuntu 22.04's libyaml-cpp-dev)
+find_package(yaml-cpp CONFIG QUIET)
 
-if(NOT YAML_CPP_FOUND)
-    find_package(yaml-cpp QUIET)
-    if(yaml-cpp_FOUND OR YAML_CPP_FOUND)
-        set(YAML_CPP_FOUND TRUE)
-        message(STATUS "Found yaml-cpp via find_package")
-        if(NOT YAML_CPP_LIBRARIES)
-            set(YAML_CPP_LIBRARIES yaml-cpp)
-        endif()
-        if(NOT YAML_CPP_INCLUDE_DIRS)
-            set(YAML_CPP_INCLUDE_DIRS ${YAML_CPP_INCLUDE_DIR})
-        endif()
-    endif()
-endif()
-
-# Manual fallback - search for library and headers
-if(NOT YAML_CPP_FOUND)
-    find_path(YAML_CPP_INCLUDE_DIR yaml-cpp/yaml.h 
-              PATHS /usr/include /usr/local/include)
+if(NOT yaml-cpp_FOUND)
+    # Fallback: manual search for older systems without CMake config
     find_library(YAML_CPP_LIBRARY NAMES yaml-cpp 
                  PATHS /usr/lib /usr/local/lib /usr/lib/x86_64-linux-gnu)
+    find_path(YAML_CPP_INCLUDE_DIR NAMES yaml-cpp/yaml.h
+              PATHS /usr/include /usr/local/include)
     
-    if(YAML_CPP_INCLUDE_DIR AND YAML_CPP_LIBRARY)
-        set(YAML_CPP_FOUND TRUE)
-        set(YAML_CPP_INCLUDE_DIRS ${YAML_CPP_INCLUDE_DIR})
+    if(YAML_CPP_LIBRARY AND YAML_CPP_INCLUDE_DIR)
         set(YAML_CPP_LIBRARIES ${YAML_CPP_LIBRARY})
+        set(YAML_CPP_INCLUDE_DIRS ${YAML_CPP_INCLUDE_DIR})
+        set(yaml-cpp_FOUND TRUE)
         message(STATUS "Found yaml-cpp manually: ${YAML_CPP_LIBRARY}")
     else()
         message(FATAL_ERROR "yaml-cpp is required but not found. Install libyaml-cpp-dev")
     endif()
+else()
+    # CMake config found - use the target
+    set(YAML_CPP_LIBRARIES yaml-cpp)
+    set(YAML_CPP_INCLUDE_DIRS "")
+    message(STATUS "Found yaml-cpp via CMake config: ${yaml-cpp_DIR}")
 endif()
-
-message(STATUS "YAML-CPP include dirs: ${YAML_CPP_INCLUDE_DIRS}")
-message(STATUS "YAML-CPP libraries: ${YAML_CPP_LIBRARIES}")
 
 # All dependencies found - enable full features
 add_compile_definitions(HAVE_MYSQL_SUPPORT)
