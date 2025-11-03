@@ -3,9 +3,6 @@ project(NetSimCPP VERSION 0.1 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Silence Boost FindBoost deprecation warning
-cmake_policy(SET CMP0167 OLD)
-
 find_package(cpprestsdk REQUIRED) # Microsoft C++ REST SDK
 find_package(nlohmann_json REQUIRED)
 find_package(OpenSSL REQUIRED)
@@ -54,14 +51,9 @@ find_path(PICOJSON_INCLUDE picojson.h PATHS /usr/include /usr/local/include)
 
 # YAML-CPP for scenario files - REQUIRED
 find_package(yaml-cpp CONFIG REQUIRED)
-
-if(NOT TARGET yaml-cpp)
-    message(FATAL_ERROR "yaml-cpp was not found even though libyaml-cpp-dev is installed.")
-endif()
-
 message(STATUS "Found yaml-cpp via CMake config")
-
 set(YAML_CPP_LIBRARIES yaml-cpp)
+add_compile_definitions(HAVE_YAML_SUPPORT)
 
 # All dependencies found - enable full features
 add_compile_definitions(HAVE_MYSQL_SUPPORT)

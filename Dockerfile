@@ -20,11 +20,20 @@ RUN apt-get update && apt-get install -y \
     libboost-thread-dev \
     libhiredis-dev \
     libargon2-dev \
-    libyaml-cpp-dev \
     mysql-client \
     git \
     curl \
     && rm -rf /var/lib/apt/lists/*
+
+# Build and install yaml-cpp from source (Ubuntu 22.04 version lacks CMake config)
+RUN git clone https://github.com/jbeder/yaml-cpp.git /tmp/yaml-cpp && \
+    cd /tmp/yaml-cpp && \
+    mkdir build && cd build && \
+    cmake .. -DBUILD_SHARED_LIBS=ON -DYAML_BUILD_SHARED_LIBS=ON -DYAML_CPP_BUILD_TESTS=OFF && \
+    make -j$(nproc) && make install && \
+    ldconfig && \
+    rm -rf /tmp/yaml-cpp && \
+    echo "yaml-cpp built and installed from source"
 
 # Install picojson (header-only library, required by jwt-cpp)
 RUN curl -L -o /usr/local/include/picojson.h https://raw.githubusercontent.com/kazuho/picojson/master/picojson.h && \
