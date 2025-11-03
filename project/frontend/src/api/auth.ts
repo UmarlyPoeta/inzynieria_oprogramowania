@@ -1,6 +1,6 @@
 import { ApiClient } from "@/api";
 
-interface AuthResponse { 
+export interface AuthResponse { 
     token: string;
     user: { 
         id: string;
@@ -8,7 +8,7 @@ interface AuthResponse {
     }
 }
 
-interface AuthRequest {
+export interface AuthRequest {
     username: string;
     password: string;
 }
