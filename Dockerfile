@@ -9,6 +9,7 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     cmake \
     g++ \
+    pkg-config \
     libcpprest-dev \
     nlohmann-json3-dev \
     libssl-dev \
