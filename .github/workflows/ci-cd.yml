@@ -63,13 +63,6 @@ jobs:
           libyaml-cpp-dev \
           mysql-client
     
-    - name: Verify yaml-cpp installation
-      run: |
-        echo "Checking for yaml-cpp..."
-        pkg-config --modversion yaml-cpp || echo "yaml-cpp not found via pkg-config"
-        dpkg -L libyaml-cpp-dev | grep -E '(\.pc|\.cmake)' || echo "No pkg-config or cmake files found"
-        find /usr -name "*yaml-cpp*" -type f 2>/dev/null | head -20
-    
     - name: Install header-only libraries (jwt-cpp, picojson)
       run: |
         # Install picojson
