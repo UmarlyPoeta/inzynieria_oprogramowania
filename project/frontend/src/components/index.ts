@@ -7,3 +7,6 @@ export { default as GroupNode } from './editor/ContextGroupMenu/ContextGroupMenu
 export { default as GlobalContextMenu } from './editor/GlobalContextMenu/GlobalContextMenu';
 export { default as ContextGroupMenu } from './editor/ContextGroupMenu/ContextGroupMenu';
 export { default as ContextDeviceMenu } from './editor/ContextDeviceMenu/ContextDeviceMenu';
+
+export { default as AuthForm } from './auth/AuthForm/AuthForm';
+export { default as AuthLayout } from './auth/AuthLayout/AuthLayout';
