@@ -3,6 +3,9 @@ project(NetSimCPP VERSION 0.1 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Silence Boost FindBoost deprecation warning
+cmake_policy(SET CMP0167 OLD)
+
 find_package(cpprestsdk REQUIRED) # Microsoft C++ REST SDK
 find_package(nlohmann_json REQUIRED)
 find_package(OpenSSL REQUIRED)
@@ -50,30 +53,15 @@ message(STATUS "JWT-CPP found: ${JWT_CPP_INCLUDE}")
 find_path(PICOJSON_INCLUDE picojson.h PATHS /usr/include /usr/local/include)
 
 # YAML-CPP for scenario files - REQUIRED
-# Try CMake config first (works with Ubuntu 22.04's libyaml-cpp-dev)
-find_package(yaml-cpp CONFIG QUIET)
+find_package(yaml-cpp CONFIG REQUIRED)
 
-if(NOT yaml-cpp_FOUND)
-    # Fallback: manual search for older systems without CMake config
-    find_library(YAML_CPP_LIBRARY NAMES yaml-cpp 
-                 PATHS /usr/lib /usr/local/lib /usr/lib/x86_64-linux-gnu)
-    find_path(YAML_CPP_INCLUDE_DIR NAMES yaml-cpp/yaml.h
-              PATHS /usr/include /usr/local/include)
-    
-    if(YAML_CPP_LIBRARY AND YAML_CPP_INCLUDE_DIR)
-        set(YAML_CPP_LIBRARIES ${YAML_CPP_LIBRARY})
-        set(YAML_CPP_INCLUDE_DIRS ${YAML_CPP_INCLUDE_DIR})
-        set(yaml-cpp_FOUND TRUE)
-        message(STATUS "Found yaml-cpp manually: ${YAML_CPP_LIBRARY}")
-    else()
-        message(FATAL_ERROR "yaml-cpp is required but not found. Install libyaml-cpp-dev")
-    endif()
-else()
-    # CMake config found - use the target
-    set(YAML_CPP_LIBRARIES yaml-cpp)
-    set(YAML_CPP_INCLUDE_DIRS "")
-    message(STATUS "Found yaml-cpp via CMake config: ${yaml-cpp_DIR}")
+if(NOT TARGET yaml-cpp)
+    message(FATAL_ERROR "yaml-cpp was not found even though libyaml-cpp-dev is installed.")
 endif()
+
+message(STATUS "Found yaml-cpp via CMake config")
+
+set(YAML_CPP_LIBRARIES yaml-cpp)
 
 # All dependencies found - enable full features
 add_compile_definitions(HAVE_MYSQL_SUPPORT)
