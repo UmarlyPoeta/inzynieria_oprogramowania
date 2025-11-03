@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { SignIn, SignUp, GetUser } from "@/api"; 
-import { useFetch } from "@/hooks";
-import { useMutation } from "@/hooks";
+import { useFetch, useMutation } from "@/hooks";
 
 export default function useAuth() {
   const [user, setUser] = useState<any>(null);
