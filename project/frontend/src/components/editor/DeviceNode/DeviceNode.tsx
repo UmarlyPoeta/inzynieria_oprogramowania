@@ -1,12 +1,25 @@
+import { ComputerIcon, RouterIcon, SwitchIcon } from '@/data';
 import { useEditor } from "@/context/EditorContext";
 import type { Device } from "@/types";
 import { useState, useEffect } from "react";
 import { Node } from './DeviceNode.styled'
 
+
 const DeviceNode: React.FC<{ device: Device, scale: number }> = ({ device, scale }) => {
   const { moveDevice, selectDevice, selectedDeviceId, connectingModeActive, selectDeviceForLink } = useEditor();
   const [dragging, setDragging] = useState(false);
   const [startPos, setStartPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+
+  const getDeviceIcon = () => { 
+    switch (device.type.toLowerCase()) {
+      case 'pc':
+        return <img src={ComputerIcon} alt="PC" width={"100%"}/>;
+      case 'router':
+        return <img src={RouterIcon} alt="Router" width={"100%"}/>;
+      case 'switch':
+        return <img src={SwitchIcon} alt="Switch" width={"100%"}/>;
+    }
+  }
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (e.button !== 2) return; // tylko lewy przycisk
@@ -34,14 +47,20 @@ const DeviceNode: React.FC<{ device: Device, scale: number }> = ({ device, scale
     };
   }, [dragging, startPos, device.x, device.y, scale]);
 
-  return <Node style={{ left: device.x, top: device.y, border: selectedDeviceId === device.id ? "3px solid #121212" : "none" }} onMouseDown={handleMouseDown} 
-    onClick={() => {
-      if (connectingModeActive) {
-        selectDeviceForLink(device.id);
-      } else {
+  return (
+    <Node style={{ left: device.x, top: device.y }}
+      $selected={selectedDeviceId === device.id}
+      onMouseDown={handleMouseDown}
+      onClick={() => {
+        if (connectingModeActive) {
+          selectDeviceForLink(device.id);
+        } else {
         selectDevice(device.id);
       }
-    }}>{device.type}</Node>;
-  };
+    }}>
+      {getDeviceIcon()}
+    </Node>
+  );
+};
 
 export default DeviceNode;
