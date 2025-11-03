@@ -50,6 +50,8 @@ message(STATUS "JWT-CPP found: ${JWT_CPP_INCLUDE}")
 find_path(PICOJSON_INCLUDE picojson.h PATHS /usr/include /usr/local/include)
 
 # YAML-CPP for scenario files - REQUIRED
+# Add /usr/local to CMAKE_PREFIX_PATH for yaml-cpp built from source
+list(APPEND CMAKE_PREFIX_PATH "/usr/local/lib/cmake/yaml-cpp")
 find_package(yaml-cpp CONFIG REQUIRED)
 message(STATUS "Found yaml-cpp via CMake config")
 set(YAML_CPP_LIBRARIES yaml-cpp)

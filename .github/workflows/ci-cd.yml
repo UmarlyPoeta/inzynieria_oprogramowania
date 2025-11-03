@@ -60,8 +60,18 @@ jobs:
           libboost-thread-dev \
           libhiredis-dev \
           libargon2-dev \
-          libyaml-cpp-dev \
           mysql-client
+    
+    - name: Build and install yaml-cpp from source
+      run: |
+        git clone https://github.com/jbeder/yaml-cpp.git /tmp/yaml-cpp
+        cd /tmp/yaml-cpp
+        mkdir build && cd build
+        cmake .. -DBUILD_SHARED_LIBS=ON -DYAML_BUILD_SHARED_LIBS=ON -DYAML_CPP_BUILD_TESTS=OFF
+        make -j$(nproc)
+        sudo make install
+        sudo ldconfig
+        echo "yaml-cpp built and installed from source"
     
     - name: Install header-only libraries (jwt-cpp, picojson)
       run: |
@@ -157,6 +167,17 @@ jobs:
           libhiredis-dev \
           libargon2-dev \
           valgrind
+    
+    - name: Build and install yaml-cpp from source
+      run: |
+        git clone https://github.com/jbeder/yaml-cpp.git /tmp/yaml-cpp
+        cd /tmp/yaml-cpp
+        mkdir build && cd build
+        cmake .. -DBUILD_SHARED_LIBS=ON -DYAML_BUILD_SHARED_LIBS=ON -DYAML_CPP_BUILD_TESTS=OFF
+        make -j$(nproc)
+        sudo make install
+        sudo ldconfig
+        echo "yaml-cpp built and installed from source"
     
     - name: Install header-only libraries (jwt-cpp, picojson)
       run: |
