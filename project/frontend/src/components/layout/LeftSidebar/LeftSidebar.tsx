@@ -1,6 +1,6 @@
 import { useContextMenu } from "@/context/ContextualMenuContext";
 import { useEditor } from "@/context/EditorContext";
-import React, { useEffect } from "react";
+import React from "react";
 import { Save, Waypoints, ChevronDown, FilePlus, FolderOpen, RotateCcw, RotateCw, Copy, Clipboard, Trash2, Move } from "lucide-react";
 import { 
   SidebarWrapper,
@@ -112,23 +112,6 @@ const LayersPanel: React.FC = () => {
 };
 
 const LeftSidebar = () => {
-  const { addDevice, addGroup } = useEditor();
-
-  // For testing: add some default groups and devices (to be removed later)
-  useEffect(() => {
-    // It affect rerender so be sure to reload website after changes (its info for you, Patryk and Adrian)
-    addGroup({ id: "routers", name: "Routers", collapsed: false });
-    addGroup({ id: "switches", name: "Switches", collapsed: false });
-    addGroup({ id: "pcs", name: "PCs", collapsed: false });
-
-
-    addDevice({ id: "pc-1", type: "pc", x: 523, y: 431, groupId: "pcs" });
-    addDevice({ id: "router-1", type: "router", x: 300, y: 25, groupId: "routers" });
-    addDevice({ id: "switch-1", type: "switch", x: 500, y: 50, groupId: "switches" });
-    addDevice({ id: "switch-2", type: "switch", x: 700, y: 50, groupId: "switches" });
-    addDevice({ id: "switch-3", type: "switch", x: 231, y: 120, groupId: "switches" });
-  }, []);
-
   return (
     <SidebarWrapper>
 
