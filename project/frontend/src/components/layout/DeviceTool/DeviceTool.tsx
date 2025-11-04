@@ -6,9 +6,9 @@ const DeviceTool: React.FC = () => {
 
     return (
         <DeviceToolContainer>
-            <DeviceButton onClick={() => addDevice({ type: "router", x: 0, y: 0})}> Router </DeviceButton>
-            <DeviceButton onClick={() => addDevice({ type: "switch", x: 0, y: 0})}> Switch </DeviceButton>
-            <DeviceButton onClick={() => addDevice({ type: "pc",     x: 0, y: 0})}> PC </DeviceButton>
+            <DeviceButton onClick={() => addDevice({ type: "router", x: 400, y: 100})}> Router </DeviceButton>
+            <DeviceButton onClick={() => addDevice({ type: "switch", x: 500, y: 100})}> Switch </DeviceButton>
+            <DeviceButton onClick={() => addDevice({ type: "pc",     x: 600, y: 100})}> PC </DeviceButton>
         </DeviceToolContainer>
     );
 }
