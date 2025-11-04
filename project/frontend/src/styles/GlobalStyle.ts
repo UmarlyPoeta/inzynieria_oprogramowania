@@ -22,6 +22,11 @@ const GlobalStyle = createGlobalStyle
             height: 100%;
             width: 100%;
         }
+
+        ::selection { 
+            background-color: #FC5D08;
+            color: #fff;
+        }
     `;
 
 export default GlobalStyle;
