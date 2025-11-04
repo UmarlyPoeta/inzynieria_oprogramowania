@@ -72,7 +72,8 @@ const AuthForm = ({ mode }: AuthFormProps) => {
           setError("Error! Password cannot be the same as username.");
           return false;
       }
-
+      
+      setError(null);
       return true;
     };
 
@@ -94,7 +95,14 @@ const AuthForm = ({ mode }: AuthFormProps) => {
         }, 100);
 
         try {
-            if (mode === "login") await login(form);
+            if (mode === "login") {
+              if (form.password.length === 0 || form.username.length === 0) {
+                setError("Error! Username and password cannot be empty.");
+                return;
+              }
+              setError(null);
+              await login(form);
+            }
             else {
               if (!validateData()) return;
               await register(form);
