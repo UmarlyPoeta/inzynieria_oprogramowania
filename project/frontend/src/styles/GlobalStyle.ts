@@ -15,7 +15,9 @@ const GlobalStyle = createGlobalStyle
             font-family: "Inter", sans-serif;
             height: 100%;
             width: 100%;
-            overflow: hidden;
+            overflow: auto;        
+            scrollbar-width: none; 
+            -ms-overflow-style: none;
          }
 
         #root {
@@ -27,6 +29,10 @@ const GlobalStyle = createGlobalStyle
             background-color: #FC5D08;
             color: #fff;
         }
+
+        ::-webkit-scrollbar {
+            display: none; 
+        }   
     `;
 
 export default GlobalStyle;
