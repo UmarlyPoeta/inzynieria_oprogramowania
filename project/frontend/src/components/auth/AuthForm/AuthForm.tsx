@@ -84,7 +84,7 @@ const AuthForm = ({ mode }: AuthFormProps) => {
             }
             navigate("/workspace");
         } catch (err: any) {
-            setError(err.message || "Wystąpił błąd.");
+            setError(err.message || "The error occurred during authentication");
         }
     };
 
