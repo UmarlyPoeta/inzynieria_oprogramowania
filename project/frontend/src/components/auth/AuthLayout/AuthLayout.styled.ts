@@ -7,5 +7,11 @@ export const Wrapper = styled.div<{ gradient?: string }>`
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: color-mix(in oklab, #ff7f00 30%, black 100%);
+  background-color: #c1bfbfff;
+  padding: 3rem;
+
+  @media (max-width: 1300px) {
+    height: 100%;
+    min-height: 0;
+  }
 `;
