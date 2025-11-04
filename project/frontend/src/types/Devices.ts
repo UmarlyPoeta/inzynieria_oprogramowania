@@ -10,6 +10,8 @@ export interface RouterConfig {
     subnet?: string;            // np. "255.255.255.0"
     status: "up" | "down";      // interfejs włączony/wyłączony
     dhcpEnabled?: boolean;      // DHCP klient na interfejsie
+    natInside?: boolean;        // interfejs NAT inside
+    natOutside?: boolean;       // interfejs NAT outside
   }[];
 
   // Routing dynamiczny
@@ -40,12 +42,11 @@ export interface RouterConfig {
   }[];
 
   // NAT i Firewall
-  natEnabled: boolean;
-  natRules?: {
-    source: string;
-    destination: string;
-    translated: string;
-  }[];
+  natEnabled: boolean;  // włączony/wyłączony NAT globalnie
+  natType?: "dynamic" | "static" | "overload"; // typ NAT
+  natPool?: { startIp: string; endIp: string }[]; // dla dynamic/overload
+  natRules?: { localIp: string; globalIp: string }[]; // dla static NAT
+
   firewallEnabled: boolean;
   firewallRules?: {
     action: "permit" | "deny";

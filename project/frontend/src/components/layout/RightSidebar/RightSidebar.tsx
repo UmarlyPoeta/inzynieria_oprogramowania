@@ -108,9 +108,241 @@ const DeviceDetailsPanel: React.FC = () => {
           </Section>
         );
       case "NAT":
-        return <Section>NAT configuration inputs...</Section>;
+        return (
+          <>
+            <h5>General</h5>
+            <Section>
+
+              <Select
+                value={config?.natEnabled ? "enabled" : "disabled"}
+                onChange={(e) => handleInputChange("natEnabled", e.target.value === "enabled")}
+              >
+                <option value="enabled">Enabled</option>
+                <option value="disabled">Disabled</option>
+              </Select>
+
+              <Select
+                value={config?.natType || "dynamic"}
+                onChange={(e) => handleInputChange("natType", e.target.value)}
+              >
+                <option value="dynamic">Dynamic NAT</option>
+                <option value="static">Static NAT</option>
+                <option value="overload">PAT/Overload</option>
+              </Select>
+            </Section>
+          
+          <h5 style={{display: "flex", justifyContent: "space-between", alignItems: "center"}}>
+            NAT Pool
+            <button onClick={() => handleInputChange("natPool", [...(config.natPool || []), { startIp: "", endIp: "" }])}>
+              Add NAT Pool
+            </button>
+          </h5>
+
+            {config?.natType === "dynamic" || config?.natType === "overload" ? (
+              <>
+                {(config.natPool || []).map((pool, idx) => (
+                  <Section key={idx} style={{ marginBottom: "-8px" }}>
+                    <Input
+                      placeholder="Start IP"
+                      value={pool.startIp || ""}
+                      onChange={(e) => {
+                        const newPool = [...(config.natPool || [])];
+                        newPool[idx] = { ...newPool[idx], startIp: e.target.value };
+                        handleInputChange("natPool", newPool);
+                      }}
+                    />
+                    <Input
+                      placeholder="End IP"
+                      value={pool.endIp || ""}
+                      onChange={(e) => {
+                        const newPool = [...(config.natPool || [])];
+                        newPool[idx] = { ...newPool[idx], endIp: e.target.value };
+                        handleInputChange("natPool", newPool);
+                      }}
+                    /> 
+                  </Section>
+                ))}
+              </>
+            ) : null}
+
+            {config?.natType === "static" ? (
+              <>
+              <h5 style={{display: "flex", justifyContent: "space-between", alignItems: "center"}}>
+                Static NAT Rules
+                <button onClick={() => handleInputChange("natRules", [...(config.natRules || []), { localIp: "", globalIp: "" }])}>
+                  Add Static NAT Rule
+                </button>
+              </h5>
+                {(config.natRules || []).map((rule, idx) => (
+                  <Section key={idx} style={{ marginBottom: "6px" }}>
+                    <Input
+                      placeholder="Inside Local IP"
+                      value={rule.localIp || ""}
+                      onChange={(e) => {
+                        const newRules = [...(config.natRules || [])];
+                        newRules[idx] = { ...newRules[idx], localIp: e.target.value };
+                        handleInputChange("natRules", newRules);
+                      }}
+                    />
+                    <Input
+                      placeholder="Outside Global IP"
+                      value={rule.globalIp || ""}
+                      onChange={(e) => {
+                        const newRules = [...(config.natRules || [])];
+                        newRules[idx] = { ...newRules[idx], globalIp: e.target.value };
+                        handleInputChange("natRules", newRules);
+                      }}
+                    />
+                  </Section>
+                ))}
+              </>
+            ) : null}
+
+          <h5 style={{marginTop: "7px"}}>Interfaces for NAT</h5>
+              {(config.interfaces || []).map((intf, idx) => (
+                <> {intf.name}
+                <Section key={idx} direction="column">
+                  <Select
+                    value={intf.natInside ? "inside" : intf.natOutside ? "outside" : "none"}
+                    onChange={(e) => {
+                      const newIfs = [...(config.interfaces || [])];
+                      newIfs[idx] = {
+                        ...newIfs[idx],
+                        natInside: e.target.value === "inside",
+                        natOutside: e.target.value === "outside"
+                      };
+                      handleInputChange("interfaces", newIfs);
+                    }}
+                  >
+                    <option value="none">None</option>
+                    <option value="inside">Inside</option>
+                    <option value="outside">Outside</option>
+                  </Select>
+                </Section>
+                </>
+              ))}
+          </>
+        );
+
       case "DHCP":
-        return <Section>DHCP configuration inputs...</Section>;
+        return (
+          <>
+            <Section>
+              <Select
+                value={config?.dhcpEnabled ? "enabled" : "disabled"}
+                onChange={(e) => handleInputChange("dhcpEnabled", e.target.value === "enabled")}
+              >
+                <option value="enabled">Enabled</option>
+                <option value="disabled">Disabled</option>
+              </Select>
+            </Section>
+
+            <h5 style={{display: "flex", justifyContent: "space-between", alignItems: "center"}}>
+              DHCP Pools
+              <button
+                onClick={() =>
+                  handleInputChange("dhcpPools", [
+                    ...(config.dhcpPools || []),
+                    {
+                      name: "",
+                      network: "",
+                      subnet: "",
+                      defaultGateway: "",
+                      dns: "",
+                      rangeStart: "",
+                      rangeEnd: "",
+                    },
+                  ])
+                }
+              >
+                Add Pool
+              </button>
+            </h5>
+
+            {(config.dhcpPools || []).map((pool, idx) => (
+              <div key={idx}>
+              <h5> Pool {idx+1} </h5>
+              <Section>
+                <Input
+                  placeholder="Pool Name"
+                  value={pool.name || ""}
+                  onChange={(e) => {
+                    const newPools = [...(config.dhcpPools || [])];
+                    newPools[idx] = { ...newPools[idx], name: e.target.value };
+                    handleInputChange("dhcpPools", newPools);
+                  }}
+                />
+              </Section>
+              <Section>
+                <Input
+                  placeholder="Network"
+                  value={pool.network || ""}
+                  onChange={(e) => {
+                    const newPools = [...(config.dhcpPools || [])];
+                    newPools[idx] = { ...newPools[idx], network: e.target.value };
+                    handleInputChange("dhcpPools", newPools);
+                  }}
+                />
+                </Section>
+              <Section>
+                <Input
+                  placeholder="Subnet"
+                  value={pool.subnet || ""}
+                  onChange={(e) => {
+                    const newPools = [...(config.dhcpPools || [])];
+                    newPools[idx] = { ...newPools[idx], subnet: e.target.value };
+                    handleInputChange("dhcpPools", newPools);
+                  }}
+                />
+                </Section>
+              <Section>
+                <Input
+                  placeholder="Default Gateway"
+                  value={pool.defaultGateway || ""}
+                  onChange={(e) => {
+                    const newPools = [...(config.dhcpPools || [])];
+                    newPools[idx] = { ...newPools[idx], defaultGateway: e.target.value };
+                    handleInputChange("dhcpPools", newPools);
+                  }}
+                />
+                </Section>
+              <Section>
+                <Input
+                  placeholder="DNS Server"
+                  value={pool.dns || ""}
+                  onChange={(e) => {
+                    const newPools = [...(config.dhcpPools || [])];
+                    newPools[idx] = { ...newPools[idx], dns: e.target.value };
+                    handleInputChange("dhcpPools", newPools);
+                  }}
+                />
+              </Section>
+              <Section>
+                <Input
+                  placeholder="Range Start"
+                  value={pool.rangeStart || ""}
+                  onChange={(e) => {
+                    const newPools = [...(config.dhcpPools || [])];
+                    newPools[idx] = { ...newPools[idx], rangeStart: e.target.value };
+                    handleInputChange("dhcpPools", newPools);
+                  }}
+                />
+              </Section>
+              <Section>
+                <Input
+                  placeholder="Range End"
+                  value={pool.rangeEnd || ""}
+                  onChange={(e) => {
+                    const newPools = [...(config.dhcpPools || [])];
+                    newPools[idx] = { ...newPools[idx], rangeEnd: e.target.value };
+                    handleInputChange("dhcpPools", newPools);
+                  }}
+                />
+              </Section>
+              </div>
+            ))}
+          </>
+        );
       case "Security":
         return <Section>Firewall / ACL configuration...</Section>;
       case "Services":
