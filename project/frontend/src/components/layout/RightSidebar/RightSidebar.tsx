@@ -7,17 +7,17 @@ import {
   Sidebar, 
   IconButton, 
   PanelWrapper, 
-  TabsWrapper, 
   Section, 
   Input, 
   Select,
-  TabButton, 
-} from './RightSidebar.styled'
+  SectionHeader,
+  AccordionContent
+} from './RightSidebar.styled';
 
 const DeviceDetailsPanel: React.FC = () => {
-  const { devices, selectedDeviceId, updateDeviceConfig } = useEditor();
+  const { devices, selectedDeviceId, updateDeviceConfig, startConnecting } = useEditor();
   const device = devices.find((d) => d.id === selectedDeviceId);
-  const [activeTab, setActiveTab] = useState<string>("General");
+  const [expandedSection, setExpandedSection] = useState<string | null>("General");
 
   if (!device) return <p style={{ padding: "10px" }}>Select a device to see details</p>;
 
@@ -25,84 +25,79 @@ const DeviceDetailsPanel: React.FC = () => {
     updateDeviceConfig(device.id, { [key]: value });
   };
 
-  // zakładki
-  let tabs: string[] = ["General"];
-  if (device.type === "router") tabs.push("Interfaces", "Routing", "NAT", "DHCP", "Security", "Services");
+  let sections: string[] = ["General"];
+  if (device.type === "router") sections.push("Interfaces", "Routing", "NAT", "DHCP", "Security", "Services");
 
-  const renderRouterTab = (tab: string) => {
+  const renderRouterSection = (section: string) => {
     const config = device.config as RouterConfig;
-    switch (tab) {
+    switch (section) {
       case "General":
         return (
           <Section>
-            <label>Hostname</label>
-            <Input
-              value={config?.hostname || ""}
-              onChange={(e) => handleInputChange("hostname", e.target.value)}
-            />
-            <label>Domain Name</label>
-            <Input
-              value={config?.domainName || ""}
-              onChange={(e) => handleInputChange("domainName", e.target.value)}
-            />
+            <Input value={config?.hostname || ""} onChange={(e) => handleInputChange("hostname", e.target.value)} placeholder="Hostname"/>
+            <Input value={config?.domainName || ""} onChange={(e) => handleInputChange("domainName", e.target.value)} placeholder="Domain Name"/>
           </Section>
         );
       case "Interfaces":
         return (
-          <Section>
+          <>
             {config?.interfaces?.map((intf, idx) => (
-              <div key={idx} style={{ marginBottom: "10px" }}>
-                <label>{intf.name} IP</label>
-                <Input
-                  value={intf.ip || ""}
-                  onChange={(e) => {
-                    const newIfs = [...(config.interfaces || [])];
-                    newIfs[idx] = { ...newIfs[idx], ip: e.target.value };
-                    handleInputChange("interfaces", newIfs);
-                  }}
-                />
-                <label>Subnet</label>
-                <Input
-                  value={intf.subnet || ""}
-                  onChange={(e) => {
-                    const newIfs = [...(config.interfaces || [])];
-                    newIfs[idx] = { ...newIfs[idx], subnet: e.target.value };
-                    handleInputChange("interfaces", newIfs);
-                  }}
-                />
-                <label>Status</label>
-                <Select
-                  value={intf.status || "up"}
-                  onChange={(e) => {
-                    const newIfs = [...(config.interfaces || [])];
-                    newIfs[idx] = { ...newIfs[idx], status: e.target.value as "up" | "down" };
-                    handleInputChange("interfaces", newIfs);
-                  }}
-                >
-                  <option value="up">Up</option>
-                  <option value="down">Down</option>
-                </Select>
+              <div key={idx}>
+                <strong>{intf.name}</strong>
+                <Section>
+                  <Input
+                    value={intf.ip || ""}
+                    placeholder="Adres IP"
+                    onChange={(e) => {
+                      const newIfs = [...(config.interfaces || [])];
+                      newIfs[idx] = { ...newIfs[idx], ip: e.target.value };
+                      handleInputChange("interfaces", newIfs);
+                    }}
+                  />
+                  <Input
+                    value={intf.subnet || ""}
+                    placeholder="Subnet"
+                    onChange={(e) => {
+                      const newIfs = [...(config.interfaces || [])];
+                      newIfs[idx] = { ...newIfs[idx], subnet: e.target.value };
+                      handleInputChange("interfaces", newIfs);
+                    }}
+                  />
+                </Section>
+                <Section>
+                  <Select
+                    value={intf.status || "up"}
+                    onChange={(e) => {
+                      const newIfs = [...(config.interfaces || [])];
+                      newIfs[idx] = { ...newIfs[idx], status: e.target.value as "up" | "down" };
+                      handleInputChange("interfaces", newIfs);
+                    }}
+                  >
+                    <option value="up">Up</option>
+                    <option value="down">Down</option>
+                  </Select>
+                </Section>
               </div>
             ))}
-          </Section>
+          </>
         );
       case "Routing":
         return (
           <Section>
-            <label>Routing Protocol</label>
             <Select
               value={config?.routingProtocol || "None"}
               onChange={(e) => handleInputChange("routingProtocol", e.target.value)}
             >
-              <option value="None">None</option>
+              <option value="None">Protocol: Select</option>
               <option value="RIP">RIP</option>
               <option value="OSPF">OSPF</option>
               <option value="EIGRP">EIGRP</option>
               <option value="BGP">BGP</option>
+              <option value="BGP">STATIC</option>
             </Select>
-            <label>Static Routes</label>
             <Input
               value={config?.staticRoutes?.join(", ") || ""}
+              placeholder="Static Routes"
               onChange={(e) =>
                 handleInputChange(
                   "staticRoutes",
@@ -125,29 +120,36 @@ const DeviceDetailsPanel: React.FC = () => {
     }
   };
 
-  const { startConnecting } = useEditor();
-
-  const renderTabContent = () => {
-    if (device.type === "router") return renderRouterTab(activeTab);
-    return <Section>Configuration for {device.type} coming soon...</Section>;
-  };
-
   return (
-    <PanelWrapper>
-      <h3>{device.name || device.type}</h3>
-      <TabsWrapper style={{ borderBottom: "2px solid #ededf5", paddingBottom: "4px" }}>
-        {tabs.map((tab) => (
-          <TabButton key={tab} active={tab === activeTab} onClick={() => setActiveTab(tab)}>
-            {tab}
-          </TabButton>
+    <>
+      <div style={{ borderBottom: "2px solid #ededf5", textAlign: "center", fontWeight: "bold", fontSize: ".9rem" }}>
+        <h3 style={{ backgroundColor: "#121212", color: "#ffffff", margin: "10px", borderRadius: "6px", padding: "1px" }}>
+          {device.name || device.type}
+        </h3>
+      </div>
+      <PanelWrapper>
+        {sections.map((section) => (
+          <div key={section}>
+            <SectionHeader
+              expanded={expandedSection === section}
+              onClick={() =>
+                setExpandedSection(expandedSection === section ? null : section)
+              }
+            >
+              {section}
+              <span>{expandedSection === section ? "▲" : "▼"}</span>
+            </SectionHeader>
+            <AccordionContent expanded={expandedSection === section}>
+              {renderRouterSection(section)}
+            </AccordionContent>
+          </div>
         ))}
-      </TabsWrapper>
-      {renderTabContent()}
-      <br />
-      <IconButton title="Connect" onClick={startConnecting} style={{border: "2px solid #e0e0e0a6"}}>
-         Connect Nodes
-      </IconButton>
-    </PanelWrapper>
+        <br />
+        <IconButton title="Connect" onClick={startConnecting} style={{ border: "2px solid #e0e0e0a6" }}>
+          Connect Nodes
+        </IconButton>
+      </PanelWrapper>
+    </>
   );
 };
 
@@ -155,7 +157,10 @@ const RightSidebar: React.FC = () => {
   return (
     <Sidebar>
       <SimulationContainer>
-        <h2>Configuration</h2>
+        <div>
+          <h2>Configuration</h2>
+          <p>Setup device & run simulation</p>
+        </div>
         <IconButton title="Run Simulation">
           <Play />
         </IconButton>
@@ -166,6 +171,7 @@ const RightSidebar: React.FC = () => {
 };
 
 export default RightSidebar;
+
 
 
 
