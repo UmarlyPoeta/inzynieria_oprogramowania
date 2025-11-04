@@ -15,7 +15,7 @@ import {
 } from './RightSidebar.styled';
 
 const DeviceDetailsPanel: React.FC = () => {
-  const { devices, selectedDeviceId, updateDeviceConfig, startConnecting } = useEditor();
+  const { devices, selectedDeviceId, updateDeviceConfig } = useEditor();
   const device = devices.find((d) => d.id === selectedDeviceId);
   const [expandedSection, setExpandedSection] = useState<string | null>("General");
 
@@ -145,9 +145,6 @@ const DeviceDetailsPanel: React.FC = () => {
           </div>
         ))}
         <br />
-        <IconButton title="Connect" onClick={startConnecting} style={{ border: "2px solid #e0e0e0a6" }}>
-          Connect Nodes
-        </IconButton>
       </PanelWrapper>
     </>
   );
