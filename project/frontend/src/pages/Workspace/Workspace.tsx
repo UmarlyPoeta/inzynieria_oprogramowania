@@ -3,7 +3,7 @@ import { Container, MainArea } from './Workspace.styled';
 
 const Workspace = () => {
   return (
-    <Container>
+    <Container onContextMenu={(e) => e.preventDefault()}>
       <MainArea>
         <LeftSidebar />
         <CanvasArea />
