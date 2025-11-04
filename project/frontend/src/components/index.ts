@@ -11,3 +11,4 @@ export { default as ContextDeviceMenu } from './editor/ContextDeviceMenu/Context
 
 export { default as AuthForm } from './auth/AuthForm/AuthForm';
 export { default as AuthLayout } from './auth/AuthLayout/AuthLayout';
+export { default as ProtectedRoute } from './common/ProtectedRoute/ProtectedRoute';

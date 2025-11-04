@@ -6,7 +6,7 @@ import { EditorProvider } from "@/context/EditorContext";
 import { ContextMenuProvider } from "@/context/ContextualMenuContext";
 import { AuthProvider } from "@/context/AuthContext";
 
-import { GlobalContextMenu } from "@/components";
+import { GlobalContextMenu, ProtectedRoute } from "@/components";
 import { Workspace, Authorization } from "@/pages";
 
 const App = () => {
@@ -18,15 +18,26 @@ const App = () => {
             <GlobalStyle />
             <BrowserRouter>
               <Routes>
-                <Route path="/" element={<Navigate to="/login" replace />} />
-                <Route path="/login" element={<Authorization mode="login" />} />
-                <Route path="/register" element={<Authorization mode="register" />} />
+                <Route path="/" element={
+                  <ProtectedRoute redirectIfAuthenticated>
+                    <Navigate to="/login" replace />
+                  </ProtectedRoute>
+                }/>
+                <Route path="/login" element={
+                  <ProtectedRoute redirectIfAuthenticated>
+                    <Authorization mode="login" />
+                    </ProtectedRoute>
+                }/>
+                <Route path="/register" element={
+                  <ProtectedRoute redirectIfAuthenticated>
+                    <Authorization mode="register" />
+                    </ProtectedRoute>
+                }/>
                 <Route
-                  path="/workspace"
-                  element={
-                    <>
+                  path="/workspace"element={
+                    <ProtectedRoute>
                       <Workspace />
-                    </>
+                    </ProtectedRoute>
                   }
                 />
               </Routes>
