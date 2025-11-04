@@ -14,17 +14,17 @@ const ContextDeviceMenu: React.FC<ContextDeviceMenuProps> = ({ device }) => {
   const { closeMenu } = useContextMenu();
 
   const handleDelete = () => {
-    deleteDevice(device.id);
+    deleteDevice(device.id!);
     closeMenu();
   };
 
   const handleRemoveFromGroup = () => {
-    removeDeviceFromGroup(device.id);
+    removeDeviceFromGroup(device.id!);
     closeMenu();
   };
 
   const handleMoveToGroup = (groupId: string) => {
-    moveDeviceToGroup(device.id, groupId);
+    moveDeviceToGroup(device.id!, groupId);
     closeMenu();
   };
 

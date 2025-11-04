@@ -22,7 +22,7 @@ const DeviceDetailsPanel: React.FC = () => {
   if (!device) return <p style={{ padding: "10px" }}>Select a device to see details</p>;
 
   const handleInputChange = (key: string, value: any) => {
-    updateDeviceConfig(device.id, { [key]: value });
+    updateDeviceConfig(device.id!, { [key]: value });
   };
 
   let sections: string[] = ["General"];

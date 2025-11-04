@@ -34,7 +34,7 @@ const DeviceNode: React.FC<{ device: Device, scale: number }> = ({ device, scale
     if (!dragging) return;
     const dx = (e.clientX - startPos.x) / scale;
     const dy = (e.clientY - startPos.y) / scale;
-    moveDevice(device.id, device.x + dx, device.y + dy);
+    moveDevice(device.id!, device.x + dx, device.y + dy);
     setStartPos({ x: e.clientX, y: e.clientY });
   };
 
@@ -53,7 +53,7 @@ const DeviceNode: React.FC<{ device: Device, scale: number }> = ({ device, scale
       onMouseDown={handleMouseDown}
       onClick={() => {
         if (connectingModeActive) {
-          selectDeviceForLink(device.id);
+          selectDeviceForLink(device.id!);
         } else {
         selectDevice(device.id);
       }
