@@ -13,7 +13,9 @@ import {
   Subtitle, 
   Label, 
   Checkbox,
-  CheckBoxWrapper 
+  CheckBoxWrapper,
+  ProgressBar,
+  ProgressWrapper
 } from "./AuthForm.styled";
 
 interface AuthFormProps {
@@ -23,6 +25,8 @@ interface AuthFormProps {
 const AuthForm = ({ mode }: AuthFormProps) => {
     const [form, setForm] = useState({ username: "", password: "", confirmPassword: "" });
     const [error, setError] = useState<string | null>(null);
+    const [isRequestInProgress, setIsRequestInProgress] = useState(false);
+    const [requestProgress, setRequestProgress] = useState(0);
     const {login, register} = useAuthContext();
     const navigate = useNavigate(); 
 
@@ -76,6 +80,19 @@ const AuthForm = ({ mode }: AuthFormProps) => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        setIsRequestInProgress(true);
+        setRequestProgress(0);  
+
+        const progressInterval = setInterval(() => {
+            setRequestProgress((prevProgress) => {
+                if (prevProgress < 100) {
+                    return prevProgress + 5;
+                }
+                return prevProgress;
+            });
+        }, 100);
+
         try {
             if (mode === "login") await login(form);
             else {
@@ -85,6 +102,10 @@ const AuthForm = ({ mode }: AuthFormProps) => {
             navigate("/workspace");
         } catch (err: any) {
             setError(err.message || "The error occurred during authentication");
+        } finally { 
+          clearInterval(progressInterval);  
+          setIsRequestInProgress(false);
+          setRequestProgress(100); 
         }
     };
 
@@ -92,6 +113,11 @@ const AuthForm = ({ mode }: AuthFormProps) => {
       <>
         <LeftContainer>
           <FormContainer onSubmit={handleSubmit}>
+            {isRequestInProgress && (
+              <ProgressWrapper style={{ position: 'absolute', top: 0, left: 0, width: '100%' }}>
+                <ProgressBar progress={requestProgress} />
+              </ProgressWrapper>
+            )}
             <Title> {mode === "login" ? "Welcome Back" : "Create an account"} </Title>
             <Subtitle> {mode === "login" ? "Welcome back! Please enter your details" : "Please fill in the form to create an account"} </Subtitle>
             <Label> Username </Label>

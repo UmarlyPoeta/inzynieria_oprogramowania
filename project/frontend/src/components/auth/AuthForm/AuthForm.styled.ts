@@ -6,6 +6,7 @@ export const FormContainer = styled.form`
   justify-content: center;
   width: 100%;
   height: 100%;
+  position: relative;
 `;
 
 export const Title = styled.h2`
@@ -139,4 +140,21 @@ export const RightContainer = styled.div`
 
 export const CheckBoxWrapper = styled.div`
   font-size: .9rem;
+`;
+
+export const ProgressWrapper = styled.div`
+  width: 100%;
+  height: 4px;
+  background-color: #ccc;
+  border-radius: 2px;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+`;
+
+export const ProgressBar = styled.div<{ progress: number }>`
+  width: ${(p) => p.progress}%;
+  height: 100%;
+  background-color: #fc5d08;
+  border-radius: 2px;
+  transition: width 0.1s ease-in-out;
 `;
