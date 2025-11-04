@@ -1,4 +1,4 @@
-import { LeftSidebar, RightSidebar, CanvasArea } from '@/components';
+import { LeftSidebar, RightSidebar, CanvasArea, DeviceTool } from '@/components';
 import { Container, MainArea } from './Workspace.styled';
 
 const Workspace = () => {
@@ -7,6 +7,7 @@ const Workspace = () => {
       <MainArea>
         <LeftSidebar />
         <CanvasArea />
+        <DeviceTool />
         <RightSidebar />
       </MainArea>
     </Container>

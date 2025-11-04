@@ -108,9 +108,21 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         const count = prev.filter(d => d.type === device.type).length;
         name = `${device.type.charAt(0).toUpperCase() + device.type.slice(1)} ${count + 1}`;
       }
-      return [...prev, { ...device, name, config: device.config ?? defaultConfig(device.type) }];
+
+      const id = device.id ?? Math.random().toString(36).substring(2, 9); 
+
+      return [
+        ...prev, 
+        { 
+          ...device, 
+          id,
+          name, 
+          config: device.config ?? defaultConfig(device.type) 
+        }
+      ];
     });
   };
+
 
   const updateDeviceConfig = (id: string, configUpdate: Partial<Device["config"]>) => {
     setDevices(prev =>

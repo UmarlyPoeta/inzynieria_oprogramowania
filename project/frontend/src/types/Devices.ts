@@ -98,7 +98,7 @@ export interface PCConfig {
 }
 
 export interface Device {
-  id: string;
+  id?: string;
   type: "router" | "switch" | "pc";
   x: number;
   y: number;
