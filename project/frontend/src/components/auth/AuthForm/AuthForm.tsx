@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useAuthContext } from '../../../context/AuthContext'; 
 import { useNavigate } from "react-router-dom";
-import { Waypoints } from "lucide-react";
 import { 
   Button, 
   FormContainer, 
@@ -42,7 +41,7 @@ const AuthForm = ({ mode }: AuthFormProps) => {
         <LeftContainer>
           <FormContainer onSubmit={handleSubmit}>
             <Title> {mode === "login" ? "Welcome Back" : "Create an account"} </Title>
-            <Subtitle> Welcome back! Please enter your details </Subtitle>
+            <Subtitle> {mode === "login" ? "Welcome back! Please enter your details" : "Please fill in the form to create an account"} </Subtitle>
             <Label> Username </Label>
             <Input type = "text" placeholder="Enter your username" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} />
             <Label> Password </Label>

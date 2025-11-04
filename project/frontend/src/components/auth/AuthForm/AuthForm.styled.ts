@@ -4,6 +4,8 @@ export const FormContainer = styled.form`
   display: flex;
   flex-direction: column;
   justify-content: center;
+  width: 100%;
+  height: 100%;
 `;
 
 export const Title = styled.h2`
@@ -76,6 +78,11 @@ export const ErrorText = styled.p`
 `;
 
 export const LeftContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  // flex-direction: column;
+  // align-items: center;
+  // justify-content: center;
   width: 600px;
   height: 90vh;
   background-color: #fff;
