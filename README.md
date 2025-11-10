@@ -158,7 +158,58 @@
 
 NetSimCPP provides enterprise-grade authentication with JWT tokens, Argon2 password hashing, and Redis-based session management.
 
-![Authentication Flow](docs/UML/auth_flow.png)
+```mermaid
+sequenceDiagram
+    participant User
+    participant API as REST API<br/>(main.cpp)
+    participant Auth as AuthService<br/>(JWT Manager)
+    participant Hash as PasswordHasher<br/>(Argon2)
+    participant Redis as RedisClient<br/>(Session Store)
+    participant DB as MySQL<br/>Database
+
+    Note over User,DB: Registration
+    User->>API: POST /register<br/>{username, email, password}
+    API->>Hash: hash(password)
+    Hash->>Hash: Argon2id hash
+    Hash-->>API: hashed_password
+    API->>DB: INSERT INTO users
+    DB-->>API: user_id
+    API-->>User: 201 Created
+
+    Note over User,DB: Login
+    User->>API: POST /login<br/>{username, password}
+    API->>DB: SELECT * FROM users<br/>WHERE username=?
+    DB-->>API: user data
+    API->>Hash: verify(password, hash)
+    Hash-->>API: valid
+    API->>Auth: generateToken(user_id)
+    Auth->>Auth: Sign JWT with secret
+    Auth-->>API: JWT token
+    API->>Redis: SET session:token<br/>{user_id, exp}
+    Redis-->>API: OK
+    API-->>User: 200 OK<br/>{token, user_id}
+
+    Note over User,DB: Authenticated Request
+    User->>API: GET /network/status<br/>Authorization: Bearer token
+    API->>Auth: validateToken(token)
+    Auth->>Auth: Verify signature
+    Auth-->>API: user_id
+    API->>Redis: GET session:token
+    Redis-->>API: session data
+    alt Session valid
+        API->>DB: Check permissions
+        DB-->>API: permissions
+        API-->>User: 200 OK<br/>{data}
+    else Invalid/Expired
+        API-->>User: 401 Unauthorized
+    end
+
+    Note over User,DB: Logout
+    User->>API: POST /logout<br/>Authorization: Bearer token
+    API->>Redis: DEL session:token
+    Redis-->>API: OK
+    API-->>User: 200 OK
+```
 
 #### Authentication Flow
 
@@ -209,7 +260,31 @@ See [AUTHENTICATION.md](docs/AUTHENTICATION.md) for complete guide.
 
 YAML-based network scenario automation with validation and step-by-step execution.
 
-![Scenario System](docs/UML/scenario_system.png)
+```mermaid
+graph TB
+    subgraph "Scenario System"
+        YAML[("YAML Files<br/>(scenarios/)")]
+        Parser["ScenarioParser<br/>(YAML)"]
+        Validator["ScenarioValidator"]
+        Runner["ScenarioRunner<br/>(Execution Engine)"]
+        API["REST API Endpoints"]
+        Engine["Network Engine"]
+    end
+
+    YAML -->|Read| Parser
+    Parser -->|"Parse YAML<br/>Validate schema<br/>Build scenario"| Validator
+    Validator -->|"Validate nodes<br/>Check connectivity<br/>Verify protocols"| Runner
+    API -->|Control| Runner
+    Runner -->|"Execute steps<br/>Manage state<br/>Handle conditions<br/>Loop support"| Engine
+    Engine -->|"Execute commands<br/>Process packets<br/>Update topology"| Runner
+
+    style YAML fill:#e1f5ff
+    style Parser fill:#fff4e1
+    style Validator fill:#ffe1f5
+    style Runner fill:#e1ffe1
+    style API fill:#f5e1ff
+    style Engine fill:#ffe1e1
+```
 
 #### Architecture
 
@@ -294,7 +369,45 @@ See [SCENARIOS_IMPLEMENTATION.md](docs/SCENARIOS_IMPLEMENTATION.md) for detailed
 
 Real-time event broadcasting for live network monitoring without polling.
 
-![WebSocket Flow](docs/UML/websocket_flow.png)
+```mermaid
+sequenceDiagram
+    participant Client
+    participant WS as WebSocket Server<br/>:9001
+    participant Engine as Network Engine
+    participant Queue as Event Queue
+
+    Note over Client,Queue: Connection
+    Client->>WS: WebSocket Handshake
+    WS-->>Client: 101 Switching Protocols
+    WS->>Client: {"type":"connected","clients":1}
+
+    Note over Client,Queue: Real-time Events
+    Engine->>Engine: node_added("router1")
+    Engine->>Queue: Publish event
+    Queue->>WS: Broadcast to all clients
+    WS->>Client: {"type":"node_added","name":"router1"}
+
+    Engine->>Engine: packet_sent("H1","H2")
+    Engine->>Queue: Publish event
+    Queue->>WS: Broadcast
+    WS->>Client: {"type":"packet_sent","from":"H1","to":"H2"}
+
+    Engine->>Engine: link_modified("H1-R1",delay=50)
+    Engine->>Queue: Publish event
+    Queue->>WS: Broadcast
+    WS->>Client: {"type":"link_modified","link":"H1-R1","delay":50}
+
+    Note over Client,Queue: Client Ping
+    Client->>WS: {"type":"ping"}
+    WS-->>Client: {"type":"pong","timestamp":"2025-11-02T22:00:00Z"}
+
+    Note over Client,Queue: Disconnection
+    Client->>WS: Close connection
+    WS->>Queue: Unsubscribe client
+    WS-->>Client: Connection closed
+
+    Note right of Queue: Events broadcasted:<br/>node_added / node_removed / node_failed<br/>link_added / link_removed / link_modified<br/>packet_sent / packet_received<br/>network_cleared
+```
 
 #### Event Types
 
@@ -352,7 +465,60 @@ See [WEBSOCKET_API.md](docs/WEBSOCKET_API.md) for complete WebSocket API documen
 
 Enterprise-grade production deployment with Nginx, HTTPS, monitoring, and automated secret management.
 
-![Production Deployment](docs/UML/production_deployment.png)
+```mermaid
+graph TB
+    subgraph Internet
+        User([User])
+        LetsEncrypt[Let's Encrypt CA]
+    end
+
+    subgraph "Production Server"
+        subgraph "Docker Compose Production Stack"
+            Nginx[Nginx<br/>Reverse Proxy]
+            Backend[Backend<br/>NetSimCPP]
+            MySQL[(MySQL<br/>Database)]
+            Redis[(Redis<br/>Session Store)]
+            Prometheus[(Prometheus<br/>Metrics)]
+            Grafana[Grafana<br/>Monitoring]
+        end
+
+        subgraph Volumes
+            Certs[certbot_data/<br/>SSL Certificates]
+            MySQLVol[mysql_data/<br/>Database]
+            GrafanaVol[grafana_data/<br/>Dashboards]
+            PromVol[prometheus_data/<br/>Metrics]
+        end
+
+        Env[.env.production<br/>Secrets]
+    end
+
+    User -->|HTTP :80| Nginx
+    User -->|HTTPS :443| Nginx
+    LetsEncrypt -->|ACME Challenge| Nginx
+    
+    Nginx -->|Proxy| Backend
+    Nginx -->|WebSocket| Backend
+    Backend -->|Query| MySQL
+    Backend -->|Session Check| Redis
+    Backend -->|Cache| Redis
+    
+    Prometheus -->|Scrape /metrics| Backend
+    Prometheus -->|Scrape /metrics| MySQL
+    Grafana -->|Query| Prometheus
+    
+    Nginx -.->|Read Certs| Certs
+    MySQL -.->|Persist| MySQLVol
+    Grafana -.->|Persist| GrafanaVol
+    Prometheus -.->|Persist| PromVol
+
+    style Nginx fill:#90EE90
+    style Backend fill:#87CEEB
+    style MySQL fill:#FFB6C1
+    style Redis fill:#FFD700
+    style Prometheus fill:#DDA0DD
+    style Grafana fill:#F0E68C
+    style Env fill:#FFB6C1
+```
 
 #### Production Stack
 
@@ -422,13 +588,123 @@ See [PRODUCTION_DEPLOY.md](PRODUCTION_DEPLOY.md) (532 lines) for complete produc
 
 Complete system architecture showing all layers (Client, Application, Persistence):
 
-![System Overview](docs/UML/system_overview.png)
+```mermaid
+graph TB
+    subgraph "CLIENT LAYER"
+        Browser[Web Browser<br/>Adminer GUI]
+        WSClient[WebSocket Client<br/>Real-time Events]
+        Curl[curl / Postman<br/>API Testing]
+        Apps[Custom Applications<br/>REST + Auth]
+    end
+
+    subgraph "APPLICATION LAYER"
+        REST[REST API Server<br/>main.cpp<br/>34+ HTTP Endpoints<br/>JWT Authentication<br/>Request routing<br/>JSON serialization]
+        WSServer[WebSocket Server<br/>Port 9001<br/>Real-time events<br/>Broadcast to clients<br/>Bi-directional comm]
+        Auth[Auth Service<br/>JWT Manager<br/>Password Hasher Argon2<br/>Session validation]
+        Scenario[Scenario System<br/>YAML Parser<br/>Validator<br/>Runner]
+        Network[Network Manager<br/>Network.cpp<br/>Topology management<br/>In-memory graph<br/>Persistence orchestration]
+        Engine[Engine.cpp<br/>Routing algorithms<br/>Packet simulation<br/>Event processing]
+        DBMgr[DatabaseManager<br/>Connection pool<br/>Transactions<br/>SQL execution]
+        Repos[Repositories<br/>NodeRepo<br/>LinkRepo<br/>StatsRepo]
+    end
+
+    subgraph "PERSISTENCE LAYER"
+        subgraph MySQL[MySQL 8.0 Database]
+            NetTables[Network Tables<br/>nodes, links<br/>packet_stats<br/>vlans, congestion]
+            AuthTables[Auth Tables<br/>users, permissions<br/>rate_limits<br/>audit_log]
+        end
+        
+        Redis[(Redis<br/>Session Store<br/>JWT Sessions<br/>Rate Limits)]
+        
+        Adminer[Adminer Web GUI<br/>Port 8081<br/>Visual database management<br/>SQL query interface]
+    end
+
+    Browser --> REST
+    WSClient --> WSServer
+    Curl --> REST
+    Apps --> REST
+    
+    REST --> Auth
+    REST --> Network
+    REST --> Scenario
+    Auth --> DBMgr
+    Auth --> Redis
+    Scenario --> Network
+    Network --> Engine
+    Network --> DBMgr
+    DBMgr --> Repos
+    Repos --> MySQL
+    WSServer --> Engine
+    
+    Adminer --> MySQL
+
+    style Browser fill:#E3F2FD
+    style WSClient fill:#E3F2FD
+    style Curl fill:#E3F2FD
+    style Apps fill:#E3F2FD
+    style REST fill:#E8F5E9
+    style WSServer fill:#E8F5E9
+    style Auth fill:#FFF9C4
+    style Scenario fill:#FFE0B2
+    style Network fill:#F3E5F5
+    style Engine fill:#E1F5FE
+    style DBMgr fill:#FFF3E0
+    style Repos fill:#FCE4EC
+    style MySQL fill:#FFEBEE
+    style Redis fill:#FFF9C4
+    style Adminer fill:#E0F2F1
+```
 
 #### Database Schema
 
 MySQL 8.0 database with 5 tables for persistent storage:
 
-![Database Schema](docs/UML/database_schema.png)
+```mermaid
+erDiagram
+    nodes ||--o{ links : "connects"
+    nodes ||--o{ packet_stats : "generates"
+    nodes ||--o{ vlans : "member of"
+    
+    nodes {
+        int id PK
+        string name
+        string type
+        string ip_address
+        json properties
+    }
+    
+    links {
+        int id PK
+        int node_a_id FK
+        int node_b_id FK
+        int delay_ms
+        int bandwidth_mbps
+        float packet_loss
+    }
+    
+    packet_stats {
+        int id PK
+        int source_node_id FK
+        int dest_node_id FK
+        string protocol
+        int size_bytes
+        timestamp sent_at
+    }
+    
+    vlans {
+        int id PK
+        int vlan_id
+        string name
+        json member_nodes
+    }
+    
+    congestion {
+        int id PK
+        int node_id FK
+        int queue_size
+        timestamp recorded_at
+    }
+```
 
 **Tables:**
 - `nodes` - Network nodes (Host, Router, DummyNode)
@@ -441,7 +717,59 @@ MySQL 8.0 database with 5 tables for persistent storage:
 
 In-memory (fast) + Database (persistent) approach:
 
-![Hybrid Architecture](docs/UML/hybrid_architecture.png)
+```mermaid
+graph TB
+    subgraph "IN-MEMORY (Fast Operations)"
+        Topo[Network Topology<br/>Current nodes<br/>Adjacency map<br/>nodesByName]
+        Queues[Packet Queues<br/>Per-node queues<br/>Congestion control<br/>Priority queues]
+        Routing[Routing Engine<br/>BFS algorithm<br/>Dijkstra algorithm<br/>Path computation]
+        State[Simulation State<br/>Current time<br/>Scheduled events<br/>TCP connections]
+        Scenario[Scenario State<br/>Loaded YAML scenario<br/>Current step index<br/>Execution context]
+    end
+
+    subgraph "IN DATABASE (Persistent)"
+        MySQL[(MySQL 8.0)]
+        Redis[(Redis)]
+        
+        MySQL --- History[Historical Configurations]
+        MySQL --- Stats[Packet Statistics over Time]
+        MySQL --- Metadata[Node/Link Metadata]
+        MySQL --- VLANs[VLAN Configurations]
+        MySQL --- Congestion[Congestion Records]
+        MySQL --- Users[User Accounts & Permissions]
+        MySQL --- Audit[Auth Audit Logs]
+        
+        Redis --- Sessions[JWT Sessions]
+        Redis --- RateLimits[Rate Limit Counters]
+    end
+
+    Sync[Synchronization Layer<br/>Save: Memory to Database<br/>Load: Database to Memory<br/>Optional auto-sync<br/>Transaction support]
+    Auth[Auth Layer<br/>JWT token validation<br/>Session management<br/>Password verification]
+
+    Topo --> Sync
+    Queues --> Sync
+    Routing --> Sync
+    State --> Sync
+    Scenario --> Sync
+    
+    Sync -->|saveTopologyToDB| MySQL
+    MySQL -->|loadTopologyFromDB| Sync
+    Sync --> Topo
+    
+    Topo --> Auth
+    Auth --> MySQL
+    Auth --> Redis
+
+    style Topo fill:#E8F5E9
+    style Queues fill:#E8F5E9
+    style Routing fill:#E8F5E9
+    style State fill:#E8F5E9
+    style Scenario fill:#E8F5E9
+    style MySQL fill:#E3F2FD
+    style Redis fill:#E3F2FD
+    style Sync fill:#FFF9C4
+    style Auth fill:#FFE0B2
+```
 
 **In-Memory:**
 - Network topology (nodes, adjacency map)
@@ -460,13 +788,108 @@ In-memory (fast) + Database (persistent) approach:
 
 How network topology is saved to database:
 
-![Save Topology](docs/UML/save_topology_sequence.png)
+```mermaid
+sequenceDiagram
+    participant Client
+    participant API as REST API
+    participant Net as Network
+    participant DBMgr as DatabaseMgr
+    participant NodeRepo
+    participant LinkRepo
+    participant StatsRepo
+    participant DB as MySQL
+
+    Client->>API: GET /db/save
+    activate API
+    API->>Net: saveTopologyToDB()
+    activate Net
+    
+    Net->>DBMgr: beginTransaction()
+    DBMgr->>DB: START TRANSACTION
+    DB-->>DBMgr: OK
+    DBMgr-->>Net: Transaction started
+    
+    loop For each node
+        Net->>NodeRepo: createNode(node)
+        NodeRepo->>DB: INSERT INTO nodes...
+        DB-->>NodeRepo: Node ID
+        NodeRepo-->>Net: Created
+    end
+    
+    loop For each link
+        Net->>LinkRepo: createLink(nodeA, nodeB)
+        LinkRepo->>DB: INSERT INTO links...
+        DB-->>LinkRepo: Link ID
+        LinkRepo-->>Net: Created
+    end
+    
+    loop For each statistic
+        Net->>StatsRepo: recordPacket(src, dst, count)
+        StatsRepo->>DB: INSERT INTO packet_stats...
+        DB-->>StatsRepo: OK
+        StatsRepo-->>Net: Recorded
+    end
+    
+    Net->>DBMgr: commit()
+    DBMgr->>DB: COMMIT
+    DB-->>DBMgr: Success
+    DBMgr-->>Net: Committed
+    
+    Net-->>API: ✅ Success
+    deactivate Net
+    API-->>Client: {"status":"success",<br/>"message":"Topology saved"}
+    deactivate API
+```
 
 #### Data Flow - Load Topology
 
 How network topology is loaded from database:
 
-![Load Topology](docs/UML/load_topology_sequence.png)
+```mermaid
+sequenceDiagram
+    participant Client
+    participant API as REST API
+    participant Net as Network
+    participant NodeRepo
+    participant LinkRepo
+    participant StatsRepo
+    participant DB as MySQL
+
+    Client->>API: GET /db/load
+    activate API
+    API->>Net: loadTopologyFromDB()
+    activate Net
+    
+    Net->>Net: Clear current topology
+    
+    Net->>NodeRepo: getAllNodes()
+    NodeRepo->>DB: SELECT * FROM nodes
+    DB-->>NodeRepo: Node records
+    NodeRepo-->>Net: Node list
+    
+    loop For each node record
+        Net->>Net: createNode(name, type, ip)
+    end
+    
+    Net->>LinkRepo: getAllLinks()
+    LinkRepo->>DB: SELECT * FROM links
+    DB-->>LinkRepo: Link records
+    LinkRepo-->>Net: Link list
+    
+    loop For each link record
+        Net->>Net: connectNodes(nodeA, nodeB, delay, bandwidth)
+    end
+    
+    Net->>StatsRepo: getPacketStats()
+    StatsRepo->>DB: SELECT * FROM packet_stats
+    DB-->>StatsRepo: Stats records
+    StatsRepo-->>Net: Statistics
+    
+    Net-->>API: ✅ Success
+    deactivate Net
+    API-->>Client: {"status":"success",<br/>"message":"Topology loaded",<br/>"nodes":X,"links":Y}
+    deactivate API
+```
 
 #### Legacy Class Diagram
 ![Class Diagram](docs/UML/CLASSES.png)
@@ -544,7 +967,47 @@ Complete REST API with 34+ endpoints for network management, authentication, sce
 
 NetSimCPP runs in Docker with MySQL database and Adminer web GUI:
 
-![Docker Deployment](docs/UML/docker_deployment.png)
+```mermaid
+graph TB
+    subgraph "Docker Host"
+        subgraph "netsim-network (Bridge Network)"
+            NetSim["netsim<br/>Ports: 8080, 9001"]
+            MySQL["mysql<br/>Port: 3306"]
+            Redis["redis<br/>Port: 6379"]
+            Adminer["adminer<br/>Port: 8081"]
+            
+            MySQLData[("mysql_data<br/>(Volume)")]
+            RedisData[("redis_data<br/>(Volume)")]
+        end
+    end
+
+    subgraph "Host Machine / External"
+        P8080["Port 8080<br/>http://localhost:8080<br/>(REST API + Auth)"]
+        P9001["Port 9001<br/>ws://localhost:9001<br/>(WebSocket Events)"]
+        P3306["Port 3306<br/>mysql://localhost:3306<br/>(Database)"]
+        P6379["Port 6379<br/>redis://localhost:6379<br/>(Session Store)"]
+        P8081["Port 8081<br/>http://localhost:8081<br/>(Adminer GUI)"]
+    end
+
+    NetSim -->|MySQL Connector/C++| MySQL
+    NetSim -->|hiredis Sessions| Redis
+    Adminer -->|Connect| MySQL
+    MySQL -.->|Persist| MySQLData
+    Redis -.->|Persist| RedisData
+
+    NetSim --> P8080
+    NetSim --> P9001
+    MySQL --> P3306
+    Redis --> P6379
+    Adminer --> P8081
+
+    style NetSim fill:#90EE90
+    style MySQL fill:#FFB6C1
+    style Redis fill:#FFD700
+    style Adminer fill:#87CEEB
+    style MySQLData fill:#DDA0DD
+    style RedisData fill:#F0E68C
+```
 
 **Services:**
 - **netsim** (Port 8080) - C++ REST API server
@@ -894,7 +1357,59 @@ Our CI/CD pipeline runs on every push and PR with full MySQL database integratio
 
 Complete workflow showing all jobs and database integration:
 
-![CI/CD Pipeline](docs/UML/cicd_pipeline.png)
+```mermaid
+flowchart TD
+    Start([GitHub Push/PR]) --> Trigger[GitHub Actions<br/>CI/CD Triggered]
+    
+    Trigger --> BuildTest[Build and Test Job]
+    Trigger --> PerfTest[Performance Tests Job]
+    Trigger --> DockerBuild[Docker Build Job]
+    
+    subgraph BuildTest [Build and Test Job]
+        MySQL1[Start MySQL Service<br/>Docker Container<br/>Port 3306]
+        Redis1[Start Redis Service<br/>Docker Container<br/>Port 6379]
+        Schema1[Load Database Schema<br/>NetSimDB.sql + AuthSchema.sql<br/>Network tables 5<br/>Auth tables 4]
+        Deps1[Install Dependencies<br/>cmake, g++, libmysqlcppconn-dev<br/>hiredis, argon2, jwt-cpp<br/>yaml-cpp, websocketpp]
+        Build1[Build C++ Project<br/>cmake + make]
+        UnitTests[Run Unit Tests<br/>61 tests<br/>Network simulation<br/>Database connectivity<br/>Authentication flow<br/>Scenario validation]
+        
+        MySQL1 --> Redis1 --> Schema1 --> Deps1 --> Build1 --> UnitTests
+    end
+    
+    subgraph PerfTest [Performance Tests Job]
+        Services2[Start MySQL + Redis Services]
+        BuildPerf[Build Performance Tests]
+        RunPerf[Run Performance Tests<br/>10 performance tests<br/>Memory leak check Valgrind<br/>Concurrent access tests]
+        
+        Services2 --> BuildPerf --> RunPerf
+    end
+    
+    subgraph DockerBuild [Docker Build Job]
+        BuildImage[Build Docker Image<br/>Multi-stage build<br/>MySQL Connector/C++<br/>Redis, Auth, Scenarios<br/>Dependencies cached]
+        ComposeUp[Docker Compose Up<br/>Full Stack<br/>netsim, mysql<br/>redis, adminer]
+        HealthCheck[Wait for Services<br/>Health Check]
+        Integration[Integration Tests<br/>API endpoints<br/>Database save/load<br/>WebSocket events]
+        
+        BuildImage --> ComposeUp --> HealthCheck --> Integration
+    end
+    
+    UnitTests --> Quality[Code Quality Checks<br/>Static analysis cppcheck<br/>Code style validation<br/>Security checks]
+    RunPerf --> Quality
+    Integration --> Quality
+    
+    Quality --> Success{All Tests<br/>Passed?}
+    Success -->|Yes| Pass([✅ Pipeline Success])
+    Success -->|No| Fail([❌ Pipeline Failed<br/>Show logs])
+
+    style Start fill:#4CAF50
+    style Trigger fill:#E3F2FD
+    style BuildTest fill:#E8F5E9
+    style PerfTest fill:#FFF9C4
+    style DockerBuild fill:#E1F5FE
+    style Quality fill:#F3E5F5
+    style Pass fill:#4CAF50
+    style Fail fill:#F44336
+```
 
 #### Pipeline Jobs
 
@@ -1151,13 +1666,123 @@ NetSimCPP wykorzystuje **architekturę hybrydową** łączącą wydajność pami
 
 Kompletna architektura systemu pokazująca wszystkie warstwy (Klient, Aplikacja, Persystencja):
 
-![Przegląd Systemu](docs/UML/system_overview.png)
+```mermaid
+graph TB
+    subgraph "WARSTWA KLIENTA"
+        Browser[Przeglądarka Web<br/>Adminer GUI]
+        WSClient[Klient WebSocket<br/>Zdarzenia Real-time]
+        Curl[curl / Postman<br/>Testowanie API]
+        Apps[Aplikacje Własne<br/>REST + Auth]
+    end
+
+    subgraph "WARSTWA APLIKACJI"
+        REST[Serwer REST API<br/>main.cpp<br/>34+ endpointy HTTP<br/>Autentykacja JWT<br/>Routing żądań<br/>Serializacja JSON]
+        WSServer[Serwer WebSocket<br/>Port 9001<br/>Zdarzenia real-time<br/>Broadcast do klientów<br/>Komunikacja dwukierunkowa]
+        Auth[Serwis Autoryzacji<br/>Menadżer JWT<br/>Hasher Argon2<br/>Walidacja sesji]
+        Scenario[System Scenariuszy<br/>Parser YAML<br/>Walidator<br/>Wykonawca]
+        Network[Menadżer Sieci<br/>Network.cpp<br/>Zarządzanie topologią<br/>Graf w pamięci<br/>Orkiestracja persystencji]
+        Engine[Engine.cpp<br/>Algorytmy routingu<br/>Symulacja pakietów<br/>Przetwarzanie zdarzeń]
+        DBMgr[Menadżer Bazy<br/>Pula połączeń<br/>Transakcje<br/>Wykonanie SQL]
+        Repos[Repozytoria<br/>NodeRepo<br/>LinkRepo<br/>StatsRepo]
+    end
+
+    subgraph "WARSTWA PERSYSTENCJI"
+        subgraph MySQL[Baza MySQL 8.0]
+            NetTables[Tabele Sieciowe<br/>nodes, links<br/>packet_stats<br/>vlans, congestion]
+            AuthTables[Tabele Autoryzacji<br/>users, permissions<br/>rate_limits<br/>audit_log]
+        end
+        
+        Redis[(Redis<br/>Magazyn Sesji<br/>Sesje JWT<br/>Limity zapytań)]
+        
+        Adminer[Adminer Web GUI<br/>Port 8081<br/>Wizualne zarządzanie bazą<br/>Interfejs zapytań SQL]
+    end
+
+    Browser --> REST
+    WSClient --> WSServer
+    Curl --> REST
+    Apps --> REST
+    
+    REST --> Auth
+    REST --> Network
+    REST --> Scenario
+    Auth --> DBMgr
+    Auth --> Redis
+    Scenario --> Network
+    Network --> Engine
+    Network --> DBMgr
+    DBMgr --> Repos
+    Repos --> MySQL
+    WSServer --> Engine
+    
+    Adminer --> MySQL
+
+    style Browser fill:#E3F2FD
+    style WSClient fill:#E3F2FD
+    style Curl fill:#E3F2FD
+    style Apps fill:#E3F2FD
+    style REST fill:#E8F5E9
+    style WSServer fill:#E8F5E9
+    style Auth fill:#FFF9C4
+    style Scenario fill:#FFE0B2
+    style Network fill:#F3E5F5
+    style Engine fill:#E1F5FE
+    style DBMgr fill:#FFF3E0
+    style Repos fill:#FCE4EC
+    style MySQL fill:#FFEBEE
+    style Redis fill:#FFF9C4
+    style Adminer fill:#E0F2F1
+```
 
 #### Schemat Bazy Danych
 
 Baza danych MySQL 8.0 z 5 tabelami do trwałego przechowywania:
 
-![Schemat Bazy Danych](docs/UML/database_schema.png)
+```mermaid
+erDiagram
+    nodes ||--o{ links : "łączy"
+    nodes ||--o{ packet_stats : "generuje"
+    nodes ||--o{ vlans : "należy do"
+    
+    nodes {
+        int id PK
+        string name
+        string type
+        string ip_address
+        json properties
+    }
+    
+    links {
+        int id PK
+        int node_a_id FK
+        int node_b_id FK
+        int delay_ms
+        int bandwidth_mbps
+        float packet_loss
+    }
+    
+    packet_stats {
+        int id PK
+        int source_node_id FK
+        int dest_node_id FK
+        string protocol
+        int size_bytes
+        timestamp sent_at
+    }
+    
+    vlans {
+        int id PK
+        int vlan_id
+        string name
+        json member_nodes
+    }
+    
+    congestion {
+        int id PK
+        int node_id FK
+        int queue_size
+        timestamp recorded_at
+    }
+```
 
 **Tabele:**
 - `nodes` - Węzły sieci (Host, Router, DummyNode)
@@ -1170,7 +1795,59 @@ Baza danych MySQL 8.0 z 5 tabelami do trwałego przechowywania:
 
 Podejście: Pamięć operacyjna (szybka) + Baza danych (trwała):
 
-![Architektura Hybrydowa](docs/UML/hybrid_architecture.png)
+```mermaid
+graph TB
+    subgraph "W PAMIĘCI (Szybkie Operacje)"
+        Topo[Topologia Sieci<br/>Bieżące węzły<br/>Mapa sąsiedztwa<br/>nodesByName]
+        Queues[Kolejki Pakietów<br/>Kolejki per węzeł<br/>Kontrola przeciążeń<br/>Kolejki priorytetowe]
+        Routing[Silnik Routingu<br/>Algorytm BFS<br/>Algorytm Dijkstry<br/>Obliczanie ścieżek]
+        State[Stan Symulacji<br/>Bieżący czas<br/>Zaplanowane zdarzenia<br/>Połączenia TCP]
+        Scenario[Stan Scenariusza<br/>Załadowany YAML<br/>Bieżący indeks kroku<br/>Kontekst wykonania]
+    end
+
+    subgraph "W BAZIE DANYCH (Trwałe)"
+        MySQL[(MySQL 8.0)]
+        Redis[(Redis)]
+        
+        MySQL --- History[Historyczne Konfiguracje]
+        MySQL --- Stats[Statystyki Pakietów w Czasie]
+        MySQL --- Metadata[Metadane Węzłów/Połączeń]
+        MySQL --- VLANs[Konfiguracje VLAN]
+        MySQL --- Congestion[Rekordy Przeciążeń]
+        MySQL --- Users[Konta Użytkowników i Uprawnienia]
+        MySQL --- Audit[Logi Audytu Autoryzacji]
+        
+        Redis --- Sessions[Sesje JWT]
+        Redis --- RateLimits[Liczniki Limitów]
+    end
+
+    Sync[Warstwa Synchronizacji<br/>Zapis: Pamięć do Bazy<br/>Wczytanie: Baza do Pamięci<br/>Opcjonalne auto-sync<br/>Wsparcie transakcji]
+    Auth[Warstwa Autoryzacji<br/>Walidacja tokenu JWT<br/>Zarządzanie sesjami<br/>Weryfikacja hasła]
+
+    Topo --> Sync
+    Queues --> Sync
+    Routing --> Sync
+    State --> Sync
+    Scenario --> Sync
+    
+    Sync -->|saveTopologyToDB| MySQL
+    MySQL -->|loadTopologyFromDB| Sync
+    Sync --> Topo
+    
+    Topo --> Auth
+    Auth --> MySQL
+    Auth --> Redis
+
+    style Topo fill:#E8F5E9
+    style Queues fill:#E8F5E9
+    style Routing fill:#E8F5E9
+    style State fill:#E8F5E9
+    style Scenario fill:#E8F5E9
+    style MySQL fill:#E3F2FD
+    style Redis fill:#E3F2FD
+    style Sync fill:#FFF9C4
+    style Auth fill:#FFE0B2
+```
 
 **W Pamięci:**
 - Topologia sieci (węzły, mapa sąsiedztwa)
@@ -1189,13 +1866,108 @@ Podejście: Pamięć operacyjna (szybka) + Baza danych (trwała):
 
 Jak topologia sieci jest zapisywana do bazy danych:
 
-![Zapis Topologii](docs/UML/save_topology_sequence.png)
+```mermaid
+sequenceDiagram
+    participant Client as Klient
+    participant API as REST API
+    participant Net as Network
+    participant DBMgr as DatabaseMgr
+    participant NodeRepo
+    participant LinkRepo
+    participant StatsRepo
+    participant DB as MySQL
+
+    Client->>API: GET /db/save
+    activate API
+    API->>Net: saveTopologyToDB()
+    activate Net
+    
+    Net->>DBMgr: beginTransaction()
+    DBMgr->>DB: START TRANSACTION
+    DB-->>DBMgr: OK
+    DBMgr-->>Net: Transakcja rozpoczęta
+    
+    loop Dla każdego węzła
+        Net->>NodeRepo: createNode(node)
+        NodeRepo->>DB: INSERT INTO nodes...
+        DB-->>NodeRepo: Node ID
+        NodeRepo-->>Net: Utworzono
+    end
+    
+    loop Dla każdego połączenia
+        Net->>LinkRepo: createLink(nodeA, nodeB)
+        LinkRepo->>DB: INSERT INTO links...
+        DB-->>LinkRepo: Link ID
+        LinkRepo-->>Net: Utworzono
+    end
+    
+    loop Dla każdej statystyki
+        Net->>StatsRepo: recordPacket(src, dst, count)
+        StatsRepo->>DB: INSERT INTO packet_stats...
+        DB-->>StatsRepo: OK
+        StatsRepo-->>Net: Zapisano
+    end
+    
+    Net->>DBMgr: commit()
+    DBMgr->>DB: COMMIT
+    DB-->>DBMgr: Sukces
+    DBMgr-->>Net: Zacommitowano
+    
+    Net-->>API: ✅ Sukces
+    deactivate Net
+    API-->>Client: {"status":"success",<br/>"message":"Topologia zapisana"}
+    deactivate API
+```
 
 #### Przepływ Danych - Wczytywanie Topologii
 
 Jak topologia sieci jest wczytywana z bazy danych:
 
-![Wczytywanie Topologii](docs/UML/load_topology_sequence.png)
+```mermaid
+sequenceDiagram
+    participant Client as Klient
+    participant API as REST API
+    participant Net as Network
+    participant NodeRepo
+    participant LinkRepo
+    participant StatsRepo
+    participant DB as MySQL
+
+    Client->>API: GET /db/load
+    activate API
+    API->>Net: loadTopologyFromDB()
+    activate Net
+    
+    Net->>Net: Wyczyść bieżącą topologię
+    
+    Net->>NodeRepo: getAllNodes()
+    NodeRepo->>DB: SELECT * FROM nodes
+    DB-->>NodeRepo: Rekordy węzłów
+    NodeRepo-->>Net: Lista węzłów
+    
+    loop Dla każdego rekordu węzła
+        Net->>Net: createNode(name, type, ip)
+    end
+    
+    Net->>LinkRepo: getAllLinks()
+    LinkRepo->>DB: SELECT * FROM links
+    DB-->>LinkRepo: Rekordy połączeń
+    LinkRepo-->>Net: Lista połączeń
+    
+    loop Dla każdego rekordu połączenia
+        Net->>Net: connectNodes(nodeA, nodeB, delay, bandwidth)
+    end
+    
+    Net->>StatsRepo: getPacketStats()
+    StatsRepo->>DB: SELECT * FROM packet_stats
+    DB-->>StatsRepo: Rekordy statystyk
+    StatsRepo-->>Net: Statystyki
+    
+    Net-->>API: ✅ Sukces
+    deactivate Net
+    API-->>Client: {"status":"success",<br/>"message":"Topologia wczytana",<br/>"nodes":X,"links":Y}
+    deactivate API
+```
 
 #### Diagram Klas (Legacy)
 ![Diagram Klas](docs/UML/CLASSES.png)
@@ -1271,7 +2043,47 @@ class Engine {
 
 NetSimCPP działa w Docker z bazą danych MySQL i interfejsem webowym Adminer:
 
-![Wdrożenie Docker](docs/UML/docker_deployment.png)
+```mermaid
+graph TB
+    subgraph "Host Docker"
+        subgraph "netsim-network (Sieć Mostkowa)"
+            NetSim["netsim<br/>Porty: 8080, 9001"]
+            MySQL["mysql<br/>Port: 3306"]
+            Redis["redis<br/>Port: 6379"]
+            Adminer["adminer<br/>Port: 8081"]
+            
+            MySQLData[("mysql_data<br/>(Wolumin)")]
+            RedisData[("redis_data<br/>(Wolumin)")]
+        end
+    end
+
+    subgraph "Maszyna Hosta / Zewnętrzne"
+        P8080["Port 8080<br/>http://localhost:8080<br/>(REST API + Auth)"]
+        P9001["Port 9001<br/>ws://localhost:9001<br/>(WebSocket Wydarzenia)"]
+        P3306["Port 3306<br/>mysql://localhost:3306<br/>(Baza Danych)"]
+        P6379["Port 6379<br/>redis://localhost:6379<br/>(Magazyn Sesji)"]
+        P8081["Port 8081<br/>http://localhost:8081<br/>(Adminer GUI)"]
+    end
+
+    NetSim -->|MySQL Connector/C++| MySQL
+    NetSim -->|hiredis Sesje| Redis
+    Adminer -->|Połączenie| MySQL
+    MySQL -.->|Persystencja| MySQLData
+    Redis -.->|Persystencja| RedisData
+
+    NetSim --> P8080
+    NetSim --> P9001
+    MySQL --> P3306
+    Redis --> P6379
+    Adminer --> P8081
+
+    style NetSim fill:#90EE90
+    style MySQL fill:#FFB6C1
+    style Redis fill:#FFD700
+    style Adminer fill:#87CEEB
+    style MySQLData fill:#DDA0DD
+    style RedisData fill:#F0E68C
+```
 
 **Serwisy:**
 - **netsim** (Port 8080) - Serwer REST API w C++
@@ -1467,7 +2279,59 @@ Nasz pipeline CI/CD uruchamia się przy każdym push i PR z pełną integracją 
 
 Kompletny workflow pokazujący wszystkie zadania i integrację z bazą danych:
 
-![Pipeline CI/CD](docs/UML/cicd_pipeline.png)
+```mermaid
+flowchart TD
+    Start([GitHub Push/PR]) --> Trigger[GitHub Actions<br/>Uruchomienie CI/CD]
+    
+    Trigger --> BuildTest[Zadanie Build i Test]
+    Trigger --> PerfTest[Zadanie Testów Wydajności]
+    Trigger --> DockerBuild[Zadanie Build Docker]
+    
+    subgraph BuildTest [Zadanie Build i Test]
+        MySQL1[Start Serwisu MySQL<br/>Kontener Docker<br/>Port 3306]
+        Redis1[Start Serwisu Redis<br/>Kontener Docker<br/>Port 6379]
+        Schema1[Wczytanie Schematu Bazy<br/>NetSimDB.sql + AuthSchema.sql<br/>Tabele sieciowe 5<br/>Tabele autoryzacji 4]
+        Deps1[Instalacja Zależności<br/>cmake, g++, libmysqlcppconn-dev<br/>hiredis, argon2, jwt-cpp<br/>yaml-cpp, websocketpp]
+        Build1[Build Projektu C++<br/>cmake + make]
+        UnitTests[Uruchomienie Testów Jednostkowych<br/>61 testów<br/>Symulacja sieci<br/>Łączność z bazą<br/>Przepływ autoryzacji<br/>Walidacja scenariuszy]
+        
+        MySQL1 --> Redis1 --> Schema1 --> Deps1 --> Build1 --> UnitTests
+    end
+    
+    subgraph PerfTest [Zadanie Testów Wydajności]
+        Services2[Start MySQL + Redis]
+        BuildPerf[Build Testów Wydajności]
+        RunPerf[Uruchomienie Testów Wydajności<br/>10 testów wydajności<br/>Sprawdzenie wycieków Valgrind<br/>Testy współbieżności]
+        
+        Services2 --> BuildPerf --> RunPerf
+    end
+    
+    subgraph DockerBuild [Zadanie Build Docker]
+        BuildImage[Build Obrazu Docker<br/>Build wieloetapowy<br/>MySQL Connector/C++<br/>Redis, Auth, Scenariusze<br/>Cache zależności]
+        ComposeUp[Docker Compose Up<br/>Pełny Stack<br/>netsim, mysql<br/>redis, adminer]
+        HealthCheck[Czekanie na Serwisy<br/>Health Check]
+        Integration[Testy Integracyjne<br/>Endpointy API<br/>Zapis/odczyt bazy<br/>Wydarzenia WebSocket]
+        
+        BuildImage --> ComposeUp --> HealthCheck --> Integration
+    end
+    
+    UnitTests --> Quality[Sprawdzanie Jakości Kodu<br/>Analiza statyczna cppcheck<br/>Walidacja stylu kodu<br/>Sprawdzenia bezpieczeństwa]
+    RunPerf --> Quality
+    Integration --> Quality
+    
+    Quality --> Success{Wszystkie Testy<br/>Przeszły?}
+    Success -->|Tak| Pass([✅ Sukces Pipeline])
+    Success -->|Nie| Fail([❌ Pipeline Nieudany<br/>Pokaż logi])
+
+    style Start fill:#4CAF50
+    style Trigger fill:#E3F2FD
+    style BuildTest fill:#E8F5E9
+    style PerfTest fill:#FFF9C4
+    style DockerBuild fill:#E1F5FE
+    style Quality fill:#F3E5F5
+    style Pass fill:#4CAF50
+    style Fail fill:#F44336
+```
 
 #### Zadania Pipeline
 
