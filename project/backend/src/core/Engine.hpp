@@ -7,9 +7,18 @@
 class Engine {
 public:
     explicit Engine(Network& net);
+    enum class PingMode { HOPS, DELAY, DFS };
+
+    // ping now supports selecting traversal algorithm via PingMode.
+    // - HOPS: shortest number of hops (BFS) [default]
+    // - DELAY: shortest total link delay (Dijkstra)
+    // - DFS: any path found by DFS (useful for testing)
+    // maxDepth is used only for DFS mode.
     bool ping(const std::string &srcName,
                const std::string &dstName,
-               std::vector<std::string> &path);
+               std::vector<std::string> &path,
+               PingMode mode = PingMode::HOPS,
+               int maxDepth = 1000);
     bool traceroute(const std::string &srcName,
                     const std::string &dstName,
                     std::vector<std::string> &path);

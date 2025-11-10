@@ -1,12 +1,11 @@
 #include "Engine.hpp"
+#include "TraversalAlgorithms.hpp"
 #include <iostream>
-#include <queue>
-#include <map>
 #include <algorithm>
 
 Engine::Engine(Network &network) : net(network) {}
 
-bool Engine::ping(const std::string &src, const std::string &dst, std::vector<std::string> &pathOut) {
+bool Engine::ping(const std::string &src, const std::string &dst, std::vector<std::string> &pathOut, PingMode mode, int maxDepth) {
     std::cout << "[PING] From " << src << " to " << dst << std::endl;
 
     const auto &adj = net.getAdjacency();
@@ -19,64 +18,61 @@ bool Engine::ping(const std::string &src, const std::string &dst, std::vector<st
         return false;
     }
 
-    std::queue<std::string> q;
-    std::map<std::string, std::string> parent;
-    std::map<std::string, int> ttl;
+    auto getNeighbors = [this](const std::string &n) -> std::vector<std::string> {
+        return net.getNeighbors(n);
+    };
 
-    q.push(src);
-    ttl[src] = 8;  // start TTL
+    std::optional<std::vector<std::string>> maybePath;
 
-    bool found = false;
-
-    while (!q.empty()) {
-        auto current = q.front();
-        q.pop();
-
-        if (current == dst) {
-            found = true;
+    switch (mode) {
+        case PingMode::HOPS:
+            maybePath = traversal::bfs_shortest_hops(getNeighbors, src, dst);
+            break;
+        case PingMode::DELAY: {
+            auto getLinkDelay = [this](const std::string &a, const std::string &b) -> int {
+                return net.getLinkDelay(a, b);
+            };
+            maybePath = traversal::dijkstra_shortest_delay(getNeighbors, getLinkDelay, src, dst);
             break;
         }
-
-        if (ttl[current] <= 0)
-            continue; // pakiet wygasł
-
-        for (const auto &neighbor : adj.at(current)) {
-            if (!parent.count(neighbor)) { // nieodwiedzony
-                parent[neighbor] = current;
-                ttl[neighbor] = ttl[current] - 1;
-                q.push(neighbor);
-            }
-        }
+        case PingMode::DFS:
+            maybePath = traversal::dfs_any_path(getNeighbors, src, dst, maxDepth);
+            break;
+        default:
+            maybePath = traversal::bfs_shortest_hops(getNeighbors, src, dst);
     }
 
-    if (!found) {
+    if (!maybePath) {
         std::cout << "Ping failed: no route from " << src << " to " << dst << "\n";
         return false;
     }
 
-    // Odtwórz ścieżkę
-    std::vector<std::string> path;
-    for (auto at = dst; !at.empty(); at = parent.count(at) ? parent[at] : "") {
-        path.push_back(at);
-        if (at == src) break;
-    }
-
-    std::reverse(path.begin(), path.end());
-    pathOut = path;
-
+    pathOut = *maybePath;
     std::cout << "Path found: ";
-    for (auto &p : path) std::cout << p << " ";
+    for (const auto &p : pathOut) std::cout << p << " ";
     std::cout << std::endl;
 
     return true;
 }
 
 bool Engine::traceroute(const std::string &src, const std::string &dst, std::vector<std::string> &pathOut) {
-    return ping(src, dst, pathOut);
+    // Use Dijkstra to find path with minimal total delay
+    auto getNeighbors = [this](const std::string &n) -> std::vector<std::string> {
+        return net.getNeighbors(n);
+    };
+    auto getLinkDelay = [this](const std::string &a, const std::string &b) -> int {
+        return net.getLinkDelay(a, b);
+    };
+
+    auto maybePath = traversal::dijkstra_shortest_delay(getNeighbors, getLinkDelay, src, dst);
+    if (!maybePath) return false;
+    pathOut = *maybePath;
+    return true;
 }
 
 int Engine::getTotalDelay(const std::vector<std::string>& path) {
     int totalDelay = 0;
+    if (path.size() < 2) return 0;
     for (size_t i = 0; i < path.size() - 1; ++i) {
         totalDelay += net.getLinkDelay(path[i], path[i + 1]);
     }

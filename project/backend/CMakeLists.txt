@@ -71,6 +71,7 @@ endif()
 add_executable(netsim
     src/main.cpp
     src/core/Node.cpp
+    src/core/TraversalAlgorithms.cpp
     src/core/Packet.cpp
     src/core/Network.cpp
     src/core/Engine.cpp
@@ -130,6 +131,7 @@ find_package(GTest REQUIRED)
 add_executable(netsim_tests
     src/test_main.cpp
     src/core/Node.cpp
+    src/core/TraversalAlgorithms.cpp
     src/core/Packet.cpp
     src/core/Network.cpp
     src/core/Engine.cpp
@@ -170,6 +172,7 @@ add_test(NAME netsim_tests COMMAND netsim_tests)
 add_executable(netsim_perf_tests
     src/performance_tests.cpp
     src/core/Node.cpp
+    src/core/TraversalAlgorithms.cpp
     src/core/Packet.cpp
     src/core/Network.cpp
     src/core/Engine.cpp
