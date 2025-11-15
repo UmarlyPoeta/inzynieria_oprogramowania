@@ -9,7 +9,7 @@ const defaultRouterConfig = (): RouterConfig => ({
     { name: "GigabitEthernet0/0", status: "down", dhcpEnabled: false },
     { name: "GigabitEthernet0/1", status: "down", dhcpEnabled: false },
   ],
-  routingProtocol: "None",
+  routingProtocol: "STATIC",
   ospf: { processId: 1, area: 0, networks: [] },
   rip: { version: 2, networks: [] },
   eigrp: { asNumber: 1, networks: [] },
@@ -26,6 +26,22 @@ const defaultRouterConfig = (): RouterConfig => ({
   qosEnabled: false,
   qosPolicies: [],
 });
+
+const defaultSwitchConfig = (): SwitchConfig => ({
+  hostname: "Switch",
+  vlans: [{ id: 1, name: "default" }],
+  stpEnabled: true,
+  interfaces: [],
+});
+
+const defaultPCConfig = (): PCConfig => ({
+  hostname: "PC",
+  interfaces: [
+    { name: "eth0", ip: "", subnet: "", gateway: "" }
+  ],
+  description: "",
+});
+
 
 interface EditorContextType {
   devices: Device[];
@@ -162,12 +178,9 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const defaultConfig = (type: Device["type"]) => {
     switch (type) {
-      case "router":
-        return defaultRouterConfig();
-      case "switch":
-        return { vlans: [{ id: 1, name: "default" }], stpEnabled: true } as SwitchConfig;
-      case "pc":
-        return { ip: "", gateway: "" } as PCConfig;
+      case "router": return defaultRouterConfig();
+      case "switch": return defaultSwitchConfig();
+      case "pc": return defaultPCConfig();
     }
   };
 
@@ -199,11 +212,12 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setDevices(prev =>
       prev.map(d => 
         d.id === id 
-          ? { ...d, config: { ...defaultConfig(d.type), ...d.config, ...configUpdate } } 
+          ? { ...d, config: { ...d.config, ...configUpdate } as typeof d.config } 
           : d
       )
     );
   };
+
 
   const removeDeviceFromGroup = (deviceId: string) => {
     setDevices(prev => prev.map(d => (d.id === deviceId ? { ...d, groupId: undefined } : d)));

@@ -74,10 +74,10 @@ export const TabButton = styled.button<{ active: boolean }>`
   font-size: 0.85rem;
 `;
 
-export const Section = styled.div<{ direction?: string }>`
+export const Section = styled.div<{ direction?: string, gap?: string }>`
   display: flex;
   flex-direction: ${(props) => props.direction || "row"};
-  gap: 10px;
+  gap: ${(props) => props.gap || "10px"};
   font-size: .9rem;
   // margin-bottom: 12px;
 `;

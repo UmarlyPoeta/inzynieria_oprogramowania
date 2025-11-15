@@ -15,7 +15,7 @@ export interface RouterConfig {
   }[];
 
   // Routing dynamiczny
-  routingProtocol: "None" | "RIP" | "OSPF" | "EIGRP" | "BGP";
+  routingProtocol: "STATIC" | "RIP" | "OSPF" | "EIGRP" | "BGP";
   ospf?: {
     processId: number;
     area: number;
@@ -89,13 +89,28 @@ export interface RouterConfig {
 
 
 export interface SwitchConfig {
-  vlans: { id: number; name: string }[];
-  stpEnabled: boolean;
+  hostname: string;                // np. "Switch1"
+  vlans: { id: number; name: string }[];  // lista VLANów
+  stpEnabled: boolean;             // Spanning Tree Protocol
+  interfaces: {                    // interfejsy fizyczne
+    name: string;                  // np. "GigabitEthernet0/1"
+    status: "up" | "down";
+    vlanId?: number;               // przypisanie do VLAN
+  }[];
+  managementIp?: string;           // IP do zarządzania
+  description?: string;            // opcjonalny opis
 }
 
 export interface PCConfig {
-  ip: string;
-  gateway: string;
+  hostname: string;
+  interfaces: {
+    name: string;       // np. "eth0"
+    ip: string;
+    subnet: string;
+    gateway: string;
+    dns?: string;
+  }[];                  // kilka kart sieciowych
+  description?: string;
 }
 
 export interface Device {
