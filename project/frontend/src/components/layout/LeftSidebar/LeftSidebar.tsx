@@ -1,5 +1,6 @@
 import { useContextMenu } from "@/context/ContextualMenuContext";
 import { useEditor } from "@/context/EditorContext";
+import { ExportTopology } from "@/utils";
 import React from "react";
 import { Save, Waypoints, ChevronDown, FilePlus, FolderOpen, RotateCcw, RotateCw, Copy, Clipboard, Trash2, Move } from "lucide-react";
 import { 
@@ -112,6 +113,8 @@ const LayersPanel: React.FC = () => {
 };
 
 const LeftSidebar = () => {
+  const { devices, groups, links } = useEditor();
+
   return (
     <SidebarWrapper>
 
@@ -125,7 +128,7 @@ const LeftSidebar = () => {
         <IconButton title="Open project">
           <FolderOpen />
         </IconButton>
-        <IconButton title="Save project">
+        <IconButton title="Save project" onClick={() => {ExportTopology(devices, links, groups)}}>
           <Save />
         </IconButton>
         <IconButton title="Undo action">
