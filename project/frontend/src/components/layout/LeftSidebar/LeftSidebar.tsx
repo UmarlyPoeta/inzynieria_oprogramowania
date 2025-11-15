@@ -1,8 +1,11 @@
 import { useContextMenu } from "@/context/ContextualMenuContext";
 import { useEditor } from "@/context/EditorContext";
-import { ExportTopology } from "@/utils";
+import { ExportTopology, ImportTopology } from "@/utils";
 import React from "react";
-import { Save, Waypoints, ChevronDown, FilePlus, FolderOpen, RotateCcw, RotateCw, Copy, Clipboard, Trash2, Move } from "lucide-react";
+import { 
+  Save, Waypoints, ChevronDown, FilePlus, FolderOpen, 
+  RotateCcw, RotateCw, Copy, Clipboard, Trash2, Move 
+} from "lucide-react";
 import { 
   SidebarWrapper,
   LeftPanel,
@@ -22,17 +25,13 @@ const LayersPanel: React.FC = () => {
   const [editingGroupId, setEditingGroupId] = React.useState<string | null>(null);
   const [tempName, setTempName] = React.useState<string>("");
 
-  const devicesByGroup = groups.reduce((acc: Record<string, typeof devices>, group) => {
-    acc[group.id] = devices.filter(d => d.groupId === group.id);
-    return acc;
-  }, {} as Record<string, typeof devices>);
+  const devicesByGroup = Object.fromEntries(
+    groups.map(g => [g.id, devices.filter(d => d.groupId === g.id)])
+  );
 
   const showAll = () => {
-    if (groups.every(g => g.collapsed)) {
-      groups.forEach(g => toggleGroupCollapsed(g.id, false)); 
-      return;
-    }
-    groups.forEach(g => toggleGroupCollapsed(g.id, true)); 
+    const allCollapsed = groups.every(g => g.collapsed);
+    groups.forEach(g => toggleGroupCollapsed(g.id, !allCollapsed));
   };
 
   const ungroupedDevices = devices.filter(d => !d.groupId);
@@ -74,7 +73,9 @@ const LayersPanel: React.FC = () => {
                 style={{ fontWeight: "bold", width: "100%" }}
               />
             ) : (
-              <span style={{whiteSpace: "nowrap"}} title={group.name}>{group.name.length > 15 ? `${group.name.substring(0, 12)}...` : group.name}</span>
+              <span style={{whiteSpace: "nowrap"}} title={group.name}>
+                {group.name.length > 15 ? `${group.name.substring(0, 12)}...` : group.name}
+              </span>
             )}
             <ChevronDown
               style={{ transform: group.collapsed ? "rotate(-90deg)" : "rotate(0deg)" }}
@@ -87,65 +88,110 @@ const LayersPanel: React.FC = () => {
                 onContextMenu={(e) => {
                   e.preventDefault();
                   openMenu("device", device, e);
-                  }}key={device.id}>{device.name || device.type}
-                </DeviceRow>
-            ))}
+                }}
+                key={device.id}
+              >
+                {device.name || device.type}
+              </DeviceRow>
+            ))
+          }
         </div>
       ))}
+
       {ungroupedDevices.length > 0 && (
-      <>
-        <GroupRow collapsed={false}> Others </GroupRow>
-        {ungroupedDevices.map(device => (
-          <DeviceRow 
-            onClick={() => selectDevice(device.id)}
-            onContextMenu={(e) => {
-              e.preventDefault();
-              openMenu("device", device, e);
-              }} key={device.id}>{device.name || device.type }
-        </DeviceRow>
-        ))}
-      </>
-      )} 
+        <>
+          <GroupRow collapsed={false}> Others </GroupRow>
+          {ungroupedDevices.map(device => (
+            <DeviceRow 
+              onClick={() => selectDevice(device.id)}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                openMenu("device", device, e);
+              }}
+              key={device.id}
+            >
+              {device.name || device.type}
+            </DeviceRow>
+          ))}
+        </>
+      )}
       <br />
-      <button onClick={showAll} style={{border: "1px dashed #b2b2b6ff", padding: "2px"}}> Show / Hide All Layers </button>
+      <button 
+        onClick={showAll} 
+        style={{border: "1px dashed #b2b2b6ff", padding: "2px"}}
+      >
+        Show / Hide All Layers
+      </button>
     </LayersPanelWrapper>
   );
 };
 
 const LeftSidebar = () => {
-  const { devices, groups, links } = useEditor();
+  const { devices, groups, links, undo, redo, addDevice, addGroup, addLink } = useEditor();
+
+  const handleImportClick = () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json"; 
+    input.onchange = (e: Event) => {
+      const target = e.target as HTMLInputElement;
+      if (target.files?.[0]) {
+        ImportTopology(target.files[0], addDevice, addGroup, addLink);
+      }
+    };
+    input.click();
+  };
+
+  const handleExportClick = () => {
+    try {
+      ExportTopology(devices, links, groups, "project.json");
+    } catch (err) {
+      console.error("Export failed:", err);
+    }
+  };
 
   return (
     <SidebarWrapper>
-
       <LeftPanel>
         <AppLogo> 
           <Waypoints />
         </AppLogo>
+
         <IconButton title="New project">
           <FilePlus />
         </IconButton>
-        <IconButton title="Open project">
+
+        <IconButton 
+          title="Open project" 
+          onClick={handleImportClick}
+        >
           <FolderOpen />
         </IconButton>
-        <IconButton title="Save project" onClick={() => {ExportTopology(devices, links, groups)}}>
+
+        <IconButton title="Save project" onClick={handleExportClick}>
           <Save />
         </IconButton>
-        <IconButton title="Undo action">
+
+        <IconButton title="Undo action" onClick={undo}>
           <RotateCcw />
         </IconButton>
-        <IconButton title="Redo action">
+
+        <IconButton title="Redo action" onClick={redo}>
           <RotateCw />
         </IconButton>
+
         <IconButton title="Copy">
           <Copy />
         </IconButton>
+
         <IconButton title="Paste">
           <Clipboard />
         </IconButton>
+
         <IconButton title="Delete">
           <Trash2 />
         </IconButton>
+
         <IconButton title="Move">
           <Move />
         </IconButton>
@@ -155,16 +201,16 @@ const LeftSidebar = () => {
         <RightBarHeader>
           <h1> NetSimCPP <ChevronDown /> </h1>
           <p> Project X </p>
-
         </RightBarHeader>
-          <LayersPanel />
+        <LayersPanel />
       </RightPanel>
-
     </SidebarWrapper>
   );
 };
 
+
 export default LeftSidebar;
+
 
 
 
