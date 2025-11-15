@@ -75,8 +75,10 @@ interface EditorContextType {
   connectingDeviceId?: string | null;
   startConnecting: () => void;
   selectDeviceForLink: (id: string) => void;
+  selectDevicePortForLink: (deviceId: string, port: string) => void;
   stopConnecting: () => void;
   connectingModeActive: boolean;
+  connectingPort?: string | null;
 }
 
 
@@ -89,6 +91,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [history, setHistory] = useState<{ devices: Device[]; links: Link[]; groups: Group[] }[]>([]);
   const [redoStack, setRedoStack] = useState<typeof history>([]);
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | undefined>(undefined);
+  const [connectingPort, setConnectingPort] = useState<string | null>(null);
   const [connectingDeviceId, setConnectingDeviceId] = useState<string | null>(null);
   const [connectingModeActive, setConnectingModeActive] = useState(false);
   const [selectedDeviceIds, setSelectedDeviceIds] = useState<string[]>([]);
@@ -97,6 +100,35 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setSelectedDeviceId(id);
     setSelectedDeviceIds(id ? [id] : []);
   };
+
+  const addLinkWithHistory = (link: Link) => {
+    pushToHistory();
+    setLinks(prev => [...prev, link]);
+  };
+
+  const selectDevicePortForLink = (deviceId: string, port: string) => {
+    if (!connectingDeviceId) {
+      setConnectingDeviceId(deviceId);
+      setConnectingPort(port);
+      setConnectingModeActive(true);
+    } else if (connectingDeviceId === deviceId) {
+      setConnectingPort(port);
+    } else {
+      const newLink: Link = {
+        id: Math.random().toString(36).substring(2, 9),
+        from: connectingDeviceId,
+        to: deviceId,
+        fromPort: connectingPort!,
+        toPort: port
+      };
+      addLinkWithHistory(newLink);
+
+      setConnectingDeviceId(null);
+      setConnectingPort(null);
+      setConnectingModeActive(false);
+    }
+  };
+
 
   const toggleSelectDevice = (id: string) => {
     setSelectedDeviceIds(prev => {
@@ -277,7 +309,9 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       selectedDeviceIds,
       toggleSelectDevice,
       selectAll,
-      setSelectedDeviceIds
+      setSelectedDeviceIds,
+      selectDevicePortForLink,
+      connectingPort,
     }}>
     {children}
     </EditorContext.Provider>

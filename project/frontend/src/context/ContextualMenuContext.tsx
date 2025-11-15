@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState } from "react";
 
-export type MenuType = "device" | "group" | "canvas";
+export type MenuType = "device" | "group" | "canvas" | "link";
 
 export interface MenuData<T = any> {
   type: MenuType;

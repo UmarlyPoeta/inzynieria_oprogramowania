@@ -1,5 +1,6 @@
 import { ComputerIcon, RouterIcon, SwitchIcon } from '@/data';
 import { useEditor } from "@/context/EditorContext";
+import { useContextMenu } from "@/context/ContextualMenuContext"
 import type { Device } from "@/types";
 import { useState, useEffect } from "react";
 import { Node } from './DeviceNode.styled'
@@ -10,6 +11,8 @@ const DeviceNode: React.FC<{ device: Device, scale: number }> = ({ device, scale
   const [dragging, setDragging] = useState(false);
   const [startPos, setStartPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 
+  const { openMenu } = useContextMenu();
+  
   const getDeviceIcon = () => { 
     switch (device.type.toLowerCase()) {
       case 'pc':
@@ -53,8 +56,13 @@ const DeviceNode: React.FC<{ device: Device, scale: number }> = ({ device, scale
       onMouseDown={handleMouseDown}
       onClick={(e) => {
         e.stopPropagation();
+        
         if (connectingModeActive) {
-          selectDeviceForLink(device.id!);
+          if (device.config && "interfaces" in device.config && device.config.interfaces.length > 0) {
+            openMenu("link", { deviceId: device.id!, interfaces: device.config.interfaces }, e);
+          } else {
+            selectDeviceForLink(device.id!);
+          }
           return;
         }
 
@@ -63,8 +71,7 @@ const DeviceNode: React.FC<{ device: Device, scale: number }> = ({ device, scale
         } else {
           selectDevice(device.id!);
         }
-      }}
-      >
+      }}>
       {getDeviceIcon()}
     </Node>
   );

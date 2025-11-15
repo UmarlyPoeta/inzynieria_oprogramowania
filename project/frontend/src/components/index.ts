@@ -12,7 +12,7 @@ export { default as DeviceDetailsPanel } from './editor/DeviceDetailsPanel/Devic
 export { default as SwitchConfigPanel } from './editor/SwitchConfigPanel/SwitchConfigPanel'
 export { default as PCConfigPanel } from './editor/PCConfigPanel/PCConfigPanel'
 export { default as RouterConfigPanel } from './editor/RouterConfigPanel/RouterConfigPanel'
-
+export { default as PortLinkMenu } from './editor/PortLinkMenu/PortLinkMenu'
 
 export { default as AuthForm } from './auth/AuthForm/AuthForm';
 export { default as AuthLayout } from './auth/AuthLayout/AuthLayout';
