@@ -79,6 +79,8 @@ interface EditorContextType {
   stopConnecting: () => void;
   connectingModeActive: boolean;
   connectingPort?: string | null;
+
+  resetTopology: () => void;
 }
 
 
@@ -95,6 +97,12 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [connectingDeviceId, setConnectingDeviceId] = useState<string | null>(null);
   const [connectingModeActive, setConnectingModeActive] = useState(false);
   const [selectedDeviceIds, setSelectedDeviceIds] = useState<string[]>([]);
+
+  const resetTopology = () => {
+    setDevices([]);
+    setGroups([]);
+    setLinks([]);
+  };
 
   const selectDevice = (id?: string) => {
     setSelectedDeviceId(id);
@@ -312,6 +320,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setSelectedDeviceIds,
       selectDevicePortForLink,
       connectingPort,
+      resetTopology
     }}>
     {children}
     </EditorContext.Provider>

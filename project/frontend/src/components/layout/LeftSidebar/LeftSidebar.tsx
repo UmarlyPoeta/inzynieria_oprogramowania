@@ -127,7 +127,7 @@ const LayersPanel: React.FC = () => {
 };
 
 const LeftSidebar = () => {
-  const { devices, groups, links, undo, redo, addDevice, addGroup, addLink } = useEditor();
+  const { devices, groups, links, undo, redo, addDevice, addGroup, addLink, resetTopology } = useEditor();
 
   const handleImportClick = () => {
     const input = document.createElement("input");
@@ -136,7 +136,7 @@ const LeftSidebar = () => {
     input.onchange = (e: Event) => {
       const target = e.target as HTMLInputElement;
       if (target.files?.[0]) {
-        ImportTopology(target.files[0], addDevice, addGroup, addLink);
+        ImportTopology(target.files[0], resetTopology, addDevice, addGroup, addLink);
       }
     };
     input.click();

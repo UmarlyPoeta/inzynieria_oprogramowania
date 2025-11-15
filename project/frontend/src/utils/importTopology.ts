@@ -1,7 +1,9 @@
 import type { Device, Link, Group } from "@/types";
 
+
 const importTopology = (
   file: File,
+  resetTopology: () => void,
   addDevice: (d: Device) => void,
   addGroup: (g: Group) => void,
   addLink: (l: Link) => void
@@ -10,8 +12,9 @@ const importTopology = (
   
   reader.onload = () => {
     try {
+      resetTopology();
+      
       const data: { devices: Device[]; links: Link[]; groups: Group[] } = JSON.parse(reader.result as string);
-
       data.groups.forEach(g => addGroup(g));
       data.devices.forEach(d => addDevice(d));
       data.links.forEach(l => addLink(l));
