@@ -6,7 +6,7 @@ import { Node } from './DeviceNode.styled'
 
 
 const DeviceNode: React.FC<{ device: Device, scale: number }> = ({ device, scale }) => {
-  const { moveDevice, selectDevice, selectedDeviceId, connectingModeActive, selectDeviceForLink } = useEditor();
+  const { toggleSelectDevice, moveDevice, selectDevice, selectedDeviceIds, connectingModeActive, selectDeviceForLink } = useEditor();
   const [dragging, setDragging] = useState(false);
   const [startPos, setStartPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 
@@ -49,15 +49,22 @@ const DeviceNode: React.FC<{ device: Device, scale: number }> = ({ device, scale
 
   return (
     <Node style={{ left: device.x, top: device.y }}
-      $selected={selectedDeviceId === device.id}
+      $selected={selectedDeviceIds.includes(device.id!)}
       onMouseDown={handleMouseDown}
-      onClick={() => {
+      onClick={(e) => {
+        e.stopPropagation();
         if (connectingModeActive) {
           selectDeviceForLink(device.id!);
+          return;
+        }
+
+        if (e.ctrlKey || e.metaKey) {
+          toggleSelectDevice(device.id!);
         } else {
-        selectDevice(device.id);
-      }
-    }}>
+          selectDevice(device.id!);
+        }
+      }}
+      >
       {getDeviceIcon()}
     </Node>
   );

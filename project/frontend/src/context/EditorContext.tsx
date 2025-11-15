@@ -31,25 +31,38 @@ interface EditorContextType {
   devices: Device[];
   links: Link[];
   groups: Group[];
+
+  undo: () => void;
+  redo: () => void;
+
   addDevice: (device: Device) => void;
   deleteDevice: (id: string) => void;
+  moveDevice: (id: string, x: number, y: number) => void;
+  selectedDeviceId?: string; 
+  selectDevice: (id: string | undefined) => void;
+  selectedDeviceIds: string[];
+  toggleSelectDevice: (id: string) => void;
+  selectAll: () => void;
+  setSelectedDeviceIds: React.Dispatch<React.SetStateAction<string[]>>;
+  updateDeviceConfig: (id: string, configUpdate: Partial<Device["config"]>) => void;
+
   removeDeviceFromGroup: (deviceId: string) => void;
   moveDeviceToGroup: (deviceId: string, groupId: string) => void;
-  addLink: (link: Link) => void;
-  moveDevice: (id: string, x: number, y: number) => void;
+
+
   addGroup: (group: Group) => void;
   renameGroup: (id: string, name: string) => void;
   deleteGroup: (id: string) => void;
   toggleGroupCollapsed: (id: string, coll: boolean) => void;
-  selectedDeviceId?: string; 
-  selectDevice: (id: string | undefined) => void; 
+
+  addLink: (link: Link) => void;
   connectingDeviceId?: string | null;
   startConnecting: () => void;
   selectDeviceForLink: (id: string) => void;
   stopConnecting: () => void;
   connectingModeActive: boolean;
-  updateDeviceConfig: (id: string, configUpdate: Partial<Device["config"]>) => void;
 }
+
 
 const EditorContext = createContext<EditorContextType | undefined>(undefined);
 
@@ -57,11 +70,68 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [devices, setDevices] = useState<Device[]>([]);
   const [links, setLinks] = useState<Link[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
+  const [history, setHistory] = useState<{ devices: Device[]; links: Link[]; groups: Group[] }[]>([]);
+  const [redoStack, setRedoStack] = useState<typeof history>([]);
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | undefined>(undefined);
   const [connectingDeviceId, setConnectingDeviceId] = useState<string | null>(null);
   const [connectingModeActive, setConnectingModeActive] = useState(false);
+  const [selectedDeviceIds, setSelectedDeviceIds] = useState<string[]>([]);
 
-  const selectDevice = (id?: string) => setSelectedDeviceId(id);
+  const selectDevice = (id?: string) => {
+    setSelectedDeviceId(id);
+    setSelectedDeviceIds(id ? [id] : []);
+  };
+
+  const toggleSelectDevice = (id: string) => {
+    setSelectedDeviceIds(prev => {
+      if (prev.includes(id)) {
+        const next = prev.filter(x => x !== id);
+        setSelectedDeviceId(next.length === 1 ? next[0] : undefined);
+        return next;
+      }
+      const next = [...prev, id];
+      setSelectedDeviceId(undefined);
+      return next;
+    });
+  };
+
+  const selectAll = () => {
+    setSelectedDeviceIds(devices.flatMap(d => d.id ? [d.id] : []));
+    setSelectedDeviceId(undefined);
+  };
+
+
+  const pushToHistory = () => {
+    setHistory(prev => [
+      ...prev,
+      { devices: structuredClone(devices), links: structuredClone(links), groups: structuredClone(groups) }
+    ]);
+    setRedoStack([]); 
+  };
+
+   const undo = () => {
+    setHistory(prev => {
+      if (prev.length === 0) return prev;
+      const last = prev[prev.length - 1];
+      setRedoStack(r => [{ devices, links, groups }, ...r]);
+      setDevices(last.devices);
+      setLinks(last.links);
+      setGroups(last.groups);
+      return prev.slice(0, -1);
+    });
+  };
+
+  const redo = () => {
+    setRedoStack(prev => {
+      if (prev.length === 0) return prev;
+      const next = prev[0];
+      setHistory(h => [...h, { devices, links, groups }]);
+      setDevices(next.devices);
+      setLinks(next.links);
+      setGroups(next.groups);
+      return prev.slice(1);
+    });
+  };
 
   const startConnecting = () => {
     setConnectingModeActive(true);
@@ -102,6 +172,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   const addDevice = (device: Device) => {
+    pushToHistory();
     setDevices(prev => {
       let name = device.name;
       if (!name) { 
@@ -143,11 +214,13 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
   
   const deleteDevice = (id: string) => {
+    pushToHistory();
     setDevices(prev => prev.filter(d => d.id !== id));
     setLinks(prev => prev.filter(l => l.from !== id && l.to !== id));
   }
 
   const deleteGroup = (id: string) => {
+    pushToHistory();
     setGroups(prev => prev.filter(g => g.id !== id));
     setDevices(prev => prev.map(d => (d.groupId === id ? { ...d, groupId: undefined } : d)));
   }
@@ -184,7 +257,13 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       stopConnecting,
       connectingModeActive,
       connectingDeviceId,
-      selectDeviceForLink
+      selectDeviceForLink,
+      undo,
+      redo,
+      selectedDeviceIds,
+      toggleSelectDevice,
+      selectAll,
+      setSelectedDeviceIds
     }}>
     {children}
     </EditorContext.Provider>
