@@ -1,19 +1,15 @@
 import { renderHook, act, waitFor } from '@testing-library/react'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { useFetch } from '@/hooks'
 
 describe('useFetch', () => {
   const key = 'test-key'
 
-  let testCache: Map<string, any>;
 
-  beforeEach(() => {
-    testCache = new Map();
-  });
 
   it('should initialize with idle state when cache is empty', async () => {
     const fetchFn = vi.fn(() => new Promise(resolve => setTimeout(() => resolve('data'), 50)));
-    const { result } = renderHook(() => useFetch(key, fetchFn, testCache));
+    const { result } = renderHook(() => useFetch(key, fetchFn));
 
     expect(result.current.data).toBeNull();
     expect(result.current.error).toBeNull();
@@ -27,7 +23,7 @@ describe('useFetch', () => {
     let result: any;
 
     await act(async () => {
-      ({ result } = renderHook(() => useFetch(key, fetchFn, testCache)));
+      ({ result } = renderHook(() => useFetch(key, fetchFn)));
     });
 
     await waitFor(() => expect(result.current.status).toBe('success'));
@@ -41,7 +37,7 @@ describe('useFetch', () => {
     let result: any;
 
     await act(async () => {
-      ({ result } = renderHook(() => useFetch(key, fetchFn, testCache)));
+      ({ result } = renderHook(() => useFetch(key, fetchFn)));
     });
 
     await waitFor(() => expect(result.current.status).toBe('error'));
@@ -55,7 +51,7 @@ describe('useFetch', () => {
     let result: any;
 
     await act(async () => {
-      ({ result } = renderHook(() => useFetch('refetch-key', fetchFn, testCache)));
+      ({ result } = renderHook(() => useFetch('refetch-key', fetchFn)));
     });
 
     await waitFor(() => expect(result.current.status).toBe('success'));
@@ -66,7 +62,7 @@ describe('useFetch', () => {
 
     let result2: any;
     await act(async () => {
-      ({ result: result2 } = renderHook(() => useFetch('refetch-key', fetchFn, testCache)));
+      ({ result: result2 } = renderHook(() => useFetch('refetch-key', fetchFn)));
     });
 
     await waitFor(() => expect(result2.current.status).toBe('success'));
