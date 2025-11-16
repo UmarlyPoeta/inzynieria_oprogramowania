@@ -100,7 +100,7 @@ export default function useKeyboardShortcuts() {
         }
       }
 
-      if (e.key === "Delete") {
+      if (e.key === "Delete" || e.key === "Del" || e.key === "Backspace") {
         e.preventDefault();
         if (editor.selectedDeviceId) {
           editor.deleteDevice(editor.selectedDeviceId);
