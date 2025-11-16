@@ -72,6 +72,7 @@ interface EditorContextType {
   toggleGroupCollapsed: (id: string, coll: boolean) => void;
 
   addLink: (link: Link) => void;
+  deleteLink: (id: string) => void;
   connectingDeviceId?: string | null;
   startConnecting: () => void;
   selectDeviceForLink: (id: string) => void;
@@ -112,6 +113,11 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const addLinkWithHistory = (link: Link) => {
     pushToHistory();
     setLinks(prev => [...prev, link]);
+  };
+
+  const deleteLink = (id: string) => {
+    pushToHistory(); 
+    setLinks(prev => prev.filter(l => l.id !== id));
   };
 
   const selectDevicePortForLink = (deviceId: string, port: string) => {
@@ -320,7 +326,8 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setSelectedDeviceIds,
       selectDevicePortForLink,
       connectingPort,
-      resetTopology
+      resetTopology,
+      deleteLink
     }}>
     {children}
     </EditorContext.Provider>
