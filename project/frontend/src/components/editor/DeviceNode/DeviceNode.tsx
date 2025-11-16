@@ -2,7 +2,7 @@ import { ComputerIcon, RouterIcon, SwitchIcon } from '@/data';
 import { useEditor } from "@/context/EditorContext";
 import { useContextMenu } from "@/context/ContextualMenuContext"
 import type { Device } from "@/types";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Node } from './DeviceNode.styled'
 
 
@@ -10,6 +10,7 @@ const DeviceNode: React.FC<{ device: Device, scale: number }> = ({ device, scale
   const { toggleSelectDevice, moveDevice, selectDevice, selectedDeviceIds, connectingModeActive, selectDeviceForLink } = useEditor();
   const [dragging, setDragging] = useState(false);
   const [startPos, setStartPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const lastRightClick = useRef<number>(0);
 
   const { openMenu } = useContextMenu();
   
@@ -41,6 +42,19 @@ const DeviceNode: React.FC<{ device: Device, scale: number }> = ({ device, scale
     setStartPos({ x: e.clientX, y: e.clientY });
   };
 
+  const handleRightClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const now = Date.now();
+    if (now - lastRightClick.current < 400) { // double-click PPM w 400ms
+      if (!connectingModeActive && selectedDeviceIds.includes(device.id!)) {
+        openMenu("device", device, e);
+      }
+    }
+    lastRightClick.current = now;
+  };
+
   useEffect(() => {
     window.addEventListener("mousemove", handleMouseMove);
     window.addEventListener("mouseup", handleMouseUp);
@@ -51,13 +65,15 @@ const DeviceNode: React.FC<{ device: Device, scale: number }> = ({ device, scale
   }, [dragging, startPos, device.x, device.y, scale]);
 
   return (
-    <Node style={{ left: device.x, top: device.y }}
+    <Node
+      style={{ left: device.x, top: device.y }}
       $selected={selectedDeviceIds.includes(device.id!)}
       onMouseDown={handleMouseDown}
       onClick={(e) => {
         e.stopPropagation();
-        
+
         if (connectingModeActive) {
+          // zachowanie dot. łączenia portów
           if (device.config && "interfaces" in device.config && device.config.interfaces.length > 0) {
             openMenu("link", { deviceId: device.id!, interfaces: device.config.interfaces }, e);
           } else {
@@ -71,9 +87,12 @@ const DeviceNode: React.FC<{ device: Device, scale: number }> = ({ device, scale
         } else {
           selectDevice(device.id!);
         }
-      }}>
+      }}
+      onContextMenu={handleRightClick}
+    >
       {getDeviceIcon()}
     </Node>
+
   );
 };
 

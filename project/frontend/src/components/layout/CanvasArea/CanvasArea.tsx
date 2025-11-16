@@ -1,13 +1,15 @@
 import { Grid, Inner, Container } from './CanvasArea.styled'
 import { useEditor } from "@/context/EditorContext";
+import { useModal } from "@/context/ModalContext";
 import { DeviceNode } from "@/components";
 import { useState } from "react";
 
 const CanvasArea = () => {
-  const { devices, links } = useEditor();
+  const { devices, links, deleteLink } = useEditor();
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [scale, setScale] = useState(1);
-
+  const { showModal } = useModal();
+  
   const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
     e.preventDefault();
     const delta = -e.deltaY * 0.001;          // mniejszy krok
@@ -60,6 +62,16 @@ const CanvasArea = () => {
                 stroke="#121212"
                 strokeWidth={5}
                 fill="none"
+                pointerEvents="stroke"
+                onDoubleClick={(e) => {
+                  e.stopPropagation();
+                  showModal({
+                    title: "Delete Connection",
+                    message: `Are you sure you want to delete this connection?`,
+                    onConfirm: () => deleteLink(link.id)
+                  });
+                  console.log("XD")
+                }}
               />
             );
           })}

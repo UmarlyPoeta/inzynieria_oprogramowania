@@ -1,8 +1,9 @@
 import React from "react";
-import { MenuItem, MenuList } from './ContextDeviceMenu.styled'
+import { MenuItem, MenuList } from './ContextDeviceMenu.styled';
 import { useEditor } from "@/context/EditorContext";
 import { useContextMenu } from "@/context/ContextualMenuContext";
 import { Trash2, Layers, Move } from "lucide-react";
+import { useModal } from "@/context/ModalContext";
 import type { Device } from "@/types";
 
 interface ContextDeviceMenuProps {
@@ -12,9 +13,14 @@ interface ContextDeviceMenuProps {
 const ContextDeviceMenu: React.FC<ContextDeviceMenuProps> = ({ device }) => {
   const { groups, deleteDevice, moveDeviceToGroup, removeDeviceFromGroup } = useEditor();
   const { closeMenu } = useContextMenu();
+  const { showModal } = useModal();
 
   const handleDelete = () => {
-    deleteDevice(device.id!);
+    showModal({
+      title: "Confirm Deletion",
+      message: `Are you sure you want to delete ${device.name}? This may result in loss of connections.`,
+      onConfirm: () => deleteDevice(device.id!)
+    });
     closeMenu();
   };
 
@@ -52,3 +58,5 @@ const ContextDeviceMenu: React.FC<ContextDeviceMenuProps> = ({ device }) => {
 };
 
 export default ContextDeviceMenu;
+
+
