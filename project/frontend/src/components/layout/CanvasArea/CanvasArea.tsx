@@ -41,7 +41,7 @@ const CanvasArea = () => {
     <Container onWheel={handleWheel} onMouseMove={handleMouseDrag} onContextMenu={(e) => e.preventDefault()}>
       <Inner style={{ transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})` }}>
         
-        <svg style={{ position: "absolute", width: "5000", height: "5000", top: 0, left: 0, pointerEvents: "none", zIndex: 10 }}>
+        <svg style={{ position: "absolute", width: "5000", height: "5000", top: 0, left: 0, pointerEvents: "none", zIndex: -2 }}>
           {links.map(link => {
             const from = devices.find(d => d.id === link.from);
             const to = devices.find(d => d.id === link.to);
