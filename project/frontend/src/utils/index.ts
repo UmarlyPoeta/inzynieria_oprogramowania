@@ -1,2 +1,2 @@
-export { default as ExportTopology } from './exportTopology'
-export { default as ImportTopology } from './importTopology'
+export { default as ExportTopology } from './exportTopology/exportTopology'
+export { default as ImportTopology } from './importTopology/importTopology'
