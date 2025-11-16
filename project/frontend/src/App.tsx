@@ -5,6 +5,8 @@ import { GlobalStyle, Theme } from "@/styles";
 import { EditorProvider } from "@/context/EditorContext";
 import { ContextMenuProvider } from "@/context/ContextualMenuContext";
 import { AuthProvider } from "@/context/AuthContext";
+import { ModeProvider } from "@/context/WorkspaceModeContext"
+import { ModalProvider } from "@/context/ModalContext"
 
 import { GlobalContextMenu, ProtectedRoute } from "@/components";
 import { Workspace, Authorization } from "@/pages";
@@ -15,6 +17,7 @@ const App = () => {
       <AuthProvider>
         <EditorProvider>
           <ContextMenuProvider>
+            <ModalProvider>
             <GlobalStyle />
             <BrowserRouter>
               <Routes>
@@ -36,13 +39,16 @@ const App = () => {
                 <Route
                   path="/workspace"element={
                     <ProtectedRoute>
-                      <Workspace />
+                        <ModeProvider>
+                          <Workspace />
+                        </ModeProvider>
                     </ProtectedRoute>
                   }
                 />
               </Routes>
             </BrowserRouter>
             <GlobalContextMenu />
+            </ModalProvider>
           </ContextMenuProvider>
         </EditorProvider>
       </AuthProvider>
