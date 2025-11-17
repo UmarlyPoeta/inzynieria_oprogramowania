@@ -1,0 +1,46 @@
+*, *::before, *::after, body, h1, h2, h3, h4, h5, h6, p, a, ul, ol, li, button {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+  text-decoration: none;
+  list-style: none;
+  border: none;
+  outline: none;
+  font: inherit;
+  vertical-align: baseline;
+}
+
+:root {
+  /* Sidebar - light theme */
+--background-color-menus: #ffffff;
+--border-color: #ededf5;
+--sidebar-shadow: 0 8px 14.72px 1.28px #9a9acc1a;
+--menu--logo: #000000;
+--font-color-menus: #7b8191;
+--font-color-menus-opacity: .6;
+--font-color-menus-selected: #323251;
+}
+
+:root {
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  background-color: #f9fbfb;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+h1 {
+  font-size: 3.2em;
+  line-height: 1.1;
+}
+
+

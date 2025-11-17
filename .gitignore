@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Build directories
 build/
 **/build/
@@ -73,3 +74,21 @@ Makefile
 !CMakeLists.txt
 CTestTestfile.cmake
 _deps/
+=======
+# Global - Ignore IDE and MD files
+build
+.vscode
+project/AGENTS.md
+AGENTS.md
+
+# Frontend - Logs
+frontend/logs
+
+# Frontend - Node modules
+frontend/node_modules
+
+# Frontend - Build outputs
+frontend/dist
+frontend/dist-ssr
+frontend/*.local
+>>>>>>> origin/frontend
