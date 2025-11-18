@@ -1,4 +1,15 @@
-const API_URL = 'http://localhost:8080';
+const resolveApiUrl = () => {
+  const configured = (import.meta.env.VITE_API_URL as string | undefined)?.trim();
+  if (configured && configured.length > 0) {
+    return configured.replace(/\/$/, "");
+  }
+  if (import.meta.env.DEV) {
+    return "http://localhost:8080";
+  }
+  return "/api";
+};
+
+const API_URL = resolveApiUrl();
 
 interface ApiOptions extends RequestInit {
   body?: any;
@@ -15,7 +26,10 @@ export default async function ApiClient<T>(
 }: ApiOptions = {}): Promise<T> {
   const token = localStorage.getItem("token");
 
-  const res = await fetch(`${API_URL}/${endpoint}`, {
+  const normalizedEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
+  const target = `${API_URL}${normalizedEndpoint}`.replace(/([^:]\/)\/+/g, "$1");
+
+  const res = await fetch(target, {
     method,
     headers: {
       "Content-Type": "application/json",

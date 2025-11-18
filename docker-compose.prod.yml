@@ -40,11 +40,11 @@ services:
       retries: 5
 
   # NetSimCPP Application
-  app:
+  backend:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: netsim-app-prod
+    container_name: netsim-backend-prod
     environment:
       DB_HOST: db
       DB_PORT: 3306
@@ -65,7 +65,7 @@ services:
       - netsim-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/status"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -73,8 +73,10 @@ services:
   # Nginx Reverse Proxy with SSL
   nginx:
     build:
-      context: ./nginx
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: nginx/Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-/api}
     container_name: netsim-nginx-prod
     ports:
       - "80:80"
@@ -85,7 +87,7 @@ services:
       - certbot_www:/var/www/certbot
       - nginx_logs:/var/log/nginx
     depends_on:
-      - app
+      - backend
     networks:
       - netsim-network
     restart: unless-stopped

@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   # MySQL Database
   mysql:
@@ -5,16 +7,17 @@ services:
     container_name: netsim-mysql
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-DevPassword123!}
-      MYSQL_DATABASE: ${DB_NAME:-netsim}
+      MYSQL_ROOT_PASSWORD: NetSimCPP1234
+      MYSQL_DATABASE: netsim
       MYSQL_ROOT_HOST: '%'
     ports:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./project/database/NetSimDB.sql:/docker-entrypoint-initdb.d/schema.sql:ro
+      - ./project/database/NetSimDB.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./project/database/AuthSchema.sql:/docker-entrypoint-initdb.d/02-auth.sql:ro
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${DB_ROOT_PASSWORD:-DevPassword123!}"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-pNetSimCPP1234"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -29,11 +32,11 @@ services:
     restart: unless-stopped
     ports:
       - "6379:6379"
-    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-DevPassword123!}
+    command: redis-server --appendonly yes --requirepass NetSimCPP1234
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-DevPassword123!}", "ping"]
+      test: ["CMD", "redis-cli", "-a", "NetSimCPP1234", "ping"]
       interval: 10s
       timeout: 3s
       retries: 5
@@ -56,24 +59,21 @@ services:
       - netsim-network
 
   # NetSimCPP Server
-  netsim:
+  backend:
     build: .
     container_name: netsim-server
-    ports:
-      - "8080:8080"  # REST API
-      - "9001:9001"  # WebSocket
     environment:
       - SERVER_PORT=8080
       - WEBSOCKET_PORT=9001
       - DB_HOST=mysql
       - DB_PORT=3306
-      - DB_USER=${DB_USER:-root}
-      - DB_PASS=${DB_ROOT_PASSWORD:-DevPassword123!}
-      - DB_NAME=${DB_NAME:-netsim}
+      - DB_USER=root
+      - DB_PASS=NetSimCPP1234
+      - DB_NAME=netsim
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - REDIS_PASS=${REDIS_PASSWORD:-DevPassword123!}
-      - JWT_SECRET=${JWT_SECRET:-dev-jwt-secret-not-for-production-use-only-32chars}
+      - REDIS_PASS=NetSimCPP1234
+      - JWT_SECRET=your-secret-key-change-in-production
     depends_on:
       mysql:
         condition: service_healthy
@@ -89,25 +89,34 @@ services:
     networks:
       - netsim-network
 
+  # Nginx reverse proxy + frontend bundle
+  nginx:
+    build:
+      context: .
+      dockerfile: nginx/Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-/api}
+    container_name: netsim-nginx
+    depends_on:
+      backend:
+        condition: service_started
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx/nginx.dev.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - netsim-network
+    restart: unless-stopped
+
   # Test runner service
   netsim-tests:
     build: .
     container_name: netsim-tests
     command: ["./netsim_tests"]
     depends_on:
-      mysql:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      - mysql
     environment:
       - DB_HOST=mysql
-      - DB_PORT=3306
-      - DB_USER=${DB_USER:-root}
-      - DB_PASS=${DB_ROOT_PASSWORD:-DevPassword123!}
-      - DB_NAME=${DB_NAME:-netsim}
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - REDIS_PASS=${REDIS_PASSWORD:-DevPassword123!}
       - DB_PORT=3306
       - DB_USER=root
       - DB_PASS=NetSimCPP1234

@@ -3,11 +3,9 @@ import { useContextMenu } from "@/context/ContextualMenuContext";
 import { MenuWrapper } from './GlobalContextMenu.styled'
 import type { Group, Device } from "@/types";
 import React, { useEffect } from "react";
-import { useEditor } from "@/context/EditorContext";
 
 const GlobalContextMenu: React.FC = () => {
   const { menu, closeMenu } = useContextMenu();
-  const { connectingModeActive } = useEditor();
 
   useEffect(() => {
     const handleClickOutside = () => closeMenu();

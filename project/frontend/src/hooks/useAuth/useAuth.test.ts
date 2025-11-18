@@ -71,7 +71,7 @@ describe("useAuth", () => {
     const { result } = renderHook(() => useAuth());
 
     await act(async () => {
-      await result.current.register({ username: "JohnDoe", password: "123" });
+      await result.current.register({ username: "JohnDoe", password: "123", email: "john@example.com" });
     });
 
     expect(result.current.user).toEqual(mockUser);

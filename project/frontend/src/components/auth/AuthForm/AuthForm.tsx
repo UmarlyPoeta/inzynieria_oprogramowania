@@ -23,7 +23,7 @@ interface AuthFormProps {
 }
 
 const AuthForm = ({ mode }: AuthFormProps) => {
-    const [form, setForm] = useState({ username: "", password: "", confirmPassword: "" });
+  const [form, setForm] = useState({ username: "", email: "", password: "", confirmPassword: "" });
     const [error, setError] = useState<string | null>(null);
     const [isRequestInProgress, setIsRequestInProgress] = useState(false);
     const [requestProgress, setRequestProgress] = useState(0);
@@ -53,7 +53,12 @@ const AuthForm = ({ mode }: AuthFormProps) => {
           return false;
       }
 
-      if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,15}$/.test(form.password)) {
+    if (mode === "register" && (!form.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))) {
+      setError("Error! Please provide a valid email address.");
+      return false;
+    }
+
+    if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,15}$/.test(form.password)) {
           setError("Error! Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character.");
           return false;
       }
@@ -101,15 +106,20 @@ const AuthForm = ({ mode }: AuthFormProps) => {
                 return;
               }
               setError(null);
-              await login(form);
+              await login({ username: form.username, password: form.password });
             }
             else {
               if (!validateData()) return;
-              await register(form);
+              await register({
+                username: form.username,
+                password: form.password,
+                email: form.email,
+              });
             }
             navigate("/workspace");
-        } catch (err: any) {
-            setError(err.message || "The error occurred during authentication");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "The error occurred during authentication";
+      setError(message);
         } finally { 
           clearInterval(progressInterval);  
           setIsRequestInProgress(false);
@@ -130,6 +140,12 @@ const AuthForm = ({ mode }: AuthFormProps) => {
             <Subtitle> {mode === "login" ? "Welcome back! Please enter your details" : "Please fill in the form to create an account"} </Subtitle>
             <Label> Username </Label>
             <Input type = "text" placeholder="Enter your username" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} />
+            {mode === "register" && (
+              <>
+                <Label> Email </Label>
+                <Input type="email" placeholder="Enter your email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+              </>
+            )}
             <Label> Password </Label>
             <Input type = "password" placeholder="*************" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
             {mode === "register" && (

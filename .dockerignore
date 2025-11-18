@@ -1,0 +1,12 @@
+.git
+.gitignore
+node_modules
+project/frontend/node_modules
+project/frontend/dist
+project/frontend/.vite
+project/backend/build
+project/backend/CMakeCache.txt
+project/backend/CMakeFiles
+*.log
+DockerDesktop*
+.vscode

@@ -442,6 +442,9 @@ std::string Network::exportToJson() const {
         nlohmann::json node;
         node["name"] = n->getName();
         node["ip"] = n->getIp();
+        node["type"] = n->getType();
+        node["mtu"] = n->getMTU();
+        node["queueSize"] = n->getMaxQueueSize();
         j["nodes"].push_back(node);
     }
     j["connections"] = nlohmann::json::array();

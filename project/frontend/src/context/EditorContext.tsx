@@ -84,6 +84,7 @@ interface EditorContextType {
   resetTopology: () => void;
 }
 
+type EditorSnapshot = { devices: Device[]; links: Link[]; groups: Group[] };
 
 const EditorContext = createContext<EditorContextType | undefined>(undefined);
 
@@ -91,8 +92,8 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [devices, setDevices] = useState<Device[]>([]);
   const [links, setLinks] = useState<Link[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
-  const [history, setHistory] = useState<{ devices: Device[]; links: Link[]; groups: Group[] }[]>([]);
-  const [redoStack, setRedoStack] = useState<typeof history>([]);
+  const [, setHistory] = useState<EditorSnapshot[]>([]);
+  const [, setRedoStack] = useState<EditorSnapshot[]>([]);
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | undefined>(undefined);
   const [connectingPort, setConnectingPort] = useState<string | null>(null);
   const [connectingDeviceId, setConnectingDeviceId] = useState<string | null>(null);
