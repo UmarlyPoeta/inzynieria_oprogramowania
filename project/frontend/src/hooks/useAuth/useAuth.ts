@@ -9,12 +9,17 @@ export default function useAuth() {
   const { data: userData, status: userStatus, refetch } = useFetch(
     "user",
     () => GetUser(),
-    { enabled: !!token }
+    { enabled: !!token && token !== "undefined" }
   );
 
+
   useEffect(() => {
-    if (userData) setUser(userData);
-  }, [userData]);
+    if (userData && userData !== user) {
+        setUser(userData);
+    }
+  }, [userData, user]);
+
+
 
   const loginMutation = useMutation(SignIn, (data) => {
     localStorage.setItem("token", data.token);

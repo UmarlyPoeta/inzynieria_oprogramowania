@@ -1,4 +1,9 @@
-const API_URL = 'http://localhost:8080';
+// const API_URL = 'http://localhost:8080';
+
+interface ApiOptions extends RequestInit {
+  body?: any;
+  withAuth?: boolean; 
+}
 
 interface ApiOptions extends RequestInit {
   body?: any;
@@ -12,10 +17,16 @@ export default async function ApiClient<T>(
     headers, 
     withAuth = false, 
     ...options 
-}: ApiOptions = {}): Promise<T> {
+  }: ApiOptions = {}
+): Promise<T> {
   const token = localStorage.getItem("token");
 
-  const res = await fetch(`${API_URL}/${endpoint}`, {
+  if (withAuth && !token) {
+    throw new Error("No token available for authenticated request");
+  }
+
+  // const res = await fetch(`${API_URL}/${endpoint}`, {
+  const res = await fetch(`/api/${endpoint}`, {
     method,
     headers: {
       "Content-Type": "application/json",
@@ -28,8 +39,13 @@ export default async function ApiClient<T>(
 
   if (!res.ok) {
     const text = await res.text();
+    console.error(`API error (${res.status}): ${text}`);
+    if (res.status === 401) {
+        localStorage.removeItem("token"); 
+    }
     throw new Error(`API error (${res.status}): ${text}`);
-  }
+}
 
   return await res.json();
 }
+
