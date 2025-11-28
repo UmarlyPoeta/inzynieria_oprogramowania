@@ -101,13 +101,22 @@ const AuthForm = ({ mode }: AuthFormProps) => {
                 return;
               }
               setError(null);
-              await login(form);
+              try { 
+                await login(form);
+                navigate("/workspace");
+              } catch (error: any) {
+                setError(error.error || error.message || "Unknown error");
+              }
             }
             else {
               if (!validateData()) return;
-              await register(form);
+              try { 
+                await register(form);
+                navigate("/login");
+              } catch (error: any) {
+                setError(error.error || error.message || "Unknown error");
+              }
             }
-            navigate("/workspace");
         } catch (err: any) {
             setError(err.message || "The error occurred during authentication");
         } finally { 
@@ -143,10 +152,10 @@ const AuthForm = ({ mode }: AuthFormProps) => {
                 <> <Checkbox type="checkbox" /> Remember me </>
               )}
             </CheckBoxWrapper>
-            <Button type="submit" color="#FC5D08" style={{marginTop: '.3rem'}}>
+            <Button type="submit" $backgroundColor="#FC5D08" style={{marginTop: '.3rem'}}>
               {mode === "login" ? "Sign In" : "Sign Up"}
             </Button>
-            <Button type="button" color="#f3f3f3" style={{ marginTop: '0.5rem' }} fontColor="#121212">
+            <Button type="button" $backgroundColor="#f3f3f3" $color="#121212" style={{ marginTop: '0.5rem' }}>
               {mode === "login" ? (
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem" }}>
                   Sign in with Google

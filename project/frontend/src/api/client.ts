@@ -39,12 +39,16 @@ export default async function ApiClient<T>(
 
   if (!res.ok) {
     const text = await res.text();
+    let json: any = {};
+    try {
+      json = JSON.parse(text);
+    } catch {}
     console.error(`API error (${res.status}): ${text}`);
     if (res.status === 401) {
-        localStorage.removeItem("token"); 
+      localStorage.removeItem("token");
     }
-    throw new Error(`API error (${res.status}): ${text}`);
-}
+    throw json; 
+  }
 
   return await res.json();
 }
