@@ -13,6 +13,7 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
       - ./project/database/NetSimDB.sql:/docker-entrypoint-initdb.d/schema.sql:ro
+      - ./project/database/AuthSchema.sql:/docker-entrypoint-initdb.d/02-AuthSchema.sql:ro
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${DB_ROOT_PASSWORD:-DevPassword123!}"]
       interval: 10s
