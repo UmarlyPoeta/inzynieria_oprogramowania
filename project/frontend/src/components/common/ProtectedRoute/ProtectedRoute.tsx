@@ -8,7 +8,7 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, redirectIfAuthenticated = false }) => {
-  const { user, status } = useAuthContext();
+  const { user, token, status } = useAuthContext();
 
   if (status === "loading") {
     return null; 
@@ -18,7 +18,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, redirectIfAut
     return <Navigate to="/login" replace />;
   }
 
-  if (user && redirectIfAuthenticated) {
+  if (user && token && redirectIfAuthenticated) {
     return <Navigate to="/workspace" replace />;
   }
 
