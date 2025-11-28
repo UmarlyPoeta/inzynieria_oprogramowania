@@ -1,5 +1,5 @@
 import { ThemeProvider } from "styled-components";
-import { BrowserRouter, Routes, Route, Navigate  } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import { GlobalStyle, Theme } from "@/styles";
 import { EditorProvider } from "@/context/EditorContext";
@@ -21,30 +21,10 @@ const App = () => {
             <GlobalStyle />
             <BrowserRouter>
               <Routes>
-                <Route path="/" element={
-                  <ProtectedRoute redirectIfAuthenticated>
-                    <Navigate to="/login" replace />
-                  </ProtectedRoute>
-                }/>
-                <Route path="/login" element={
-                  <ProtectedRoute redirectIfAuthenticated>
-                    <Authorization mode="login" />
-                    </ProtectedRoute>
-                }/>
-                <Route path="/register" element={
-                  <ProtectedRoute redirectIfAuthenticated>
-                    <Authorization mode="register" />
-                    </ProtectedRoute>
-                }/>
-                <Route
-                  path="/workspace"element={
-                    <ProtectedRoute>
-                        <ModeProvider>
-                          <Workspace />
-                        </ModeProvider>
-                    </ProtectedRoute>
-                  }
-                />
+                <Route path="/" element={<ProtectedRoute redirectIfAuthenticated><Authorization mode="login" /></ProtectedRoute>} />
+                <Route path="/login" element={<ProtectedRoute redirectIfAuthenticated><Authorization mode="login" /></ProtectedRoute>} />
+                <Route path="/register" element={<ProtectedRoute redirectIfAuthenticated><Authorization mode="register" /></ProtectedRoute>} />
+                <Route path="/workspace" element={<ProtectedRoute><ModeProvider><Workspace /></ModeProvider></ProtectedRoute>} />
               </Routes>
             </BrowserRouter>
             <GlobalContextMenu />

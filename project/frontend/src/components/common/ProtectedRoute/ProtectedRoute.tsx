@@ -8,15 +8,17 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, redirectIfAuthenticated = false }) => {
-  const { user } = useAuthContext();
+  const { user, status } = useAuthContext();
 
-  return children; // Temporary bypass of authentication checks
+  if (status === "loading") {
+    return null; 
+  }
 
   if (!user && !redirectIfAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 
-  if (!user && redirectIfAuthenticated) {
+  if (user && redirectIfAuthenticated) {
     return <Navigate to="/workspace" replace />;
   }
 
