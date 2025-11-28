@@ -19,10 +19,12 @@ export default function useMutation<T, V> (
             setData(result);
             setStatus("success");
             onSuccess?.(result);
+            return result;
         } catch (error) { 
             setError(error as Error);
             setStatus("error");
             onError?.(error as Error);
+            throw error;
         }
     }
 
