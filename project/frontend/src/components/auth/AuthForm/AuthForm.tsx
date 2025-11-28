@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useAuthContext } from '../../../context/AuthContext'; 
-import { useNavigate } from "react-router-dom";
-import { GoogleIcon } from '@/data';
+import { useNavigate, Link } from "react-router-dom";
 import { 
   Button, 
   FormContainer, 
@@ -144,33 +143,24 @@ const AuthForm = ({ mode }: AuthFormProps) => {
             {mode === "register" && (
               <>
                 <Label> Confirm Password </Label>
-                <Input type = "password" placeholder="Confirm your password" value={form.confirmPassword} onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })} />
+                <Input type = "password" placeholder="*************" value={form.confirmPassword} onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })} />
               </>
             )}
             <CheckBoxWrapper>
-              {mode === "login" && ( 
                 <> <Checkbox type="checkbox" /> Remember me </>
-              )}
             </CheckBoxWrapper>
             <Button type="submit" $backgroundColor="#FC5D08" style={{marginTop: '.3rem'}}>
               {mode === "login" ? "Sign In" : "Sign Up"}
             </Button>
-            <Button type="button" $backgroundColor="#f3f3f3" $color="#121212" style={{ marginTop: '0.5rem' }}>
-              {mode === "login" ? (
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem" }}>
-                  Sign in with Google
-                </div>
-              ) : (
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem" }}>
-                  <img src={GoogleIcon} alt="Google" width="30px" height="30px" />
-                  Sign up with Google
-                </div>
-              )}
-            </Button>
             <p style={{textAlign: "center", fontSize: ".9rem", marginTop: ".3rem"}}> 
               {mode === "login" && ( 
                 <> 
-                  Don't have an account? {mode === "login" ? <a href="/register" style={{color: "#ff8000ff"}}> Sign up</a> : <a href="/login"> Log in</a>}
+                  Don't have an account? <Link to="/register" style={{color: "#ff8000ff"}}> Sign up </Link>
+                </>
+              )}
+              {mode === "register" && ( 
+                <> 
+                  Already have an account? <Link to="/login" style={{color: "#ff8000ff"}}> Sign In </Link>
                 </>
               )}
             </p>

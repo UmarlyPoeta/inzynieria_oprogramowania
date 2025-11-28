@@ -50,9 +50,9 @@ export const Label = styled.label`
   }
 `;
 
-export const Button = styled.button<{ color?: string, fontColor?: string }>`
-  background-color: ${(p) => p.color || '#ff8000ff'};
-  color: ${(p) => p.fontColor || '#fff'};
+export const Button = styled.button<{ $backgroundColor?: string, $color?: string }>`
+  background-color: ${(p) => p.$backgroundColor || '#ff8000ff'};
+  color: ${(p) => p.color || '#fff'};
   border: none;
   border-radius: 8px;
   border: 1px solid #ccc;
@@ -91,21 +91,29 @@ export const LeftContainer = styled.div`
   border-bottom-left-radius: 8px;
   padding: 4rem;
   padding-top: 3rem;
+  overflow-y: auto;
 
-  @media (max-width: 1300px) {
-    width: 95%;
-    padding: 1rem;
-    padding-top: 1rem;
-    padding-bottom: 1rem;  
+  @media (max-height: 450px) { 
+    display: none;
+  }
 
-    h2 { 
-      font-size: 1.5rem;
-    }
+  @media (max-width: 1000px) { 
+    padding-left: 1.7rem;
+    padding-right: 1.7rem;
+  }
 
-    h3 { 
-      font-size: 0.9rem;
-      margin-bottom: .3rem;
-    }
+  @media (max-width: 800px) {
+    width: 100%;
+    padding: 3rem; 
+
+    // h2 { 
+    //   font-size: 1.5rem;
+    // }
+
+    // h3 { 
+    //   font-size: 0.9rem;
+    //   margin-bottom: .3rem;
+    // }
 
     input[type="checkbox"] { 
       transform: scale(0.8);
@@ -133,9 +141,13 @@ export const RightContainer = styled.div`
   border-top-right-radius: 8px;
   border-bottom-right-radius: 8px;
 
-  @media (max-width: 733px) {
+  @media (max-width: 800px) {
     display: none;
-}
+  }
+
+  @media (max-height: 450px) { 
+    display: none;
+  }
 `;
 
 export const CheckBoxWrapper = styled.div`
