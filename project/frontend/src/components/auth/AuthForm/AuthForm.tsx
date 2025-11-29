@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useAuthContext } from '../../../context/AuthContext'; 
+import { useAuthContext } from "@/context/AuthContext"; 
 import { useNavigate, Link } from "react-router-dom";
 import { 
   Button, 
@@ -26,7 +26,8 @@ const AuthForm = ({ mode }: AuthFormProps) => {
     const [error, setError] = useState<string | null>(null);
     const [isRequestInProgress, setIsRequestInProgress] = useState(false);
     const [requestProgress, setRequestProgress] = useState(0);
-    const {login, register} = useAuthContext();
+
+    const { login, register } = useAuthContext();
     const navigate = useNavigate(); 
 
     const validateData = () => {
@@ -57,13 +58,8 @@ const AuthForm = ({ mode }: AuthFormProps) => {
           return false;
       }
 
-      if (/\s/.test(form.password)) {
-          setError("Error! Password cannot contain spaces.");
-          return false;
-      }
-
-      if (/\s/.test(form.username)) {
-          setError("Error! Username cannot contain spaces.");
+      if (/\s/.test(form.password) || /\s/.test(form.username)) {
+          setError("Error! Username and password cannot contain spaces.");
           return false;
       }
 
@@ -76,45 +72,38 @@ const AuthForm = ({ mode }: AuthFormProps) => {
       return true;
     };
 
-
-
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
         setIsRequestInProgress(true);
-        setRequestProgress(0);  
+        setRequestProgress(0);
 
         const progressInterval = setInterval(() => {
-            setRequestProgress((prevProgress) => {
-                if (prevProgress < 100) {
-                    return prevProgress + 5;
-                }
-                return prevProgress;
-            });
+            setRequestProgress(prev => (prev < 100 ? prev + 5 : prev));
         }, 100);
 
         try {
             if (mode === "login") {
-              if (form.password.length === 0 || form.username.length === 0) {
-                setError("Error! Username and password cannot be empty.");
-                return;
-              }
-              setError(null);
-              try { 
-                await login(form);
-                navigate("/workspace");
-              } catch (error: any) {
-                setError(error.error || error.message || "Unknown error");
-              }
-            }
-            else {
-              if (!validateData()) return;
-              try { 
-                await register(form);
-                navigate("/login");
-              } catch (error: any) {
-                setError(error.error || error.message || "Unknown error");
-              }
+                if (!form.username || !form.password) {
+                    setError("Error! Username and password cannot be empty.");
+                    return;
+                }
+
+                try { 
+                    await login.mutateAsync({ username: form.username, password: form.password });
+                    navigate("/workspace");
+                } catch (err: any) {
+                    setError(err.error || err.message || "Unknown error");
+                }
+            } else {
+                if (!validateData()) return;
+
+                try { 
+                    await register.mutateAsync({ username: form.username, password: form.password });
+                    navigate("/login");
+                } catch (err: any) {
+                    setError(err.error || err.message || "Unknown error");
+                }
             }
         } catch (err: any) {
             setError(err.message || "The error occurred during authentication");
@@ -134,45 +123,64 @@ const AuthForm = ({ mode }: AuthFormProps) => {
                 <ProgressBar progress={requestProgress} />
               </ProgressWrapper>
             )}
-            <Title> {mode === "login" ? "Welcome Back" : "Create an account"} </Title>
-            <Subtitle> {mode === "login" ? "Welcome back! Please enter your details" : "Please fill in the form to create an account"} </Subtitle>
-            <Label> Username </Label>
-            <Input type = "text" placeholder="Enter your username" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} />
-            <Label> Password </Label>
-            <Input type = "password" placeholder="*************" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
+            <Title>{mode === "login" ? "Welcome Back" : "Create an account"}</Title>
+            <Subtitle>{mode === "login" ? "Welcome back! Please enter your details" : "Please fill in the form to create an account"}</Subtitle>
+            
+            <Label>Username</Label>
+            <Input
+              type="text"
+              placeholder="Enter your username"
+              value={form.username}
+              onChange={(e) => setForm({ ...form, username: e.target.value })}
+            />
+
+            <Label>Password</Label>
+            <Input
+              type="password"
+              placeholder="*************"
+              value={form.password}
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
+            />
+
             {mode === "register" && (
               <>
-                <Label> Confirm Password </Label>
-                <Input type = "password" placeholder="*************" value={form.confirmPassword} onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })} />
+                <Label>Confirm Password</Label>
+                <Input
+                  type="password"
+                  placeholder="*************"
+                  value={form.confirmPassword}
+                  onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
+                />
               </>
             )}
+
             <CheckBoxWrapper>
-                <> <Checkbox type="checkbox" /> Remember me </>
+              <><Checkbox /> Remember me</>
             </CheckBoxWrapper>
-            <Button type="submit" $backgroundColor="#FC5D08" style={{marginTop: '.3rem'}}>
+
+            <Button type="submit" $backgroundColor="#FC5D08" style={{ marginTop: ".3rem" }}>
               {mode === "login" ? "Sign In" : "Sign Up"}
             </Button>
-            <p style={{textAlign: "center", fontSize: ".9rem", marginTop: ".3rem"}}> 
-              {mode === "login" && ( 
-                <> 
-                  Don't have an account? <Link to="/register" style={{color: "#ff8000ff"}}> Sign up </Link>
-                </>
-              )}
-              {mode === "register" && ( 
-                <> 
-                  Already have an account? <Link to="/login" style={{color: "#ff8000ff"}}> Sign In </Link>
-                </>
+
+            <p style={{ textAlign: "center", fontSize: ".9rem", marginTop: ".3rem" }}>
+              {mode === "login" ? (
+                <>Don't have an account? <Link to="/register" style={{ color: "#ff8000ff" }}>Sign up</Link></>
+              ) : (
+                <>Already have an account? <Link to="/login" style={{ color: "#ff8000ff" }}>Sign In</Link></>
               )}
             </p>
+
             {error && <ErrorText>{error}</ErrorText>}
-          </FormContainer> 
+          </FormContainer>
         </LeftContainer>
-        <RightContainer> </RightContainer>
+
+        <RightContainer />
       </>
-  );
+    );
 };
 
 export default AuthForm;
+
 
 
 

@@ -1,29 +1,34 @@
-import React, { type JSX } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuthContext } from "@/context/AuthContext";
+import { type ReactNode } from "react";
 
 interface ProtectedRouteProps {
-  children: JSX.Element;
-  redirectIfAuthenticated?: boolean; 
+  children: ReactNode;
+  redirectIfAuthenticated?: boolean;
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, redirectIfAuthenticated = false }) => {
-  const { user, token, status } = useAuthContext();
+const ProtectedRoute = ({ children, redirectIfAuthenticated = false }: ProtectedRouteProps) => {
+  const { user, status } = useAuthContext();
 
-  if (status === "loading") {
-    return null; 
-  }
+  // if (status === "pending") {
+  //   return (
+  //     <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
+  //       Loading...
+  //     </div>
+  //   );
 
-  if (!user && !redirectIfAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
+  // }
 
-  if (user && token && redirectIfAuthenticated) {
-    return <Navigate to="/workspace" replace />;
-  }
+  if (!user && !redirectIfAuthenticated) return <Navigate to="/login" replace />;
+  if (user && redirectIfAuthenticated) return <Navigate to="/workspace" replace />;
 
-  return children;
+
+  return <>{children}</>;
 };
 
 export default ProtectedRoute;
+
+
+
+
 

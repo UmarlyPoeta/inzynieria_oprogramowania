@@ -17,6 +17,10 @@ export const Title = styled.h2`
   font-size: 1.7rem;
   font-weight: 550;
   text-transform: uppercase;
+
+  @media screen (max-width: 500px) { 
+    font-size: 0.6rem !important;
+  }
 `;
 
 export const Subtitle = styled.h3`
@@ -24,6 +28,11 @@ export const Subtitle = styled.h3`
   text-align: center;
   color: #555;
   font-size: .9rem;
+
+  @media screen (max-width: 500px) { 
+    font-size: .3rem !important;
+    margin-bottom: 0.5rem;
+  }
 `;
 
 export const Input = styled.input`
@@ -65,11 +74,10 @@ export const Button = styled.button<{ $backgroundColor?: string, $color?: string
   }
 `;
 
-export const Checkbox = styled.input`
+export const Checkbox = styled.input.attrs({ type: "checkbox" })`
   margin-top: 1rem;
   margin-bottom: 1rem;
-  margin-right: .3rem;
-
+  margin-right: 0.3rem;
 `;
 
 export const ErrorText = styled.p`
@@ -81,9 +89,6 @@ export const ErrorText = styled.p`
 export const LeftContainer = styled.div`
   display: flex;
   justify-content: center;
-  // flex-direction: column;
-  // align-items: center;
-  // justify-content: center;
   width: 600px;
   height: 90vh;
   background-color: #fff;
@@ -105,15 +110,6 @@ export const LeftContainer = styled.div`
   @media (max-width: 800px) {
     width: 100%;
     padding: 3rem; 
-
-    // h2 { 
-    //   font-size: 1.5rem;
-    // }
-
-    // h3 { 
-    //   font-size: 0.9rem;
-    //   margin-bottom: .3rem;
-    // }
 
     input[type="checkbox"] { 
       transform: scale(0.8);
