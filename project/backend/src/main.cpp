@@ -485,7 +485,7 @@ int main() {
                         ? utility::conversions::to_utf8string(jv[U("ip")].as_string()) 
                         : std::string("127.0.0.1");
                     auto type = jv.has_field(U("type"))
-                        ? utility::conversions::to_utf8string(jv[U("type")].as_string())
+                        ? utility::conversions::to_utf8string(jv[U("nodeType")].as_string())
                         : std::string("host");
 
                     if (type == "router") {
