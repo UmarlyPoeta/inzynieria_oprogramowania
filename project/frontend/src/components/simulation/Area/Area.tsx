@@ -1,16 +1,12 @@
 import { useEditor } from "@/context/EditorContext";
-// import { useSimulation } from "@/context/SimulationContext";
 import { DeviceNode } from "@/components";
 import { Container, Inner, Grid } from '../../layout/CanvasArea/CanvasArea.styled';
 import { useState } from "react";
-import { useWebSocket } from "@/hooks";
 
 const Area = () => {
   const { devices, links } = useEditor();
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [scale, setScale] = useState(1);
-
-  const { status } = useWebSocket("ws://localhost:9001");
 
   const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -41,19 +37,7 @@ const Area = () => {
   return (
     <Container onWheel={handleWheel} onMouseMove={handleMouseDrag} onContextMenu={(e) => e.preventDefault()}>
       <Inner style={{ transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})` }}>
-
-        {/* Status WebSocket */}
-        <div style={{
-          padding: "4px 8px",
-          fontSize: "30px",
-          backgroundColor: status === "open" ? "#4caf50" : "#f44336",
-          color: "#121212",
-          borderRadius: "4px",
-          zIndex: 100
-        }}>
-          WebSocket Status (temporary message - to be removed): {status}
-        </div>
-
+   
         { /* Render SVG */ }
         <svg style={{ position: "absolute", width: "5000px", height: "5000px", top: 0, left: 0, pointerEvents: "none", zIndex: 10 }}>
           {links.map(link => {
