@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState } from "react";
-
+import React, { createContext, useContext, useState, useCallback, useRef } from "react";
+import { useWebSocket } from "@/hooks";
 import type { Device, RouterConfig, SwitchConfig, PCConfig, Link, Group } from "@/types"
 
 const defaultRouterConfig = (): RouterConfig => ({
@@ -98,7 +98,95 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [connectingDeviceId, setConnectingDeviceId] = useState<string | null>(null);
   const [connectingModeActive, setConnectingModeActive] = useState(false);
   const [selectedDeviceIds, setSelectedDeviceIds] = useState<string[]>([]);
+  
+  const handleMessage = useCallback((rawMsg: string) => {
+    let msg: any;
+    try {
+      msg = JSON.parse(rawMsg); 
+    } catch (e) {
+      console.error("Invalid JSON:", rawMsg);
+      return;
+    }
 
+    switch (msg.type) {
+      case "connected": 
+        console.log("NetSimCPP WebSocket Status:", msg.type);
+        break;
+      case "node_added":
+        setDevices(prev => [...prev, msg]);
+        break;
+      case "node_removed":
+        setDevices(prev => prev.filter(d => d.id !== msg.id));
+        break;
+      case "link_added":
+        setLinks(prev => [...prev, msg]);
+        break;
+      case "link_removed":
+        setLinks(prev => prev.filter(l => l.id !== msg.id));
+        break;
+      case "link_modified":
+        setLinks(prev => prev.map(l => l.id === msg.link ? { ...l, ...msg } : l));
+        break;
+      case "packet_sent":
+        console.log(`Packet sent: ${msg.from} -> ${msg.to}`);
+        break;
+      case "packet_received":
+        console.log(`Packet received: ${msg.from} -> ${msg.to}`);
+        break;
+      case "network_cleared":
+        setDevices([]);
+        setLinks([]);
+        setGroups([]);
+        break;
+      default:
+        console.log("Unknown event", msg);
+    }
+  }, []); 
+
+  const callAPI = async (endpoint: string, method: string, body?: any) => {
+    const token = localStorage.getItem("token");
+    try {
+      const options: RequestInit = {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` }),
+        },
+      };
+
+      if (body) {
+        options.body = JSON.stringify(body);
+      }
+
+      console.log(`🌐 API Call: ${method} ${endpoint}`, body);
+
+      const response = await fetch(`/api${endpoint}`, options);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || `HTTP ${response.status}`);
+      }
+
+      console.log(`✅ API Response:`, data);
+      return data;
+
+    } catch (error) {
+      console.error(`❌ API Error (${endpoint}):`, error);
+      throw error;
+    }
+  };
+
+  const handleError = useCallback((err: Event) => {
+    console.error("WebSocket error:", err);
+  }, []);
+  
+  const { status } = useWebSocket(
+    "ws://localhost:9001", 
+    handleMessage,
+    handleError
+  );
+
+  
   const resetTopology = () => {
     setDevices([]);
     setGroups([]);
@@ -230,18 +318,25 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   };
 
-  const addDevice = (device: Device) => {
+  const addDevice = async (device: Device) => {
     pushToHistory();
-    setDevices(prev => {
-      let name = device.name;
-      if (!name) { 
-        const count = prev.filter(d => d.type === device.type).length;
-        name = `${device.type.charAt(0).toUpperCase() + device.type.slice(1)} ${count + 1}`;
-      }
-
-      const id = device.id ?? Math.random().toString(36).substring(2, 9); 
-
-      return [
+    
+    const count = devices.filter(d => d.type === device.type).length;
+    const name = device.name || `${device.type.charAt(0).toUpperCase() + device.type.slice(1)} ${count + 1}`;
+    const id = device.id ?? Math.random().toString(36).substring(2, 9);
+    
+    const ip = (device.config as PCConfig | RouterConfig)?.interfaces?.[0]?.ip || "127.0.0.1";
+    const nodeType = device.type === "pc" ? "host" : device.type === "router" ? "router" : "host";
+    
+    try {
+      await callAPI('/node/add', 'POST', {
+        name: id,
+        ip: ip,
+        nodeType: nodeType,
+        port: 8080
+      });
+      
+      setDevices(prev => [
         ...prev, 
         { 
           ...device, 
@@ -249,8 +344,13 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           name, 
           config: device.config ?? defaultConfig(device.type) 
         }
-      ];
-    });
+      ]);
+      
+      console.log("✅ Device added successfully:", name);
+      
+    } catch (error) {
+      console.error("❌ Failed to add device:", error);
+    }
   };
 
 
@@ -273,11 +373,24 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setDevices(prev => prev.map(d => (d.id === deviceId ? { ...d, groupId } : d)));
   };
   
-  const deleteDevice = (id: string) => {
-    pushToHistory();
-    setDevices(prev => prev.filter(d => d.id !== id));
-    setLinks(prev => prev.filter(l => l.from !== id && l.to !== id));
-  }
+  const deleteDevice = async (id: string) => {
+    const device = devices.find(d => d.id === id);
+    if (!device) return;
+
+    try {
+      await callAPI('/node/remove', 'POST', {
+        name: device.id
+      });
+      
+      setDevices(prev => prev.filter(d => d.id !== id));
+      setLinks(prev => prev.filter(l => l.from !== id && l.to !== id));
+      
+      console.log("✅ Device removed successfully:", device.name);
+      
+    } catch (error) {
+      console.error("❌ Failed to remove device:", error);
+    }
+  };
 
   const deleteGroup = (id: string) => {
     pushToHistory();
@@ -327,7 +440,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       selectDevicePortForLink,
       connectingPort,
       resetTopology,
-      deleteLink
+      deleteLink,
     }}>
     {children}
     </EditorContext.Provider>

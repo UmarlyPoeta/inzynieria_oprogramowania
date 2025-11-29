@@ -8,32 +8,47 @@ interface UseWebSocketReturn {
   status: WebSocketStatus;
 }
 
-export default function useWebSocket(url: string, onMessage?: (msg: string) => void, onError?: (err: Event) => void): UseWebSocketReturn {
+export default function useWebSocket(
+  url: string,
+  onMessage?: (msg: string) => void,
+  onError?: (err: Event) => void
+): UseWebSocketReturn {
   const [messages, setMessages] = useState<string[]>([]);
   const [status, setStatus] = useState<WebSocketStatus>("connecting");
 
   const ws = useRef<WebSocket | null>(null);
   const retryTimeout = useRef<number | null>(null);
   const messageQueue = useRef<string[]>([]);
+  const shouldReconnect = useRef(true);
 
   useEffect(() => {
-    let mounted = true;
+    shouldReconnect.current = true;
 
     const connect = () => {
-      if (!mounted) return;
+      if (!shouldReconnect.current) return;
+
+      // Zamknij poprzednie połączenie jeśli istnieje
+      if (ws.current) {
+        ws.current.onclose = null;
+        ws.current.close();
+      }
 
       setStatus("connecting");
       ws.current = new WebSocket(url);
 
       ws.current.onopen = () => {
         setStatus("open");
-        messageQueue.current.forEach((msg) => ws.current?.send(msg));
-        messageQueue.current = [];
+        // Wyślij kolejkowane wiadomości
+        while (messageQueue.current.length > 0) {
+          const msg = messageQueue.current.shift();
+          if (msg) ws.current?.send(msg);
+        }
       };
 
       ws.current.onmessage = (event: MessageEvent) => {
-        setMessages((prev) => [...prev, event.data]);
-        onMessage?.(event.data);
+        const raw = event.data.toString().trim();
+        setMessages((prev) => [...prev, raw]);
+        onMessage?.(raw);
       };
 
       ws.current.onerror = (err: Event) => {
@@ -43,20 +58,31 @@ export default function useWebSocket(url: string, onMessage?: (msg: string) => v
 
       ws.current.onclose = () => {
         setStatus("closed");
-        retryTimeout.current = window.setTimeout(connect, 2000) as unknown as number;
+        
+        // Reconnect tylko jeśli komponent jest zamontowany i chcemy reconnect
+        if (shouldReconnect.current) {
+          retryTimeout.current = window.setTimeout(connect, 2000);
+        }
       };
     };
 
     connect();
 
     return () => {
-      mounted = false;
+      shouldReconnect.current = false;
+      
       if (retryTimeout.current !== null) {
         clearTimeout(retryTimeout.current);
+        retryTimeout.current = null;
       }
-      ws.current?.close();
+      
+      if (ws.current) {
+        ws.current.onclose = null; // Usuń handler żeby nie triggerował reconnect
+        ws.current.close();
+        ws.current = null;
+      }
     };
-  }, [url, onMessage, onError]);
+  }, [url]); // Usuń onMessage i onError z dependencies
 
   const sendMessage = (msg: string) => {
     if (ws.current?.readyState === WebSocket.OPEN) {
