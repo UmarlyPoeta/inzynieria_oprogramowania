@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS users (
     INDEX idx_username (username),
     INDEX idx_email (email),
     INDEX idx_role (role)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
 -- API Rate Limits table (per user per endpoint)
 CREATE TABLE IF NOT EXISTS api_rate_limits (
@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS api_rate_limits (
     UNIQUE KEY unique_user_endpoint (user_id, endpoint),
     INDEX idx_user_endpoint (user_id, endpoint),
     INDEX idx_window_start (window_start)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
 -- User permissions (optional, for fine-grained access control)
 CREATE TABLE IF NOT EXISTS user_permissions (
@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS user_permissions (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     UNIQUE KEY unique_user_resource_action (user_id, resource, action),
     INDEX idx_user_resource (user_id, resource)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
 -- Audit log for security events
 CREATE TABLE IF NOT EXISTS auth_audit_log (
@@ -60,7 +60,7 @@ CREATE TABLE IF NOT EXISTS auth_audit_log (
     INDEX idx_user_id (user_id),
     INDEX idx_event_type (event_type),
     INDEX idx_created_at (created_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
 -- Insert default admin user (password: admin123)
 -- Password hash is argon2id hash of "admin123"
