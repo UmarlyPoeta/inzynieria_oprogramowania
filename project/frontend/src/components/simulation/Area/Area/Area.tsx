@@ -1,5 +1,5 @@
 import { useEditor } from "@/context/EditorContext";
-import { DeviceNode } from "@/components";
+import { SimulationNode } from "@/components";
 import { Container, Inner, Grid } from '../../../layout/CanvasArea/CanvasArea.styled';
 import { useState } from "react";
 
@@ -69,7 +69,7 @@ const Area = () => {
 
         {/* Render Devices */}
         {devices.map(d => (
-          <DeviceNode
+          <SimulationNode
             key={d.id}
             device={d}
             scale={scale}
