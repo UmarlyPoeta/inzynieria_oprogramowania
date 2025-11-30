@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useRef } from "react";
+import React, { createContext, useContext, useState, useCallback } from "react";
 import { useWebSocket } from "@/hooks";
 import type { Device, RouterConfig, SwitchConfig, PCConfig, Link, Group } from "@/types"
 
@@ -104,34 +104,34 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     try {
       msg = JSON.parse(rawMsg); 
     } catch (e) {
-      console.error("Invalid JSON:", rawMsg);
+      console.error("[WEBSOCKET] Invalid JSON:", rawMsg);
       return;
     }
 
     switch (msg.type) {
       case "connected": 
-        console.log("NetSimCPP WebSocket Status:", msg.type);
+        console.log("[WEBSOCKET]", msg.type);
         break;
       case "node_added":
-        setDevices(prev => [...prev, msg]);
+        console.log("[WEBSOCKET] Node Added");
         break;
       case "node_removed":
-        setDevices(prev => prev.filter(d => d.id !== msg.id));
+        console.log("[WEBSOCKET] Node Removed");
         break;
       case "link_added":
-        setLinks(prev => [...prev, msg]);
+        console.log("[WEBSOCKET] Link Added");
         break;
       case "link_removed":
-        setLinks(prev => prev.filter(l => l.id !== msg.id));
+        console.log("[WEBSOCKET] Link Removed");
         break;
       case "link_modified":
-        setLinks(prev => prev.map(l => l.id === msg.link ? { ...l, ...msg } : l));
+        console.log("[WEBSOCKET] Link Modified");
         break;
       case "packet_sent":
-        console.log(`Packet sent: ${msg.from} -> ${msg.to}`);
+        console.log(`[WEBSOCKET] Packet sent: ${msg.from} -> ${msg.to}`);
         break;
       case "packet_received":
-        console.log(`Packet received: ${msg.from} -> ${msg.to}`);
+        console.log(`[WEBSOCKET] Packet received: ${msg.from} -> ${msg.to}`);
         break;
       case "network_cleared":
         setDevices([]);
@@ -208,7 +208,30 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setLinks(prev => prev.filter(l => l.id !== id));
   };
 
-  const selectDevicePortForLink = (deviceId: string, port: string) => {
+  // const selectDevicePortForLink = (deviceId: string, port: string) => {
+  //   if (!connectingDeviceId) {
+  //     setConnectingDeviceId(deviceId);
+  //     setConnectingPort(port);
+  //     setConnectingModeActive(true);
+  //   } else if (connectingDeviceId === deviceId) {
+  //     setConnectingPort(port);
+  //   } else {
+  //     const newLink: Link = {
+  //       id: Math.random().toString(36).substring(2, 9),
+  //       from: connectingDeviceId,
+  //       to: deviceId,
+  //       fromPort: connectingPort!,
+  //       toPort: port
+  //     };
+  //     addLinkWithHistory(newLink);
+
+  //     setConnectingDeviceId(null);
+  //     setConnectingPort(null);
+  //     setConnectingModeActive(false);
+  //   }
+  // };
+
+  const selectDevicePortForLink = async (deviceId: string, port: string) => {
     if (!connectingDeviceId) {
       setConnectingDeviceId(deviceId);
       setConnectingPort(port);
@@ -216,6 +239,16 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     } else if (connectingDeviceId === deviceId) {
       setConnectingPort(port);
     } else {
+      try {
+        const payload = {
+        nodeA: connectingDeviceId,
+        nodeB: deviceId,
+        delay: 10,          
+        bandwidth: 1000     
+      };
+
+      await callAPI("/link/connect", "POST", payload);
+
       const newLink: Link = {
         id: Math.random().toString(36).substring(2, 9),
         from: connectingDeviceId,
@@ -223,13 +256,21 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         fromPort: connectingPort!,
         toPort: port
       };
+
       addLinkWithHistory(newLink);
 
+    } catch (error) {
+      console.error("❌ Failed to create link via API:", error);
+    } finally {
       setConnectingDeviceId(null);
       setConnectingPort(null);
       setConnectingModeActive(false);
     }
+
+
+    }
   };
+
 
 
   const toggleSelectDevice = (id: string) => {
