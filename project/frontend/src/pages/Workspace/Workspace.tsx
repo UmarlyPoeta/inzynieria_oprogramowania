@@ -1,4 +1,4 @@
-import { LeftSidebar, RightSidebar, CanvasArea, DeviceTool, Area } from '@/components';
+import { LeftSidebar, RightSidebar, CanvasArea, DeviceTool, Area, PduBar, ControlBar, MainBar } from '@/components';
 import { useMode } from '@/context/WorkspaceModeContext'; 
 import { Container, MainArea } from './Workspace.styled';
 import { useKeyboardShortcuts } from '@/hooks';
@@ -19,8 +19,10 @@ const Workspace = () => {
           </>
         ) : (
           <> 
-          <div> Test </div>
-          <Area/>
+            <PduBar/>
+            <Area/>
+            <ControlBar/>
+            <MainBar/>
           </>
         )}
       </MainArea>

@@ -1,6 +1,6 @@
 import { useEditor } from "@/context/EditorContext";
 import { DeviceNode } from "@/components";
-import { Container, Inner, Grid } from '../../layout/CanvasArea/CanvasArea.styled';
+import { Container, Inner, Grid } from '../../../layout/CanvasArea/CanvasArea.styled';
 import { useState } from "react";
 
 const Area = () => {
