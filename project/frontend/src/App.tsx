@@ -7,6 +7,7 @@ import { EditorProvider } from "@/context/EditorContext";
 import { ContextMenuProvider } from "@/context/ContextualMenuContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { ModeProvider } from "@/context/WorkspaceModeContext";
+import { NetworkProvider } from "@/context/NetworkContext";
 import { ModalProvider } from "@/context/ModalContext";
 
 import { GlobalContextMenu, ProtectedRoute } from "@/components";
@@ -20,6 +21,7 @@ const App = () => {
       <ThemeProvider theme={Theme}>
         <AuthProvider>
           <EditorProvider>
+            <NetworkProvider>
             <ContextMenuProvider>
               <ModalProvider>
                 <GlobalStyle />
@@ -64,6 +66,7 @@ const App = () => {
                 <GlobalContextMenu />
               </ModalProvider>
             </ContextMenuProvider>
+            </NetworkProvider>
           </EditorProvider>
         </AuthProvider>
       </ThemeProvider>

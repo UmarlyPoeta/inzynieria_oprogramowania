@@ -39,7 +39,7 @@ const Area = () => {
       <Inner style={{ transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})` }}>
    
         { /* Render SVG */ }
-        <svg style={{ position: "absolute", width: "5000px", height: "5000px", top: 0, left: 0, pointerEvents: "none", zIndex: 10 }}>
+        <svg style={{ position: "absolute", width: "5000px", height: "5000px", top: 0, left: 0, pointerEvents: "none", zIndex: 1 }}>
           {links.map(link => {
             const from = devices.find(d => d.id === link.from);
             const to = devices.find(d => d.id === link.to);

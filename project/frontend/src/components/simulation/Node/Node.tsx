@@ -1,11 +1,26 @@
 import { ComputerIcon, RouterIcon, SwitchIcon } from '@/data';
 import { useEditor } from "@/context/EditorContext";
 import type { Device } from "@/types";
-import { Node } from './Node.styled'
+import { Node } from './Node.styled';
+import { useNetworkActions } from '@/hooks';
 
-
-const SimulationNode: React.FC<{ device: Device, scale: number }> = ({ device }) => {
+const SimulationNode: React.FC<{ device: Device; scale: number }> = ({ device }) => {
   const { toggleSelectDevice, selectDevice, selectedDeviceIds } = useEditor();
+  const { pendingAction, selectForAction } = useNetworkActions();
+
+  const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    console.log("🖱 Node clicked:", device.id);
+
+    if (pendingAction) {
+      console.log("⚡ Pending action active, selecting for action");
+      selectForAction(device.id!);
+    } else if (e.ctrlKey || e.metaKey) {
+      toggleSelectDevice(device.id!);
+    } else {
+      selectDevice(device.id!);
+    }
+  };
 
   const getDeviceIcon = () => { 
     switch (device.type.toLowerCase()) {
@@ -16,18 +31,7 @@ const SimulationNode: React.FC<{ device: Device, scale: number }> = ({ device })
       case 'switch':
         return <img src={SwitchIcon} alt="Switch" width={"100%"}/>;
     }
-  }
-
-  const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    e.stopPropagation();
-
-    if (e.ctrlKey || e.metaKey) {
-        toggleSelectDevice(device.id!);
-    } else {
-        selectDevice(device.id!);
-    }
   };
-
 
   return (
     <Node
@@ -37,7 +41,6 @@ const SimulationNode: React.FC<{ device: Device, scale: number }> = ({ device })
     >
       {getDeviceIcon()}
     </Node>
-
   );
 };
 
