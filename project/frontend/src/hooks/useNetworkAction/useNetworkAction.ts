@@ -5,8 +5,16 @@ const useNetworkActions = () => {
   const { selectedDeviceIds, setSelectedDeviceIds } = useEditor();
   const { pendingAction, setPendingAction, pdus, setPdus } = useNetwork();
 
+  const triggerAnimation = (srcId: string, dstId: string, path?: string[]) => {
+    const event = new CustomEvent('network-animation', {
+      detail: { srcId, dstId, path }
+    });
+    window.dispatchEvent(event);
+  };
+
   const runAction = async (type: NetworkActionType, srcId: string, dstId: string) => {
     console.log(`🚀 Running ${type} from ${srcId} to ${dstId}`);
+    
     try {
       const res = await fetch(`/api/${type}`, {
         method: "POST",
@@ -15,6 +23,16 @@ const useNetworkActions = () => {
       }).then(r => r.json());
 
       console.log(`📬 API response:`, res);
+
+      // 🎬 URUCHOM ANIMACJĘ z path z API
+      if (res.path && res.path.length > 0) {
+        console.log(`🎨 Triggering animation with path:`, res.path);
+        triggerAnimation(srcId, dstId, res.path);
+      } else {
+        // Fallback jeśli brak path
+        console.log(`🎨 Triggering animation without path (direct)`);
+        triggerAnimation(srcId, dstId, [srcId, dstId]);
+      }
 
       setPdus(prev => [
         ...prev,
