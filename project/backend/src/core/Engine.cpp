@@ -88,20 +88,125 @@ bool Engine::multicast(const std::string& srcName, const std::vector<std::string
         return false;
     }
     
+    // Use single BFS traversal to find paths to all destinations efficiently
+    auto getNeighbors = [this](const std::string &n) -> std::vector<std::string> {
+        return net.getNeighbors(n);
+    };
+
+    auto results = traversal::multicast_bfs(getNeighbors, srcName, destinations);
+
     bool allSuccessful = true;
-    
-    // Wyślij pakiet do każdego odbiorcy
-    for (const auto& dest : destinations) {
-        std::vector<std::string> path;
-        bool success = ping(srcName, dest, path);
-        
-        if (!success) {
+    for (const auto &dest : destinations) {
+        auto it = results.find(dest);
+        if (it == results.end() || it->second.empty()) {
             std::cerr << "Failed to reach destination: " << dest << std::endl;
             allSuccessful = false;
         } else {
-            std::cout << "Multicast packet delivered to: " << dest << std::endl;
+            std::cout << "Multicast packet delivered to: " << dest << " via ";
+            for (const auto &h : it->second) std::cout << h << " ";
+            std::cout << std::endl;
         }
     }
-    
+
     return allSuccessful;
+}
+
+std::vector<std::string> Engine::getEqualCostNextHops(const std::string& node, const std::string& dst) {
+    auto getNeighbors = [this](const std::string &n) -> std::vector<std::string> {
+        return net.getNeighbors(n);
+    };
+    auto getLinkDelay = [this](const std::string &a, const std::string &b) -> int {
+        return net.getLinkDelay(a, b);
+    };
+    return traversal::equal_cost_next_hops(getNeighbors, getLinkDelay, node, dst);
+}
+
+bool Engine::constrainedShortestPath(const std::string& src,
+                                     const std::string& dst,
+                                     std::vector<std::string>& pathOut,
+                                     int minBandwidth)
+{
+    auto getNeighbors = [this](const std::string &n) -> std::vector<std::string> {
+        return net.getNeighbors(n);
+    };
+    auto getLinkDelay = [this](const std::string &a, const std::string &b) -> int {
+        return net.getLinkDelay(a, b);
+    };
+    auto getLinkBandwidth = [this](const std::string &a, const std::string &b) -> int {
+        return net.getBandwidth(a, b);
+    };
+
+    auto maybePath = traversal::constrained_shortest_path(getNeighbors, getLinkDelay, getLinkBandwidth, src, dst, minBandwidth);
+    if (!maybePath) return false;
+    pathOut = *maybePath;
+    return true;
+}
+
+std::unordered_map<std::string, std::string> Engine::computeLinkStateRouting(const std::string& node) {
+    auto getNeighbors = [this](const std::string &n) -> std::vector<std::string> {
+        return net.getNeighbors(n);
+    };
+    auto getLinkDelay = [this](const std::string &a, const std::string &b) -> int {
+        return net.getLinkDelay(a, b);
+    };
+    return traversal::link_state_routing(getNeighbors, getLinkDelay, node);
+}
+
+bool Engine::isRPF(const std::string& node, const std::string& incomingNeighbor, const std::string& src) {
+    auto getNeighbors = [this](const std::string &n) -> std::vector<std::string> {
+        return net.getNeighbors(n);
+    };
+    auto getLinkDelay = [this](const std::string &a, const std::string &b) -> int {
+        return net.getLinkDelay(a, b);
+    };
+
+    bool result = traversal::is_rpf(getNeighbors, getLinkDelay, node, incomingNeighbor, src);
+    std::cout << "[RPF] node=" << node << " incoming=" << incomingNeighbor << " src=" << src << " -> " << (result?"ACCEPT":"REJECT") << std::endl;
+    return result;
+}
+
+std::vector<std::pair<std::vector<std::string>, double>> Engine::multipathFlowAware(const std::string& src,
+                                                                                     const std::string& dst,
+                                                                                     int k)
+{
+    auto getNeighbors = [this](const std::string &n) -> std::vector<std::string> {
+        return net.getNeighbors(n);
+    };
+    auto getLinkDelay = [this](const std::string &a, const std::string &b) -> int {
+        return net.getLinkDelay(a, b);
+    };
+    auto getLinkBandwidth = [this](const std::string &a, const std::string &b) -> int {
+        return net.getBandwidth(a, b);
+    };
+
+    auto paths = traversal::multipath_flow_aware(getNeighbors, getLinkDelay, getLinkBandwidth, src, dst, k);
+    std::cout << "[MULTIPATH] Found " << paths.size() << " candidate(s) from " << src << " to " << dst << std::endl;
+    for (size_t i = 0; i < paths.size(); ++i) {
+        std::cout << "  path[" << i << "] weight=" << paths[i].second << " route:";
+        for (auto &h : paths[i].first) std::cout << " " << h;
+        std::cout << std::endl;
+    }
+    return paths;
+}
+
+std::unordered_map<std::string, std::vector<std::pair<std::vector<std::string>, int>>> Engine::multiCommodityFlow(
+    const std::vector<std::tuple<std::string, std::string, int>>& commodities,
+    int k)
+{
+    auto getNeighbors = [this](const std::string &n) -> std::vector<std::string> {
+        return net.getNeighbors(n);
+    };
+    auto getLinkDelay = [this](const std::string &a, const std::string &b) -> int {
+        return net.getLinkDelay(a, b);
+    };
+    auto getLinkBandwidth = [this](const std::string &a, const std::string &b) -> int {
+        return net.getBandwidth(a, b);
+    };
+
+    auto alloc = traversal::multi_commodity_flow(getNeighbors, getLinkDelay, getLinkBandwidth, commodities, k);
+    std::cout << "[MULTI-COMMODITY] computed allocations for " << alloc.size() << " commodity keys" << std::endl;
+    for (const auto &entry : alloc) {
+        std::cout << "  commodity=" << entry.first << " allocations=" << entry.second.size() << std::endl;
+    }
+    return alloc;
 }

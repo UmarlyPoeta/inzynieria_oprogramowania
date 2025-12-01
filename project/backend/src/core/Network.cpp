@@ -1,6 +1,7 @@
 #include "Network.hpp"
 #include <nlohmann/json.hpp>
 #include <iostream>
+#include "TraversalAlgorithms.hpp"
 using json = nlohmann::json;
 
 
@@ -159,27 +160,16 @@ void Network::checkConnectivity(const std::string &nameA, const std::string &nam
     auto b = findByName(nameB);
     if (!a || !b)
         throw std::runtime_error("Cannot check connectivity for null nodes");
-
     if (adj.find(a->getName()) == adj.end() || adj.find(b->getName()) == adj.end())
         throw std::runtime_error("One or both nodes have no connections");
 
-    std::set<std::string> visited;
-    std::vector<std::string> stack;
-    stack.push_back(nameA);
+    // Delegate to traversal::dfs_any_path to find a path (keeps implementation centralized)
+    auto getNeighbors = [this](const std::string &n) -> std::vector<std::string> {
+        return this->getNeighbors(n);
+    };
 
-    while (!stack.empty()) {
-        auto current = stack.back();
-        stack.pop_back();
-        if (current == nameB)
-            return; // Found a path
-        if (visited.count(current))
-            continue;
-        visited.insert(current);
-        for (const auto& neighbor : getNeighbors(current)) {
-            if (!visited.count(neighbor))
-                stack.push_back(neighbor);
-        }
-    }
+    auto maybe = traversal::dfs_any_path(getNeighbors, nameA, nameB);
+    if (maybe) return;
     throw std::runtime_error("No path between nodes: " + nameA + " and " + nameB);
 }
 
