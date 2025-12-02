@@ -4,10 +4,10 @@ export { default as CanvasArea } from './layout/CanvasArea/CanvasArea';
 export { default as DeviceTool } from './layout/DeviceTool/DeviceTool';
 
 export { default as Area } from './simulation/Area/Area/Area'
-export { default as PduBar } from './simulation/PduBar/PduBar'
 export { default as ControlBar } from './simulation/ControlBar/ControlBar'
-export { default as MainBar } from './simulation/MainBar/MainBar'
 export { default as SimulationNode } from './simulation/Node/Node'
+export { default as StatisticsBar } from './simulation/RightSidebar/RightSidebar'
+export { default as InfoAndControlBar } from './simulation/LeftSidebar/LeftSidebar'
 
 export { default as DeviceNode } from './editor/DeviceNode/DeviceNode';
 export { default as GroupNode } from './editor/ContextGroupMenu/ContextGroupMenu';
