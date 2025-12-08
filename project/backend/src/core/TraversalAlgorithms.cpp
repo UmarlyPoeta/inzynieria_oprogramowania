@@ -7,6 +7,40 @@
 
 namespace traversal {
 
+// ============= Internal Helper Functions =============
+
+// Rekonstrukcja ścieżki z mapy parent (od dst do src, potem odwrócenie)
+static std::vector<std::string> reconstruct_path(
+    const std::unordered_map<std::string, std::string>& parent,
+    const std::string& src,
+    const std::string& dst)
+{
+    std::vector<std::string> path;
+    std::string cur = dst;
+    while (!cur.empty()) {
+        path.push_back(cur);
+        auto it = parent.find(cur);
+        if (it == parent.end()) break;
+        cur = it->second;
+        if (cur == src) {
+            path.push_back(src);
+            break;
+        }
+    }
+    std::reverse(path.begin(), path.end());
+    return path;
+}
+
+// Komparator dla min-heap Dijkstra (para: distance, node)
+static auto make_dijkstra_comparator() {
+    return [](const std::pair<long long, std::string>& a,
+              const std::pair<long long, std::string>& b) {
+        return a.first > b.first;
+    };
+}
+
+// ============= End Helper Functions =============
+
 std::optional<std::vector<std::string>> bfs_shortest_hops(
     const std::function<std::vector<std::string>(const std::string&)>& getNeighbors,
     const std::string& src,
@@ -23,16 +57,7 @@ std::optional<std::vector<std::string>> bfs_shortest_hops(
             if (parent.find(v) == parent.end()) {
                 parent[v] = u;
                 if (v == dst) {
-                    std::vector<std::string> path;
-                    std::string cur = dst;
-                    while (!cur.empty()) {
-                        path.push_back(cur);
-                        auto it = parent.find(cur);
-                        if (it == parent.end()) break;
-                        cur = it->second;
-                    }
-                    std::reverse(path.begin(), path.end());
-                    return path;
+                    return reconstruct_path(parent, src, dst);
                 }
                 q.push(v);
             }
@@ -48,10 +73,9 @@ std::optional<std::vector<std::string>> dijkstra_shortest_delay(
     const std::string& dst)
 {
     using Pair = std::pair<long long, std::string>;
-    const long long INF = std::numeric_limits<long long>::max()/4;
     std::unordered_map<std::string, long long> dist;
     std::unordered_map<std::string, std::string> parent;
-    auto cmp = [](const Pair& a, const Pair& b){ return a.first > b.first; };
+    auto cmp = make_dijkstra_comparator();
     std::priority_queue<Pair, std::vector<Pair>, decltype(cmp)> pq(cmp);
     dist[src] = 0;
     parent[src] = std::string();
@@ -134,16 +158,7 @@ std::unordered_map<std::string, std::vector<std::string>> multicast_bfs(
             if (parent.find(v) == parent.end()) {
                 parent[v] = u;
                 if (destSet.find(v) != destSet.end()) {
-                    std::vector<std::string> path;
-                    std::string cur = v;
-                    while (!cur.empty()) {
-                        path.push_back(cur);
-                        auto it = parent.find(cur);
-                        if (it == parent.end()) break;
-                        cur = it->second;
-                    }
-                    std::reverse(path.begin(), path.end());
-                    result[v] = path;
+                    result[v] = reconstruct_path(parent, src, v);
                     destSet.erase(v);
                 }
                 q.push(v);
@@ -197,9 +212,8 @@ std::vector<std::string> equal_cost_next_hops(
 {
     // Compute distances from every node to dst (run Dijkstra from dst on reversed costs)
     using Pair = std::pair<long long, std::string>;
-    auto getNeighborsConst = getNeighbors; // alias
     std::unordered_map<std::string, long long> dist;
-    auto cmp = [](const Pair& a, const Pair& b){ return a.first > b.first; };
+    auto cmp = make_dijkstra_comparator();
     std::priority_queue<Pair, std::vector<Pair>, decltype(cmp)> pq(cmp);
 
     // start from dst
@@ -210,7 +224,7 @@ std::vector<std::string> equal_cost_next_hops(
         auto [d,u] = pq.top(); pq.pop();
         auto it = dist.find(u);
         if (it == dist.end() || it->second != d) continue;
-        for (const auto& nei : getNeighborsConst(u)) {
+        for (const auto& nei : getNeighbors(u)) {
             // edge nei <-> u: cost = getLinkDelay(nei, u)
             int w = getLinkDelay(nei, u);
             if (w < 0) continue;
@@ -256,7 +270,7 @@ std::vector<std::vector<std::string>> ecmp_k_paths(
     // First compute equal-cost DAG edges using distances-to-dst (Dijkstra from dst)
     using Pair = std::pair<long long, std::string>;
     std::unordered_map<std::string, long long> dist;
-    auto cmp = [](const Pair& a, const Pair& b){ return a.first > b.first; };
+    auto cmp = make_dijkstra_comparator();
     std::priority_queue<Pair, std::vector<Pair>, decltype(cmp)> pq(cmp);
     dist[dst] = 0;
     pq.push({0, dst});
@@ -326,7 +340,7 @@ std::optional<std::vector<std::string>> constrained_shortest_path(
     using Pair = std::pair<long long, std::string>;
     std::unordered_map<std::string, long long> dist;
     std::unordered_map<std::string, std::string> parent;
-    auto cmp = [](const Pair& a, const Pair& b){ return a.first > b.first; };
+    auto cmp = make_dijkstra_comparator();
     std::priority_queue<Pair, std::vector<Pair>, decltype(cmp)> pq(cmp);
 
     dist[src] = 0;
@@ -357,16 +371,7 @@ std::optional<std::vector<std::string>> constrained_shortest_path(
     }
 
     if (dist.find(dst) == dist.end()) return std::nullopt;
-    std::vector<std::string> path;
-    std::string cur = dst;
-    while (!cur.empty()) {
-        path.push_back(cur);
-        auto it = parent.find(cur);
-        if (it == parent.end()) break;
-        cur = it->second;
-    }
-    std::reverse(path.begin(), path.end());
-    return path;
+    return reconstruct_path(parent, src, dst);
 }
 
 } // namespace traversal
@@ -383,7 +388,7 @@ std::unordered_map<std::string, std::string> link_state_routing(
     using Pair = std::pair<long long, std::string>;
     std::unordered_map<std::string, long long> dist;
     std::unordered_map<std::string, std::string> parent;
-    auto cmp = [](const Pair& a, const Pair& b){ return a.first > b.first; };
+    auto cmp = make_dijkstra_comparator();
     std::priority_queue<Pair, std::vector<Pair>, decltype(cmp)> pq(cmp);
 
     // Dijkstra from src
@@ -479,7 +484,7 @@ std::vector<std::pair<std::vector<std::string>, double>> multipath_flow_aware(
         // Dijkstra skipping banned edges
         std::unordered_map<std::string, long long> dist;
         std::unordered_map<std::string, std::string> parent;
-        auto cmp = [](const Pair& a, const Pair& b){ return a.first > b.first; };
+        auto cmp = make_dijkstra_comparator();
         std::priority_queue<Pair, std::vector<Pair>, decltype(cmp)> pq(cmp);
 
         dist[src] = 0;
@@ -509,15 +514,7 @@ std::vector<std::pair<std::vector<std::string>, double>> multipath_flow_aware(
         if (dist.find(dst) == dist.end()) break; // no more paths
 
         // reconstruct path
-        std::vector<std::string> path;
-        std::string cur = dst;
-        while (!cur.empty()) {
-            path.push_back(cur);
-            auto it = parent.find(cur);
-            if (it == parent.end()) break;
-            cur = it->second;
-        }
-        std::reverse(path.begin(), path.end());
+        auto path = reconstruct_path(parent, src, dst);
         if (path.empty() || path.front() != src) break; // safety
 
         // compute min bandwidth along path
@@ -571,9 +568,8 @@ bool is_rpf(
 {
     // Compute distances from src to all nodes (Dijkstra)
     using Pair = std::pair<long long, std::string>;
-    const long long INF = std::numeric_limits<long long>::max()/4;
     std::unordered_map<std::string, long long> dist;
-    auto cmp = [](const Pair& a, const Pair& b){ return a.first > b.first; };
+    auto cmp = make_dijkstra_comparator();
     std::priority_queue<Pair, std::vector<Pair>, decltype(cmp)> pq(cmp);
 
     dist[src] = 0;
@@ -663,7 +659,7 @@ std::unordered_map<std::string, std::vector<std::pair<std::vector<std::string>, 
             using Pair = std::pair<long long, std::string>;
             std::unordered_map<std::string, long long> dist;
             std::unordered_map<std::string, std::string> parent;
-            auto cmp = [](const Pair& a, const Pair& b){ return a.first > b.first; };
+            auto cmp = make_dijkstra_comparator();
             std::priority_queue<Pair, std::vector<Pair>, decltype(cmp)> pq(cmp);
 
             dist[src] = 0;
@@ -694,15 +690,7 @@ std::unordered_map<std::string, std::vector<std::pair<std::vector<std::string>, 
             if (dist.find(dst) == dist.end()) break; // can't satisfy more for this commodity
 
             // reconstruct path
-            std::vector<std::string> path;
-            std::string cur = dst;
-            while (!cur.empty()) {
-                path.push_back(cur);
-                auto it = parent.find(cur);
-                if (it == parent.end()) break;
-                cur = it->second;
-            }
-            std::reverse(path.begin(), path.end());
+            auto path = reconstruct_path(parent, src, dst);
             if (path.empty() || path.front() != src) break;
 
             // find bottleneck

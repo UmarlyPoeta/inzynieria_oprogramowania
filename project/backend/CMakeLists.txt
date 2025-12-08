@@ -204,3 +204,56 @@ if(MYSQLCPPCONN_LIB)
     target_link_libraries(netsim_perf_tests PRIVATE ${MYSQLCPPCONN_LIB})
 endif()
 add_test(NAME netsim_perf_tests COMMAND netsim_perf_tests)
+
+# Simple Traversal Console Test (no external deps except standard lib)
+add_executable(simple_traversal_test
+    src/simple_traversal_test.cpp
+    src/core/Node.cpp
+    src/core/TraversalAlgorithms.cpp
+    src/core/Packet.cpp
+    src/core/Network.cpp
+    src/core/Engine.cpp
+    src/core/Host.cpp
+    src/core/Router.cpp
+)
+target_include_directories(simple_traversal_test PRIVATE src)
+if(MYSQLCPPCONN_INCLUDE)
+    target_include_directories(simple_traversal_test PRIVATE ${MYSQLCPPCONN_INCLUDE})
+endif()
+target_link_libraries(simple_traversal_test PRIVATE 
+    pthread
+    ${MYSQLCPPCONN_LIB}
+)
+
+# Traversal API Test Server (DISABLED: requires additional MySQL linking fixes)
+# add_executable(test_traversal_api
+#     src/test_traversal_api.cpp
+#     src/core/Node.cpp
+#     src/core/TraversalAlgorithms.cpp
+#     src/core/Packet.cpp
+#     src/core/Network.cpp
+#     src/core/Engine.cpp
+#     src/core/Host.cpp
+#     src/core/Router.cpp
+# )
+# target_include_directories(test_traversal_api PRIVATE 
+#     src 
+#     ${Boost_INCLUDE_DIRS}
+# )
+# if(MYSQLCPPCONN_INCLUDE)
+#     target_include_directories(test_traversal_api PRIVATE ${MYSQLCPPCONN_INCLUDE})
+# endif()
+# if(WEBSOCKETPP_INCLUDE)
+#     target_include_directories(test_traversal_api PRIVATE ${WEBSOCKETPP_INCLUDE})
+# endif()
+
+# target_link_libraries(test_traversal_api PRIVATE 
+#     cpprestsdk::cpprest 
+#     nlohmann_json::nlohmann_json
+#     OpenSSL::SSL 
+#     OpenSSL::Crypto
+#     Boost::system
+#     Boost::thread
+#     pthread
+# )
+
