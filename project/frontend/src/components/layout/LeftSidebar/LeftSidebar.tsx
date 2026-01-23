@@ -4,7 +4,7 @@ import { ExportTopology, ImportTopology } from "@/utils";
 import React from "react";
 import { 
   Save, Waypoints, ChevronDown, FilePlus, FolderOpen, 
-  RotateCcw, RotateCw, Copy, Clipboard, Trash2, Move 
+  RotateCcw, RotateCw, Copy, Clipboard, Trash2, LogOut 
 } from "lucide-react";
 import { 
   SidebarWrapper,
@@ -18,6 +18,7 @@ import {
   GroupRow,
   DeviceRow
 } from './LeftSidebar.styled'
+import { useAuthContext } from "@/context/AuthContext";
 
 const LayersPanel: React.FC = () => {
   const { devices, groups, toggleGroupCollapsed, renameGroup, selectDevice } = useEditor();
@@ -128,6 +129,7 @@ const LayersPanel: React.FC = () => {
 
 const LeftSidebar = () => {
   const { devices, groups, links, undo, redo, addDevice, addGroup, addLink, resetTopology } = useEditor();
+  const { logout } = useAuthContext();
 
   const handleImportClick = () => {
     const input = document.createElement("input");
@@ -157,7 +159,7 @@ const LeftSidebar = () => {
           <Waypoints />
         </AppLogo>
 
-        <IconButton title="New project">
+        <IconButton title="New project" onClick={resetTopology}>
           <FilePlus />
         </IconButton>
 
@@ -180,7 +182,7 @@ const LeftSidebar = () => {
           <RotateCw />
         </IconButton>
 
-        <IconButton title="Copy">
+        {/* <IconButton title="Copy">
           <Copy />
         </IconButton>
 
@@ -190,17 +192,17 @@ const LeftSidebar = () => {
 
         <IconButton title="Delete">
           <Trash2 />
-        </IconButton>
+        </IconButton> */}
 
-        <IconButton title="Move">
-          <Move />
+        <IconButton title="Logout" onClick={logout}>
+          <LogOut color="red"/>
         </IconButton>
       </LeftPanel>
 
       <RightPanel>
         <RightBarHeader>
-          <h1> NetSimCPP <ChevronDown /> </h1>
-          <p> Project X </p>
+          <h1> NetSimCPP </h1>
+          <p> Simple network simulator</p>
         </RightBarHeader>
         <LayersPanel />
       </RightPanel>
