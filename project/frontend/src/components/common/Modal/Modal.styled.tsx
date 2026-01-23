@@ -72,9 +72,9 @@ export const Button = styled.button<ButtonProps>`
         `;
       default:
         return `
-          background: #1890ff;
+          background: #ff8818;
           color: #fff;
-          &:hover { background: #1479e0; }
+          &:hover { background: #ff8818; }
         `;
     }
   }}

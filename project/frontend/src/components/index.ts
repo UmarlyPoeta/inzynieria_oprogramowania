@@ -24,4 +24,5 @@ export { default as AuthForm } from './auth/AuthForm/AuthForm';
 export { default as AuthLayout } from './auth/AuthLayout/AuthLayout';
 export { default as ProtectedRoute } from './common/ProtectedRoute/ProtectedRoute';
 
-export { default as Modal } from './common/Modal/Modal'
+export { default as Modal } from './common/Modal/Modal';
+export { default as LinkModal } from './common/LinkConfigModal/LinkConfigModal';
