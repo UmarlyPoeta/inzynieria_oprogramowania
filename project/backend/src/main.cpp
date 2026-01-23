@@ -74,6 +74,21 @@ std::string getUserAgent(const http_request& request) {
     return "";
 }
 
+// Helper function to add CORS headers to response
+void addCorsHeaders(http_response& response) {
+    response.headers().add(U("Access-Control-Allow-Origin"), U("*"));
+    response.headers().add(U("Access-Control-Allow-Methods"), U("GET, POST, PUT, DELETE, OPTIONS"));
+    response.headers().add(U("Access-Control-Allow-Headers"), U("Content-Type, Authorization"));
+    response.headers().add(U("Access-Control-Max-Age"), U("3600"));
+}
+
+void replyWithCors(http_request& request, status_codes::code status, const web::json::value& body) {
+    http_response response(status);
+    addCorsHeaders(response);
+    response.set_body(body);
+    request.reply(response);
+}
+
 // Auth middleware structures and functions
 struct AuthResult {
     int user_id;
@@ -181,7 +196,7 @@ int main() {
             web::json::value resp;
             resp[U("status")] = web::json::value::string(U("ok"));
             resp[U("message")] = web::json::value::string(U("NetSimCPP REST API v1.0"));
-            request.reply(status_codes::OK, resp);
+            replyWithCors(request, status, resp)
             
         } else if (path == U("/nodes")) {
             // GET /nodes - List all nodes
@@ -190,7 +205,7 @@ int main() {
                 web::json::value resp;
                 resp[U("nodes")] = string_vector_to_json(nodes);
                 resp[U("count")] = web::json::value::number((int)nodes.size());
-                request.reply(status_codes::OK, resp);
+                replyWithCors(request, status, resp)
             } catch (const std::exception& e) {
                 web::json::value resp;
                 resp[U("error")] = web::json::value::string(utility::conversions::to_string_t(e.what()));
@@ -202,7 +217,7 @@ int main() {
             try {
                 std::string jsonStr = net.exportToJson();
                 auto resp = web::json::value::parse(utility::conversions::to_string_t(jsonStr));
-                request.reply(status_codes::OK, resp);
+                replyWithCors(request, status, resp)
             } catch (const std::exception& e) {
                 web::json::value resp;
                 resp[U("error")] = web::json::value::string(utility::conversions::to_string_t(e.what()));
@@ -218,7 +233,7 @@ int main() {
                 resp[U("totalPacketsSent")] = web::json::value::number(net.getTotalPacketsSent());
                 resp[U("totalPacketsReceived")] = web::json::value::number(net.getTotalPacketsReceived());
                 resp[U("mostActiveNode")] = web::json::value::string(utility::conversions::to_string_t(net.getMostActiveNode()));
-                request.reply(status_codes::OK, resp);
+                replyWithCors(request, status, resp)
             } catch (const std::exception& e) {
                 web::json::value resp;
                 resp[U("error")] = web::json::value::string(utility::conversions::to_string_t(e.what()));
@@ -232,7 +247,7 @@ int main() {
                 web::json::value resp;
                 resp[U("cloudNodes")] = string_vector_to_json(cloudNodes);
                 resp[U("count")] = web::json::value::number((int)cloudNodes.size());
-                request.reply(status_codes::OK, resp);
+                replyWithCors(request, status, resp)
             } catch (const std::exception& e) {
                 web::json::value resp;
                 resp[U("error")] = web::json::value::string(utility::conversions::to_string_t(e.what()));
@@ -252,7 +267,7 @@ int main() {
                     resp[U("status")] = web::json::value::string(U("success"));
                     resp[U("message")] = web::json::value::string(U("Topology saved to database"));
                     resp[U("nodes")] = web::json::value::number((int)net.getAllNodes().size());
-                    request.reply(status_codes::OK, resp);
+                    replyWithCors(request, status, resp)
                 } else {
                     web::json::value resp;
                     resp[U("error")] = web::json::value::string(U("Failed to save topology"));
@@ -277,7 +292,7 @@ int main() {
                     resp[U("status")] = web::json::value::string(U("success"));
                     resp[U("message")] = web::json::value::string(U("Topology loaded from database"));
                     resp[U("nodes")] = web::json::value::number((int)net.getAllNodes().size());
-                    request.reply(status_codes::OK, resp);
+                    replyWithCors(request, status, resp)
                 } else {
                     web::json::value resp;
                     resp[U("error")] = web::json::value::string(U("Failed to load topology"));
@@ -299,7 +314,7 @@ int main() {
                 } else {
                     resp[U("status")] = web::json::value::string(U("disabled"));
                 }
-                request.reply(status_codes::OK, resp);
+                replyWithCors(request, status, resp)
             } catch (const std::exception& e) {
                 web::json::value resp;
                 resp[U("error")] = web::json::value::string(utility::conversions::to_string_t(e.what()));
@@ -342,7 +357,7 @@ int main() {
                 }
                 resp[U("permissions")] = perms;
                 
-                request.reply(status_codes::OK, resp);
+                replyWithCors(request, status, resp)
                 
             } catch (const std::exception& e) {
                 web::json::value resp;
@@ -429,7 +444,7 @@ int main() {
                     
                     resp[U("expires_in")] = web::json::value::number(static_cast<int32_t>(result["expires_in"].get<int>()));
                     
-                    request.reply(status_codes::OK, resp);
+                    replyWithCors(request, status, resp)
                     
                 } catch (const std::exception& e) {
                     web::json::value resp;
@@ -462,7 +477,7 @@ int main() {
                 resp[U("success")] = web::json::value::boolean(true);
                 resp[U("message")] = web::json::value::string(U("Logged out successfully"));
                 
-                request.reply(status_codes::OK, resp);
+                replyWithCors(request, status, resp)
                 
             } catch (const std::exception& e) {
                 web::json::value resp;
@@ -502,7 +517,7 @@ int main() {
                     resp[U("result")] = web::json::value::string(U("node added"));
                     resp[U("name")] = web::json::value::string(utility::conversions::to_string_t(name));
                     resp[U("type")] = web::json::value::string(utility::conversions::to_string_t(type));
-                    request.reply(status_codes::OK, resp);
+                    replyWithCors(request, status, resp)
 
                 } catch (const std::runtime_error& e) {
                     std::string error_msg = e.what();
@@ -548,7 +563,7 @@ int main() {
                     web::json::value resp;
                     resp[U("result")] = web::json::value::string(U("node removed"));
                     resp[U("name")] = web::json::value::string(utility::conversions::to_string_t(name));
-                    request.reply(status_codes::OK, resp);
+                    replyWithCors(request, status, resp)
 
                 } catch (const std::runtime_error& e) {
                     std::string error_msg = e.what();
@@ -587,7 +602,7 @@ int main() {
                     web::json::value resp;
                     resp[U("result")] = web::json::value::string(U("node failed"));
                     resp[U("name")] = web::json::value::string(utility::conversions::to_string_t(name));
-                    request.reply(status_codes::OK, resp);
+                    replyWithCors(request, status, resp)
 
                 } catch (const std::exception& e) {
                     web::json::value resp;
@@ -644,7 +659,7 @@ int main() {
                     web::json::value resp;
                     resp[U("result")] = web::json::value::string(U("node configuration updated"));
                     resp[U("name")] = web::json::value::string(utility::conversions::to_string_t(name));
-                    request.reply(status_codes::OK, resp);
+                    replyWithCors(request, status, resp)
 
                 } catch (const std::runtime_error& e) {
                     std::string error_msg = e.what();
@@ -692,7 +707,7 @@ int main() {
                     resp[U("result")] = web::json::value::string(U("nodes connected"));
                     resp[U("nodeA")] = web::json::value::string(utility::conversions::to_string_t(nodeA));
                     resp[U("nodeB")] = web::json::value::string(utility::conversions::to_string_t(nodeB));
-                    request.reply(status_codes::OK, resp);
+                    replyWithCors(request, status, resp)
 
                 } catch (const std::runtime_error& e) {
                     std::string error_msg = e.what();
@@ -736,7 +751,7 @@ int main() {
                     resp[U("result")] = web::json::value::string(U("nodes disconnected"));
                     resp[U("nodeA")] = web::json::value::string(utility::conversions::to_string_t(nodeA));
                     resp[U("nodeB")] = web::json::value::string(utility::conversions::to_string_t(nodeB));
-                    request.reply(status_codes::OK, resp);
+                    replyWithCors(request, status, resp)
 
                 } catch (const std::runtime_error& e) {
                     std::string error_msg = e.what();
@@ -780,7 +795,7 @@ int main() {
                     web::json::value resp;
                     resp[U("result")] = web::json::value::string(U("link delay set"));
                     resp[U("delay")] = web::json::value::number(delay);
-                    request.reply(status_codes::OK, resp);
+                    replyWithCors(request, status, resp)
 
                 } catch (const std::runtime_error& e) {
                     std::string error_msg = e.what();
@@ -824,7 +839,7 @@ int main() {
                     web::json::value resp;
                     resp[U("result")] = web::json::value::string(U("bandwidth set"));
                     resp[U("bandwidth")] = web::json::value::number(bandwidth);
-                    request.reply(status_codes::OK, resp);
+                    replyWithCors(request, status, resp)
 
                 } catch (const std::runtime_error& e) {
                     std::string error_msg = e.what();
@@ -868,7 +883,7 @@ int main() {
                     web::json::value resp;
                     resp[U("result")] = web::json::value::string(U("packet loss probability set"));
                     resp[U("probability")] = web::json::value::number(prob);
-                    request.reply(status_codes::OK, resp);
+                    replyWithCors(request, status, resp)
 
                 } catch (const std::runtime_error& e) {
                     std::string error_msg = e.what();
@@ -912,7 +927,7 @@ int main() {
                     resp[U("result")] = web::json::value::string(U("VLAN assigned"));
                     resp[U("node")] = web::json::value::string(utility::conversions::to_string_t(name));
                     resp[U("vlanId")] = web::json::value::number(vlanId);
-                    request.reply(status_codes::OK, resp);
+                    replyWithCors(request, status, resp)
 
                 } catch (const std::runtime_error& e) {
                     std::string error_msg = e.what();
@@ -957,7 +972,7 @@ int main() {
                     web::json::value resp;
                     resp[U("result")] = web::json::value::string(U("firewall rule added"));
                     resp[U("action")] = web::json::value::string(allow ? U("allow") : U("deny"));
-                    request.reply(status_codes::OK, resp);
+                    replyWithCors(request, status, resp)
 
                 } catch (const std::runtime_error& e) {
                     std::string error_msg = e.what();
@@ -996,7 +1011,7 @@ int main() {
                     resp[U("success")] = web::json::value::boolean(ok);
                     resp[U("path")] = string_vector_to_json(pathOut);
                     resp[U("hops")] = web::json::value::number((int)pathOut.size());
-                    request.reply(status_codes::OK, resp);
+                    replyWithCors(request, status, resp)
 
                 } catch (const std::exception& e) {
                     web::json::value resp;
@@ -1018,7 +1033,7 @@ int main() {
                     resp[U("success")] = web::json::value::boolean(ok);
                     resp[U("path")] = string_vector_to_json(pathOut);
                     resp[U("hops")] = web::json::value::number((int)pathOut.size());
-                    request.reply(status_codes::OK, resp);
+                    replyWithCors(request, status, resp)
 
                 } catch (const std::exception& e) {
                     web::json::value resp;
@@ -1043,7 +1058,7 @@ int main() {
                     web::json::value resp;
                     resp[U("success")] = web::json::value::boolean(ok);
                     resp[U("destinations")] = web::json::value::number((int)destinations.size());
-                    request.reply(status_codes::OK, resp);
+                    replyWithCors(request, status, resp)
 
                 } catch (const std::exception& e) {
                     web::json::value resp;
@@ -1063,7 +1078,7 @@ int main() {
                     web::json::value resp;
                     resp[U("success")] = web::json::value::boolean(ok);
                     resp[U("message")] = web::json::value::string(ok ? U("TCP connection established") : U("TCP connection failed"));
-                    request.reply(status_codes::OK, resp);
+                    replyWithCors(request, status, resp)
 
                 } catch (const std::exception& e) {
                     web::json::value resp;
@@ -1087,7 +1102,7 @@ int main() {
 
                     web::json::value resp;
                     resp[U("result")] = web::json::value::string(U("topology imported"));
-                    request.reply(status_codes::OK, resp);
+                    replyWithCors(request, status, resp)
 
                 } catch (const std::runtime_error& e) {
                     std::string error_msg = e.what();
@@ -1125,7 +1140,7 @@ int main() {
                     resp[U("result")] = web::json::value::string(U("wireless range set"));
                     resp[U("node")] = web::json::value::string(utility::conversions::to_string_t(name));
                     resp[U("range")] = web::json::value::number(range);
-                    request.reply(status_codes::OK, resp);
+                    replyWithCors(request, status, resp)
 
                 } catch (const std::exception& e) {
                     web::json::value resp;
@@ -1146,7 +1161,7 @@ int main() {
                     resp[U("result")] = web::json::value::string(U("interference simulated"));
                     resp[U("node")] = web::json::value::string(utility::conversions::to_string_t(name));
                     resp[U("lossProb")] = web::json::value::number(lossProb);
-                    request.reply(status_codes::OK, resp);
+                    replyWithCors(request, status, resp)
 
                 } catch (const std::exception& e) {
                     web::json::value resp;
@@ -1166,7 +1181,7 @@ int main() {
                     web::json::value resp;
                     resp[U("result")] = web::json::value::string(U("cloud node added"));
                     resp[U("name")] = web::json::value::string(utility::conversions::to_string_t(name));
-                    request.reply(status_codes::OK, resp);
+                    replyWithCors(request, status, resp)
 
                 } catch (const std::exception& e) {
                     web::json::value resp;
@@ -1185,7 +1200,7 @@ int main() {
                     web::json::value resp;
                     resp[U("result")] = web::json::value::string(U("cloud node scaled up"));
                     resp[U("name")] = web::json::value::string(utility::conversions::to_string_t(name));
-                    request.reply(status_codes::OK, resp);
+                    replyWithCors(request, status, resp)
 
                 } catch (const std::exception& e) {
                     web::json::value resp;
@@ -1204,7 +1219,7 @@ int main() {
                     web::json::value resp;
                     resp[U("result")] = web::json::value::string(U("cloud node scaled down"));
                     resp[U("name")] = web::json::value::string(utility::conversions::to_string_t(name));
-                    request.reply(status_codes::OK, resp);
+                    replyWithCors(request, status, resp)
 
                 } catch (const std::exception& e) {
                     web::json::value resp;
@@ -1224,7 +1239,7 @@ int main() {
                     web::json::value resp;
                     resp[U("result")] = web::json::value::string(U("IoT device added"));
                     resp[U("name")] = web::json::value::string(utility::conversions::to_string_t(name));
-                    request.reply(status_codes::OK, resp);
+                    replyWithCors(request, status, resp)
 
                 } catch (const std::exception& e) {
                     web::json::value resp;
@@ -1246,7 +1261,7 @@ int main() {
                     resp[U("result")] = web::json::value::string(U("battery drained"));
                     resp[U("name")] = web::json::value::string(utility::conversions::to_string_t(name));
                     resp[U("batteryLevel")] = web::json::value::number(batteryLevel);
-                    request.reply(status_codes::OK, resp);
+                    replyWithCors(request, status, resp)
 
                 } catch (const std::exception& e) {
                     web::json::value resp;
@@ -1265,12 +1280,12 @@ int main() {
                         web::json::value resp;
                         resp[U("result")] = web::json::value::string(U("node statistics reset"));
                         resp[U("node")] = web::json::value::string(utility::conversions::to_string_t(name));
-                        request.reply(status_codes::OK, resp);
+                        replyWithCors(request, status, resp)
                     } else {
                         net.resetAllStatistics();
                         web::json::value resp;
                         resp[U("result")] = web::json::value::string(U("all statistics reset"));
-                        request.reply(status_codes::OK, resp);
+                        replyWithCors(request, status, resp)
                     }
 
                 } catch (const std::exception& e) {
@@ -1295,7 +1310,7 @@ int main() {
                     resp[U("latency")] = web::json::value::number(latency);
                     resp[U("throughput")] = web::json::value::number(throughput);
                     resp[U("packetLossRate")] = web::json::value::number(packetLoss);
-                    request.reply(status_codes::OK, resp);
+                    replyWithCors(request, status, resp)
 
                 } catch (const std::exception& e) {
                     web::json::value resp;
@@ -1331,7 +1346,7 @@ int main() {
                     resp[U("message")] = web::json::value::string(U("Database persistence enabled"));
                     resp[U("host")] = web::json::value::string(utility::conversions::to_string_t(host));
                     resp[U("database")] = web::json::value::string(utility::conversions::to_string_t(database));
-                    request.reply(status_codes::OK, resp);
+                    replyWithCors(request, status, resp)
 
                 } catch (const std::exception& e) {
                     web::json::value resp;
@@ -1347,7 +1362,7 @@ int main() {
                 web::json::value resp;
                 resp[U("status")] = web::json::value::string(U("success"));
                 resp[U("message")] = web::json::value::string(U("Database persistence disabled"));
-                request.reply(status_codes::OK, resp);
+                replyWithCors(request, status, resp)
             } catch (const std::exception& e) {
                 web::json::value resp;
                 resp[U("error")] = web::json::value::string(utility::conversions::to_string_t(e.what()));
@@ -1363,7 +1378,7 @@ int main() {
 
                     web::json::value resp;
                     resp[U("result")] = web::json::value::string(U("VLAN assigned"));
-                    request.reply(status_codes::OK, resp);
+                    replyWithCors(request, status, resp)
                 } catch (const std::exception& e) {
                     web::json::value resp;
                     resp[U("error")] = web::json::value::string(
