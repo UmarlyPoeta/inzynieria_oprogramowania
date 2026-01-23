@@ -126,7 +126,7 @@ export const SectionHeader = styled.div<{ expanded: boolean }>`
 `;
 
 export const AccordionContent = styled.div<{ expanded: boolean }>`
-  max-height: ${({ expanded }) => (expanded ? "500px" : "0")};
+  max-height: ${({ expanded }) => (!expanded ? "0" : "none")};
   overflow: hidden;
   transition: max-height 0.3s ease;
 `;
