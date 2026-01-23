@@ -7,7 +7,25 @@ vi.mock('@/components', () => ({
   CanvasArea: () => <div data-testid="canvas-area" />,
   RightSidebar: () => <div data-testid="right-sidebar" />,
   DeviceTool: () => <div data-testid="device-tool" />,
+
+  // druga gałąź (na wszelki wypadek)
+  Area: () => <div data-testid="area" />,
+  StatisticsBar: () => <div data-testid="statistics-bar" />,
+  InfoAndControlBar: () => <div data-testid="info-bar" />,
 }));
+
+
+vi.mock('@/context/WorkspaceModeContext', () => ({
+  useMode: () => ({
+    mode: 'editor',
+  }),
+}));
+
+
+vi.mock('@/hooks', () => ({
+  useKeyboardShortcuts: () => {},
+}));
+
 
 vi.mock('@/context/EditorContext', () => ({
   __esModule: true,
@@ -15,34 +33,35 @@ vi.mock('@/context/EditorContext', () => ({
     devices: [],
     links: [],
     groups: [],
-    undo: () => {},
-    redo: () => {},
-    addDevice: () => {},
-    deleteDevice: () => {},
-    removeDeviceFromGroup: () => {},
-    moveDeviceToGroup: () => {},
-    addLink: () => {},
-    moveDevice: () => {},
-    addGroup: () => {},
-    renameGroup: () => {},
-    deleteGroup: () => {},
-    toggleGroupCollapsed: () => {},
+    undo: vi.fn(),
+    redo: vi.fn(),
+    addDevice: vi.fn(),
+    deleteDevice: vi.fn(),
+    removeDeviceFromGroup: vi.fn(),
+    moveDeviceToGroup: vi.fn(),
+    addLink: vi.fn(),
+    moveDevice: vi.fn(),
+    addGroup: vi.fn(),
+    renameGroup: vi.fn(),
+    deleteGroup: vi.fn(),
+    toggleGroupCollapsed: vi.fn(),
     selectedDeviceId: undefined,
-    selectDevice: () => {},
+    selectDevice: vi.fn(),
     connectingDeviceId: null,
-    startConnecting: () => {},
-    selectDeviceForLink: () => {},
-    stopConnecting: () => {},
+    startConnecting: vi.fn(),
+    selectDeviceForLink: vi.fn(),
+    stopConnecting: vi.fn(),
     connectingModeActive: false,
-    updateDeviceConfig: () => {},
+    updateDeviceConfig: vi.fn(),
     selectedDeviceIds: [],
-    toggleSelectDevice: () => {},
-    selectAll: () => {},
+    toggleSelectDevice: vi.fn(),
+    selectAll: vi.fn(),
   }),
 }));
 
+
 describe('Workspace', () => {
-  it('renders all main components', () => {
+  it('renders editor layout components', () => {
     render(<Workspace />);
 
     expect(screen.getByTestId('left-sidebar')).toBeInTheDocument();
