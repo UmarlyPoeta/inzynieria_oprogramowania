@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import type { Device, RouterConfig } from "@/types";
-import { Section, Input, Select, SectionHeader, AccordionContent, PanelWrapper } from '@/components/layout/RightSidebar/RightSidebar.styled';
+import { Section, Input, Select, SectionHeader, AccordionContent, PanelWrapper } from '@/components/editor/RightSidebar/RightSidebar.styled';
 import { useEditor } from "@/context/EditorContext";
 
 interface Props {

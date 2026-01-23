@@ -1,7 +1,7 @@
-export { default as LeftSidebar } from './layout/LeftSidebar/LeftSidebar';
-export { default as RightSidebar } from './layout/RightSidebar/RightSidebar';
-export { default as CanvasArea } from './layout/CanvasArea/CanvasArea';
-export { default as DeviceTool } from './layout/DeviceTool/DeviceTool';
+export { default as LeftSidebar } from './editor/LeftSidebar/LeftSidebar';
+export { default as RightSidebar } from './editor/RightSidebar/RightSidebar';
+export { default as CanvasArea } from './editor/CanvasArea/CanvasArea';
+export { default as DeviceTool } from './editor/DeviceTool/DeviceTool';
 
 export { default as Area } from './simulation/Area/Area/Area'
 export { default as ControlBar } from './simulation/ControlBar/ControlBar'

@@ -1,6 +1,6 @@
 import { useEditor } from "@/context/EditorContext";
 import { SimulationNode } from "@/components";
-import { Container, Inner, Grid } from '../../../layout/CanvasArea/CanvasArea.styled';
+import { Container, Inner, Grid } from '../../../editor/CanvasArea/CanvasArea.styled';
 import { useState, useEffect, useRef } from "react";
 import styled, { keyframes, css } from "styled-components";
 
