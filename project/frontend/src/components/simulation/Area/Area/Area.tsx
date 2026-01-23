@@ -1,7 +1,7 @@
 import { useEditor } from "@/context/EditorContext";
 import { SimulationNode } from "@/components";
 import { Container, Inner, Grid } from '../../../layout/CanvasArea/CanvasArea.styled';
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import styled, { keyframes, css } from "styled-components";
 
 const dash = keyframes`
@@ -19,6 +19,15 @@ const glow = keyframes`
   }
 `;
 
+const glowBlue = keyframes`
+  0%, 100% {
+    filter: drop-shadow(0 0 6px rgba(246, 128, 59, 0.8));
+  }
+  50% {
+    filter: drop-shadow(0 0 12px rgba(250, 171, 118, 1));
+  }
+`;
+
 const pulse = keyframes`
   0%, 100% {
     opacity: 0.6;
@@ -28,20 +37,27 @@ const pulse = keyframes`
   }
 `;
 
-const animationStyles = css`
-  animation: ${dash} 0.6s linear infinite, ${pulse} 1.2s ease-in-out infinite;
+const hopPulse = keyframes`
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.3);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0;
+  }
 `;
 
-const AnimatedLine = styled.line`
-  stroke: #f8e15d;
-  stroke-width: 2.5;
-  stroke-dasharray: 12, 6;
-  opacity: 0.8;
-  ${animationStyles}
+const PacketGroup = styled.g<{ $isTraceroute?: boolean }>`
+  animation: ${props => props.$isTraceroute ? glowBlue : glow} 0.8s ease-in-out infinite;
 `;
 
-const PacketGroup = styled.g`
-  animation: ${glow} 0.8s ease-in-out infinite;
+const HopMarker = styled.circle`
+  animation: ${hopPulse} 1.2s ease-out forwards;
 `;
 
 interface Animation {
@@ -51,6 +67,7 @@ interface Animation {
   path?: string[];
   timestamp: number;
   currentSegment: number;
+  type?: 'ping' | 'traceroute';
 }
 
 const Area = () => {
@@ -58,10 +75,12 @@ const Area = () => {
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [scale, setScale] = useState(1);
   const [animations, setAnimations] = useState<Animation[]>([]);
+  const [hopMarkers, setHopMarkers] = useState<Array<{ id: string; x: number; y: number; timestamp: number }>>([]);
+  const lastSegmentRef = useRef<Map<string, number>>(new Map());
 
   useEffect(() => {
     const handleAnimation = (event: CustomEvent) => {
-      const { srcId, dstId, path } = event.detail;
+      const { srcId, dstId, path, type = 'ping' } = event.detail;
       const animationData: Animation = {
         id: `${srcId}-${dstId}-${Date.now()}`,
         srcId,
@@ -69,14 +88,18 @@ const Area = () => {
         path: path || [srcId, dstId],
         timestamp: Date.now(),
         currentSegment: 0,
+        type
       };
       
       setAnimations(prev => [...prev, animationData]);
 
-      // Długość animacji zależy od liczby segmentów
-      const duration = (path?.length || 2) * 700;
+      // Dla traceroute: wolniejsza animacja + pauza na każdym hopie
+      const segmentDuration = type === 'traceroute' ? 1200 : 700;
+      const duration = (path?.length || 2) * segmentDuration;
+      
       setTimeout(() => {
         setAnimations(prev => prev.filter(a => a.id !== animationData.id));
+        lastSegmentRef.current.delete(animationData.id);
       }, duration);
     };
 
@@ -84,15 +107,58 @@ const Area = () => {
     return () => window.removeEventListener('network-animation' as any, handleAnimation);
   }, []);
 
+  // Oddzielny effect do trackowania hop markers
   useEffect(() => {
     if (animations.length === 0) return;
-    
+
     const interval = setInterval(() => {
-      setAnimations(prev => [...prev]);
-    }, 16);
+      animations.forEach(anim => {
+        if (anim.type !== 'traceroute' || !anim.path) return;
+
+        const segmentDuration = 1200;
+        const elapsed = Date.now() - anim.timestamp;
+        const totalDuration = anim.path.length * segmentDuration;
+        const totalProgress = Math.min(elapsed / totalDuration, 1);
+
+        const currentSegmentFloat = totalProgress * (anim.path.length - 1);
+        const currentSegment = Math.floor(currentSegmentFloat);
+
+        const lastSegment = lastSegmentRef.current.get(anim.id) || 0;
+
+        if (currentSegment > lastSegment && currentSegment > 0 && currentSegment < anim.path.length) {
+          const hopId = anim.path[currentSegment];
+          const device = devices.find(d => d.id === hopId);
+          
+          if (device) {
+            const markerId = `${anim.id}-${hopId}-${currentSegment}`;
+            setHopMarkers(prev => {
+              if (!prev.some(m => m.id === markerId)) {
+                return [...prev, {
+                  id: markerId,
+                  x: device.x + 30,
+                  y: device.y + 30,
+                  timestamp: Date.now()
+                }];
+              }
+              return prev;
+            });
+          }
+
+          lastSegmentRef.current.set(anim.id, currentSegment);
+        }
+      });
+    }, 50);
 
     return () => clearInterval(interval);
-  }, [animations.length]);
+  }, [animations, devices]);
+
+  // Cleanup old hop markers
+  useEffect(() => {
+    const cleanup = setInterval(() => {
+      setHopMarkers(prev => prev.filter(m => Date.now() - m.timestamp < 1200));
+    }, 100);
+    return () => clearInterval(cleanup);
+  }, []);
 
   const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -123,22 +189,22 @@ const Area = () => {
   const getPacketPosition = (anim: Animation) => {
     if (!anim.path || anim.path.length < 2) return null;
 
+    const isTraceroute = anim.type === 'traceroute';
+    const segmentDuration = isTraceroute ? 1200 : 700;
+
     const elapsed = Date.now() - anim.timestamp;
-    const segmentDuration = 700; // 700ms na każdy segment
     const totalDuration = anim.path.length * segmentDuration;
     const totalProgress = Math.min(elapsed / totalDuration, 1);
 
-    // Oblicz w którym segmencie jesteśmy
     const currentSegmentFloat = totalProgress * (anim.path.length - 1);
     const currentSegment = Math.floor(currentSegmentFloat);
     const segmentProgress = currentSegmentFloat - currentSegment;
 
-    // Smooth ease-in-out dla każdego segmentu
+    // Smooth ease-in-out
     const easeProgress = segmentProgress < 0.5
       ? 4 * segmentProgress * segmentProgress * segmentProgress
       : 1 - Math.pow(-2 * segmentProgress + 2, 3) / 2;
 
-    // Pobierz urządzenia dla aktualnego segmentu
     const fromId = anim.path[currentSegment];
     const toId = anim.path[Math.min(currentSegment + 1, anim.path.length - 1)];
 
@@ -157,6 +223,7 @@ const Area = () => {
 
     const angle = Math.atan2(toY - fromY, toX - fromX) * (180 / Math.PI);
 
+    // Trail
     const trail = [];
     for (let i = 1; i <= 4; i++) {
       const trailProgress = Math.max(0, easeProgress - i * 0.08);
@@ -169,13 +236,12 @@ const Area = () => {
       });
     }
 
-    // Zwróć pełną ścieżkę dla narysowania linii
     const fullPath = anim.path.map(id => {
       const device = devices.find(d => d.id === id);
       return device ? { x: device.x + 30, y: device.y + 30 } : null;
     }).filter(Boolean) as { x: number; y: number }[];
 
-    return { currentX, currentY, angle, trail, fullPath, currentSegment };
+    return { currentX, currentY, angle, trail, fullPath, currentSegment, isTraceroute };
   };
 
   return (
@@ -207,22 +273,40 @@ const Area = () => {
             );
           })}
 
+          {/* Hop Markers dla traceroute */}
+          {hopMarkers.map(marker => (
+            <HopMarker
+              key={marker.id}
+              cx={marker.x}
+              cy={marker.y}
+              r="20"
+              fill="none"
+              stroke="#f6803b"
+              strokeWidth="3"
+            />
+          ))}
+
           {animations.map(anim => {
             const pos = getPacketPosition(anim);
             if (!pos) return null;
 
-            // Stwórz pathData dla pełnej ścieżki
             const pathData = pos.fullPath.length > 0
               ? `M ${pos.fullPath[0].x} ${pos.fullPath[0].y} ` +
                 pos.fullPath.slice(1).map(p => `L ${p.x} ${p.y}`).join(' ')
               : '';
+
+            const lineColor = "#f8e15d";
+            const glowColor = "#f8e15d";
+            const mainColor = "#f6803b";
+            const accentColor = "#faab76";
+            const brightColor = "#f8e15d";
 
             return (
               <g key={anim.id}>
                 {pathData && (
                   <path
                     d={pathData}
-                    stroke="#f8e15d"
+                    stroke={lineColor}
                     strokeWidth="2.5"
                     strokeDasharray="12, 6"
                     fill="none"
@@ -250,51 +334,50 @@ const Area = () => {
                       cx={t.x}
                       cy={t.y}
                       r={t.size + 2}
-                      fill="#f8e15d"
+                      fill={glowColor}
                       opacity={t.opacity * 0.15}
                     />
                     <circle
                       cx={t.x}
                       cy={t.y}
                       r={t.size}
-                      fill="#f6803b"
+                      fill={mainColor}
                       opacity={t.opacity * 0.5}
                     />
                   </g>
                 ))}
 
-                <PacketGroup transform={`translate(${pos.currentX}, ${pos.currentY}) rotate(${pos.angle})`}>
-                  {/* Glow tła */}
+                <PacketGroup 
+                  $isTraceroute={pos.isTraceroute}
+                  transform={`translate(${pos.currentX}, ${pos.currentY}) rotate(${pos.angle})`}
+                >
                   <circle
                     cx="-2"
                     cy="0"
                     r="14"
-                    fill="#f8e15d"
+                    fill={glowColor}
                     opacity="0.2"
                   />
                   
-                  {/* Główna strzałka */}
                   <path
                     d="M -11 -7 L 13 0 L -11 7 L -7 0 Z"
-                    fill="#f6803b"
-                    stroke="#faab76"
+                    fill={mainColor}
+                    stroke={accentColor}
                     strokeWidth="1.8"
                     strokeLinejoin="round"
                   />
                   
-                  {/* Wewnętrzny akcent */}
                   <path
                     d="M -7 -4 L 8 0 L -7 4 L -4 0 Z"
-                    fill="#faab76"
+                    fill={accentColor}
                     opacity="0.8"
                   />
                   
-                  {/* Świecący punkt */}
                   <circle
                     cx="0"
                     cy="0"
                     r="2.5"
-                    fill="#f8e15d"
+                    fill={brightColor}
                   />
                 </PacketGroup>
               </g>

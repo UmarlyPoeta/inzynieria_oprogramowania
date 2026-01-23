@@ -10,9 +10,14 @@ export const Sidebar = styled.div`
 
 export const SimulationContainer = styled.div`
   display: flex;
-  justify-content: space-between;
+  // justify-content: space-between;
+  gap: 50px;
   font-size: 1rem;
   font-weight: bold;
+  background-color: white;
+  position: fixed;
+  top: 0;
+  // right: 0;
   align-items: center;
   flex-direction: row;
   width: 100%;

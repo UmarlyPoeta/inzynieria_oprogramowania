@@ -5,9 +5,9 @@ const useNetworkActions = () => {
   const { selectedDeviceIds, setSelectedDeviceIds } = useEditor();
   const { pendingAction, setPendingAction, pdus, setPdus } = useNetwork();
 
-  const triggerAnimation = (srcId: string, dstId: string, path?: string[]) => {
+  const triggerAnimation = (srcId: string, dstId: string, path?: string[], type: NetworkActionType = 'ping') => {
     const event = new CustomEvent('network-animation', {
-      detail: { srcId, dstId, path }
+      detail: { srcId, dstId, path, type }
     });
     window.dispatchEvent(event);
   };
@@ -24,14 +24,14 @@ const useNetworkActions = () => {
 
       console.log(`📬 API response:`, res);
 
-      // 🎬 URUCHOM ANIMACJĘ z path z API
+      // 🎬 URUCHOM ANIMACJĘ z path z API i typem akcji
       if (res.path && res.path.length > 0) {
-        console.log(`🎨 Triggering animation with path:`, res.path);
-        triggerAnimation(srcId, dstId, res.path);
+        console.log(`🎨 Triggering ${type} animation with path:`, res.path);
+        triggerAnimation(srcId, dstId, res.path, type);
       } else {
         // Fallback jeśli brak path
-        console.log(`🎨 Triggering animation without path (direct)`);
-        triggerAnimation(srcId, dstId, [srcId, dstId]);
+        console.log(`🎨 Triggering ${type} animation without path (direct)`);
+        triggerAnimation(srcId, dstId, [srcId, dstId], type);
       }
 
       setPdus(prev => [

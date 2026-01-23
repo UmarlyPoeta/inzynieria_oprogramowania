@@ -5,20 +5,64 @@ import { Container, Row, ToggleButton, CollapsedBar, Wrapper, TabContainer, Tab,
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, CartesianGrid, ResponsiveContainer } from "recharts";
 import { Filter, Network, Link, ChevronDown, ChevronRight } from "lucide-react";
 
+// const PacketBarChart = () => {
+//   const data = [
+//     { node: "A", sent: 10, received: 8 },
+//     { node: "B", sent: 5, received: 12 },
+//     { node: "C", sent: 7, received: 7 },
+//     { node: "D", sent: 2, received: 9 },
+//   ];
+
+//   return (
+//     <ResponsiveContainer width="90%" height={200}>
+//       <BarChart data={data} margin={{ top: 10, right: 10, bottom: 10 }}>
+//         <CartesianGrid strokeDasharray="3 3" />
+//         <XAxis dataKey="node" tick={{ fontSize: 10 }} />
+//         <YAxis tick={{ fontSize: 10 }} />
+//         <Tooltip />
+//         <Legend wrapperStyle={{ fontSize: 10 }} />
+//         <Bar dataKey="sent" fill="#f37c46ff" name="Wysłane" />
+//         <Bar dataKey="received" fill="#fcc662ff" name="Odebrane" />
+//       </BarChart>
+//     </ResponsiveContainer>
+//   );
+// };
+
 const PacketBarChart = () => {
-  const data = [
-    { node: "A", sent: 10, received: 8 },
-    { node: "B", sent: 5, received: 12 },
-    { node: "C", sent: 7, received: 7 },
-    { node: "D", sent: 2, received: 9 },
-  ];
+  const { pdus } = useNetworkActions();
+  const { devices } = useEditor();
+
+  const getDeviceName = (id: string) =>
+    devices.find(d => d.id === id)?.name || id;
+
+  const data = Object.values(
+    pdus.reduce<Record<string, { node: string; sent: number; received: number }>>(
+      (acc, pdu) => {
+        const srcName = getDeviceName(pdu.src);
+        const dstName = getDeviceName(pdu.dst);
+
+        if (!acc[srcName]) {
+          acc[srcName] = { node: srcName, sent: 0, received: 0 };
+        }
+        if (!acc[dstName]) {
+          acc[dstName] = { node: dstName, sent: 0, received: 0 };
+        }
+
+        acc[srcName].sent += 1;
+        acc[dstName].received += 1;
+
+        return acc;
+      },
+      {}
+    )
+  );
 
   return (
     <ResponsiveContainer width="90%" height={200}>
       <BarChart data={data} margin={{ top: 10, right: 10, bottom: 10 }}>
         <CartesianGrid strokeDasharray="3 3" />
         <XAxis dataKey="node" tick={{ fontSize: 10 }} />
-        <YAxis tick={{ fontSize: 10 }} />
+        <YAxis allowDecimals={false} tick={{ fontSize: 10 }} />
         <Tooltip />
         <Legend wrapperStyle={{ fontSize: 10 }} />
         <Bar dataKey="sent" fill="#f37c46ff" name="Wysłane" />
@@ -27,6 +71,7 @@ const PacketBarChart = () => {
     </ResponsiveContainer>
   );
 };
+
 
 const PduList = () => {
   const { pdus } = useNetworkActions();
