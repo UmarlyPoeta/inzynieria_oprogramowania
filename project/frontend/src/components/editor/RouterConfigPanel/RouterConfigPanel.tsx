@@ -118,7 +118,7 @@ const validate = (cfg: RouterConfig) => {
     updateDeviceConfig(device.id!, { [key]: value });
   };
 
-  const sections = ["General", "Interfaces", "Routing", "NAT", "DHCP", "Security", "Services"];
+  const sections = ["General", "Interfaces", "Routing", "NAT", "DHCP", "Security"];
 
   const renderSection = (section: string) => {
     switch (section) {
@@ -403,13 +403,244 @@ const validate = (cfg: RouterConfig) => {
         );
 
       case "Security":
-        return <Section>Firewall / ACL configuration...</Section>;
+      return (
+        <>
+          <Section>
+            <Select
+              value={config.firewallEnabled ? "enabled" : "disabled"}
+              onChange={(e) => handleInputChange("firewallEnabled", e.target.value === "enabled")}
+            >
+              <option value="enabled">Enabled</option>
+              <option value="disabled">Disabled</option>
+            </Select>
+          </Section>
 
-      case "Services":
-        return <Section>DNS, HTTP, SNMP services...</Section>;
+          <h5 style={{display: "flex", justifyContent: "space-between", alignItems: "center"}}>
+            Firewall Rules (ACL)
+            <button
+              onClick={() =>
+                handleInputChange("firewallRules", [
+                  ...(config.firewallRules || []),
+                  {
+                    action: "permit",
+                    protocol: "any",
+                    source: "",
+                    destination: "",
+                    port: undefined,
+                  },
+                ])
+              }
+            >
+              Add Rule
+            </button>
+          </h5>
 
-      default:
-        return null;
+          {(config.firewallRules || []).map((rule, idx) => (
+            <div key={idx} style={{ marginBottom: "12px", padding: "8px", border: "1px solid #ddd", borderRadius: "4px" }}>
+              <h5>Rule {idx + 1}</h5>
+              <Section>
+                <Select
+                  value={rule.action}
+                  onChange={(e) => {
+                    const newRules = [...(config.firewallRules || [])];
+                    newRules[idx] = { ...newRules[idx], action: e.target.value as "permit" | "deny" };
+                    handleInputChange("firewallRules", newRules);
+                  }}
+                >
+                  <option value="permit">Permit</option>
+                  <option value="deny">Deny</option>
+                </Select>
+                <Select
+                  value={rule.protocol}
+                  onChange={(e) => {
+                    const newRules = [...(config.firewallRules || [])];
+                    newRules[idx] = { ...newRules[idx], protocol: e.target.value as any };
+                    handleInputChange("firewallRules", newRules);
+                  }}
+                >
+                  <option value="any">Any</option>
+                  <option value="tcp">TCP</option>
+                  <option value="udp">UDP</option>
+                  <option value="icmp">ICMP</option>
+                </Select>
+              </Section>
+              <Section>
+                <Input
+                  placeholder="Source IP/Network"
+                  value={rule.source}
+                  onChange={(e) => {
+                    const newRules = [...(config.firewallRules || [])];
+                    newRules[idx] = { ...newRules[idx], source: e.target.value };
+                    handleInputChange("firewallRules", newRules);
+                  }}
+                />
+                <Input
+                  placeholder="Destination IP/Network"
+                  value={rule.destination}
+                  onChange={(e) => {
+                    const newRules = [...(config.firewallRules || [])];
+                    newRules[idx] = { ...newRules[idx], destination: e.target.value };
+                    handleInputChange("firewallRules", newRules);
+                  }}
+                />
+              </Section>
+              <Section>
+                <Input
+                  type="number"
+                  placeholder="Port (optional)"
+                  value={rule.port || ""}
+                  onChange={(e) => {
+                    const newRules = [...(config.firewallRules || [])];
+                    newRules[idx] = { ...newRules[idx], port: e.target.value ? Number(e.target.value) : undefined };
+                    handleInputChange("firewallRules", newRules);
+                  }}
+                />
+              </Section>
+            </div>
+          ))}
+
+          <h5 style={{display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "16px"}}>
+            VPN Tunnels
+            <button
+              onClick={() =>
+                handleInputChange("vpnTunnels", [
+                  ...(config.vpnTunnels || []),
+                  {
+                    name: "",
+                    type: "IPSec",
+                    remoteIp: "",
+                    preSharedKey: "",
+                  },
+                ])
+              }
+            >
+              Add Tunnel
+            </button>
+          </h5>
+
+          {(config.vpnTunnels || []).map((tunnel, idx) => (
+            <div key={idx} style={{ marginBottom: "12px", padding: "8px", border: "1px solid #ddd", borderRadius: "4px" }}>
+              <h5>Tunnel {idx + 1}</h5>
+              <Section>
+                <Input
+                  placeholder="Tunnel Name"
+                  value={tunnel.name}
+                  onChange={(e) => {
+                    const newTunnels = [...(config.vpnTunnels || [])];
+                    newTunnels[idx] = { ...newTunnels[idx], name: e.target.value };
+                    handleInputChange("vpnTunnels", newTunnels);
+                  }}
+                />
+                <Select
+                  value={tunnel.type}
+                  onChange={(e) => {
+                    const newTunnels = [...(config.vpnTunnels || [])];
+                    newTunnels[idx] = { ...newTunnels[idx], type: e.target.value as "IPSec" | "GRE" };
+                    handleInputChange("vpnTunnels", newTunnels);
+                  }}
+                >
+                  <option value="IPSec">IPSec</option>
+                  <option value="GRE">GRE</option>
+                </Select>
+              </Section>
+              <Section>
+                <Input
+                  placeholder="Remote IP"
+                  value={tunnel.remoteIp}
+                  onChange={(e) => {
+                    const newTunnels = [...(config.vpnTunnels || [])];
+                    newTunnels[idx] = { ...newTunnels[idx], remoteIp: e.target.value };
+                    handleInputChange("vpnTunnels", newTunnels);
+                  }}
+                />
+                {tunnel.type === "IPSec" && (
+                  <Input
+                    placeholder="Pre-Shared Key"
+                    type="password"
+                    value={tunnel.preSharedKey || ""}
+                    onChange={(e) => {
+                      const newTunnels = [...(config.vpnTunnels || [])];
+                      newTunnels[idx] = { ...newTunnels[idx], preSharedKey: e.target.value };
+                      handleInputChange("vpnTunnels", newTunnels);
+                    }}
+                  />
+                )}
+              </Section>
+            </div>
+          ))}
+
+          <h5 style={{display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "16px"}}>
+            QoS Policies
+            <button
+              onClick={() =>
+                handleInputChange("qosPolicies", [
+                  ...(config.qosPolicies || []),
+                  {
+                    name: "",
+                    description: "",
+                    type: "priority",
+                    value: "",
+                  },
+                ])
+              }
+            >
+              Add Policy
+            </button>
+          </h5>
+
+          {(config.qosPolicies || []).map((policy, idx) => (
+            <div key={idx} style={{ marginBottom: "12px", padding: "8px", border: "1px solid #ddd", borderRadius: "4px" }}>
+              <h5>Policy {idx + 1}</h5>
+              <Section>
+                <Input
+                  placeholder="Policy Name"
+                  value={policy.name}
+                  onChange={(e) => {
+                    const newPolicies = [...(config.qosPolicies || [])];
+                    newPolicies[idx] = { ...newPolicies[idx], name: e.target.value };
+                    handleInputChange("qosPolicies", newPolicies);
+                  }}
+                />
+                <Select
+                  value={policy.type}
+                  onChange={(e) => {
+                    const newPolicies = [...(config.qosPolicies || [])];
+                    newPolicies[idx] = { ...newPolicies[idx], type: e.target.value as any };
+                    handleInputChange("qosPolicies", newPolicies);
+                  }}
+                >
+                  <option value="priority">Priority</option>
+                  <option value="bandwidth">Bandwidth</option>
+                  <option value="rate-limit">Rate Limit</option>
+                </Select>
+              </Section>
+              <Section>
+                <Input
+                  placeholder="Description"
+                  value={policy.description || ""}
+                  onChange={(e) => {
+                    const newPolicies = [...(config.qosPolicies || [])];
+                    newPolicies[idx] = { ...newPolicies[idx], description: e.target.value };
+                    handleInputChange("qosPolicies", newPolicies);
+                  }}
+                />
+                <Input
+                  placeholder="Value"
+                  value={policy.value}
+                  onChange={(e) => {
+                    const newPolicies = [...(config.qosPolicies || [])];
+                    newPolicies[idx] = { ...newPolicies[idx], value: e.target.value };
+                    handleInputChange("qosPolicies", newPolicies);
+                  }}
+                />
+              </Section>
+            </div>
+          ))}
+        </>
+      );
+
+    default:
+      return null;
     }
   };
 
