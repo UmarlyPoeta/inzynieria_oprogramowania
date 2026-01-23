@@ -16,6 +16,7 @@ import {
   ProgressBar,
   ProgressWrapper
 } from "./AuthForm.styled";
+import { NetworkImage } from '@/data'
 
 interface AuthFormProps {
     mode: 'login' | 'register';
@@ -174,7 +175,10 @@ const AuthForm = ({ mode }: AuthFormProps) => {
           </FormContainer>
         </LeftContainer>
 
-        <RightContainer />
+        {/* <RightContainer /> */}
+        <RightContainer>
+          <img src={NetworkImage} width={"100%"} height={"100%"}/>
+        </RightContainer>
       </>
     );
 };
