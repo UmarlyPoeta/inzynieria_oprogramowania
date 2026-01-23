@@ -308,7 +308,7 @@ const Area = () => {
                     cy="0" 
                     r="18" 
                     fill="none"
-                    stroke={isTraceroute ? "#4a9eff" : "#f8e15d"}
+                    stroke={isTraceroute ? "#f8e15d" : "#f8e15d"}
                     strokeWidth="2"
                     opacity="0.4"
                   />
@@ -316,7 +316,7 @@ const Area = () => {
                     cx="0" 
                     cy="0" 
                     r="14" 
-                    fill={isTraceroute ? "#4a9eff" : "#f8e15d"}
+                    fill={isTraceroute ? "#f8e15d" : "#f8e15d"}
                     opacity="0.2"
                   />
                 </g>
@@ -334,8 +334,8 @@ const Area = () => {
                   {/* Main body */}
                   <path
                     d="M -11 -7 L 14 0 L -11 7 L -7 0 Z"
-                    fill={isTraceroute ? "#4a9eff" : "#f6803b"}
-                    stroke={isTraceroute ? "#6bb3ff" : "#faab76"}
+                    fill={isTraceroute ? "#f6803b" : "#f6803b"}
+                    stroke={isTraceroute ? "#faab76" : "#faab76"}
                     strokeWidth="2"
                     strokeLinejoin="round"
                   />
@@ -343,7 +343,7 @@ const Area = () => {
                   {/* Inner highlight */}
                   <path
                     d="M -7 -4 L 9 0 L -7 4 L -4 0 Z"
-                    fill={isTraceroute ? "#6bb3ff" : "#faab76"}
+                    fill={isTraceroute ? "#faab76" : "#faab76"}
                     opacity="0.9"
                   />
                   
@@ -352,13 +352,13 @@ const Area = () => {
                     cx="1" 
                     cy="0" 
                     r="2.5" 
-                    fill={isTraceroute ? "#ffffff" : "#f8e15d"}
+                    fill={isTraceroute ? "#f8e15d" : "#f8e15d"}
                   />
                   
                   {/* Direction indicator lines */}
                   <path
                     d="M 4 -2 L 10 0 M 4 2 L 10 0"
-                    stroke={isTraceroute ? "#ffffff" : "#f8e15d"}
+                    stroke={isTraceroute ? "#f8e15d" : "#f8e15d"}
                     strokeWidth="1.5"
                     strokeLinecap="round"
                     opacity="0.8"
