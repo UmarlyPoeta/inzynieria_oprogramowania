@@ -7,6 +7,7 @@ services:
     container_name: netsim-prometheus
     volumes:
       - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./monitoring/alerts.yml:/etc/prometheus/alerts.yml
       - prometheus_data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
@@ -16,6 +17,20 @@ services:
       - '--storage.tsdb.retention.time=30d'
     ports:
       - "9090:9090"
+    networks:
+      - netsim-network
+    restart: unless-stopped
+
+  # Alertmanager - Alert routing
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: netsim-alertmanager
+    volumes:
+      - ./monitoring/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+    ports:
+      - "9093:9093"
     networks:
       - netsim-network
     restart: unless-stopped

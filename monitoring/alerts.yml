@@ -1,0 +1,65 @@
+groups:
+  - name: netsim.general
+    rules:
+      - alert: InstanceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "{{ $labels.job }} on {{ $labels.instance }} is down"
+          description: "Prometheus cannot scrape {{ $labels.instance }} for job {{ $labels.job }}."
+
+      - alert: NodeHighCPU
+        expr: sum by (instance) (rate(node_cpu_seconds_total{mode!="idle"}[5m])) > 0.8
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU on {{ $labels.instance }}"
+          description: "CPU usage >80% for 10m."
+
+      - alert: NodeLowMemory
+        expr: (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) < 0.15
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low memory on {{ $labels.instance }}"
+          description: "Less than 15% memory available."
+
+      - alert: NodeDiskSpaceLow
+        expr: (node_filesystem_avail_bytes{fstype!~"tmpfs|fuse.lxcfs|overlay"} / node_filesystem_size_bytes{fstype!~"tmpfs|fuse.lxcfs|overlay"}) < 0.15
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low disk space on {{ $labels.instance }}"
+          description: "Less than 15% disk space available on {{ $labels.device }}." 
+
+      - alert: MySQLExporterDown
+        expr: up{job="mysql"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "MySQL exporter down"
+          description: "Prometheus cannot scrape the MySQL exporter."
+
+      - alert: RedisExporterDown
+        expr: up{job="redis"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Redis exporter down"
+          description: "Prometheus cannot scrape the Redis exporter."
+
+      - alert: PrometheusHighScrapeErrors
+        expr: rate(prometheus_target_scrape_pool_exceeded_target_limit_total[5m]) > 0
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Prometheus scrape issues"
+          description: "Targets exceed scrape limits or errors occur persistently."

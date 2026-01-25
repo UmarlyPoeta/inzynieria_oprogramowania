@@ -5,11 +5,13 @@ global:
     cluster: 'netsim-production'
     environment: 'production'
 
-# Alertmanager configuration (optional)
-# alerting:
-#   alertmanagers:
-#     - static_configs:
-#         - targets: ['alertmanager:9093']
+rule_files:
+  - '/etc/prometheus/alerts.yml'
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['alertmanager:9093']
 
 scrape_configs:
   # NetSimCPP Application (if you expose metrics endpoint)
